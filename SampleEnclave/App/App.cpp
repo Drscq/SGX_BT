@@ -41,6 +41,8 @@
 #include "sgx_urts.h"
 #include "App.h"
 #include "Enclave_u.h"
+#include <chrono>
+#include <vector>
 
 /* Global EID shared by multiple threads */
 sgx_enclave_id_t global_eid = 0;
@@ -194,6 +196,36 @@ int SGX_CDECL main(int argc, char *argv[])
         printf("Enter a character before exit ...\n");
         getchar();
         return -1; 
+    }
+    // Example: 1MB buffer
+    const size_t data_len = 1024 * 1024;
+    std::vector<uint8_t> host_buffer(data_len, 0xAB); // Fill with 0xAB
+    // -- Start timing: transfer host->enclave
+    auto start = std::chrono::high_resolution_clock::now();
+    sgx_status_t ret = ecall_bandwidth_test(global_eid, host_buffer.data(), data_len);
+    auto end = std::chrono::high_resolution_clock::now();
+
+    if (ret != SGX_SUCCESS) {
+        printf("Error: ecall_bandwidth_test returned %d\n", ret);
+        return -1;
+    } else {
+        double elapsedSec = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
+        double mbps = (data_len / 1024 / 1024) / elapsedSec;
+        printf("Host->Enclave: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec, mbps);
+    }
+    // -- Next, measure enclave->host
+    // We will call ecall_write_to_untrusted, which writes data into the buffer
+    start = std::chrono::high_resolution_clock::now();
+    ret = ecall_write_to_untrusted(global_eid, host_buffer.data(), data_len);
+    end = std::chrono::high_resolution_clock::now();
+
+    if (ret != SGX_SUCCESS) {
+        printf("Error: ecall_write_to_untrusted returned %d\n", ret);
+        return -1;
+    } else {
+        double elapsedSec = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
+        double mbps = (data_len / 1024 / 1024) / elapsedSec;
+        printf("Enclave->Host: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec, mbps);
     }
  
     /* Utilize edger8r attributes */

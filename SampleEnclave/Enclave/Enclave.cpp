@@ -49,3 +49,23 @@ int printf(const char* fmt, ...)
     ocall_print_string(buf);
     return (int)strnlen(buf, BUFSIZ - 1) + 1;
 }
+
+void ecall_bandwidth_test(uint8_t* data, size_t data_len) {
+    // This function can do something with the incoming buffer,
+    // e.g., read it, parse it, etc. For a simple test, maybe just 
+    // do a quick pass to simulate some work:
+    volatile uint8_t sum = 0;
+    for (size_t i = 0; i < data_len; ++i) {
+        sum ^= data[i];
+    }
+    // sum is volatile to ensure the loop doesn't get optimized out
+}
+
+
+void ecall_write_to_untrusted(uint8_t* data, size_t data_len) {
+    // For demonstration, fill the enclave buffer with some values
+    for (size_t i = 0; i < data_len; ++i) {
+        data[i] = static_cast<uint8_t>(i & 0xFF);
+    }
+    // Upon return, SGX copies 'data' back out to untrusted memory
+}

@@ -49,7 +49,11 @@ enclave {
     from "TrustedLibrary/Libc.edl" import *;
     from "TrustedLibrary/Libcxx.edl" import ecall_exception, ecall_map;
     from "TrustedLibrary/Thread.edl" import *;
-
+    
+    trusted {
+        public void ecall_bandwidth_test([in, size=data_len] uint8_t* data, size_t data_len);
+        public void ecall_write_to_untrusted([out, size=data_len] uint8_t* data, size_t data_len);
+    };
     /* 
      * ocall_print_string - invokes OCALL to display string buffer inside the enclave.
      *  [in]: copy the string buffer to App outside.
