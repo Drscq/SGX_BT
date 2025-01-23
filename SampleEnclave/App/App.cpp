@@ -33,7 +33,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-
+#include <iostream> 
 # include <unistd.h>
 # include <pwd.h>
 # define MAX_PATH FILENAME_MAX
@@ -198,11 +198,34 @@ int SGX_CDECL main(int argc, char *argv[])
         return -1; 
     }
     // Example: 1MB buffer
-    const size_t data_len = 1024 * 1024;
-    std::vector<uint8_t> host_buffer(data_len, 0xAB); // Fill with 0xAB
+    size_t data_len = 1024 * 1024 * 4;
+    // std::vector<uint8_t> host_buffer(data_len, 0xAB); // Fill with 0xAB
+    uint8_t* host_buffer = (uint8_t*)malloc(data_len);
     // -- Start timing: transfer host->enclave
+    volatile uint8_t sum = 0;
+    for (size_t i = 0; i < data_len; ++i) {
+        sum ^= host_buffer[i];
+    }
+    auto start1 = std::chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < data_len; ++i) {
+        sum ^= host_buffer[i];
+    }
+    auto end1 = std::chrono::high_resolution_clock::now();
+    double elapsedSec1 = std::chrono::duration_cast<std::chrono::duration<double>>(end1 - start1).count();
+    double mbps1 = (data_len / 1024 / 1024) / elapsedSec1;
+    printf("Host->Host: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec1, mbps1);
+    std::cout << "Sum: " << (int)sum << std::endl;
+    start1 = std::chrono::high_resolution_clock::now();
+    for (size_t i = 0; i < data_len; ++i) {
+        host_buffer[i] = static_cast<uint8_t>(i & 0xFF);
+    }
+    end1 = std::chrono::high_resolution_clock::now();
+    elapsedSec1 = std::chrono::duration_cast<std::chrono::duration<double>>(end1 - start1).count();
+    mbps1 = (data_len / 1024 / 1024) / elapsedSec1;
+    printf("Host->Host: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec1, mbps1);
+    // data_len = 1024;
     auto start = std::chrono::high_resolution_clock::now();
-    sgx_status_t ret = ecall_bandwidth_test(global_eid, host_buffer.data(), data_len);
+    sgx_status_t ret = ecall_bandwidth_test(global_eid, host_buffer, data_len);
     auto end = std::chrono::high_resolution_clock::now();
 
     if (ret != SGX_SUCCESS) {
@@ -213,10 +236,11 @@ int SGX_CDECL main(int argc, char *argv[])
         double mbps = (data_len / 1024 / 1024) / elapsedSec;
         printf("Host->Enclave: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec, mbps);
     }
+    
     // -- Next, measure enclave->host
     // We will call ecall_write_to_untrusted, which writes data into the buffer
     start = std::chrono::high_resolution_clock::now();
-    ret = ecall_write_to_untrusted(global_eid, host_buffer.data(), data_len);
+    ret = ecall_write_to_untrusted(global_eid, host_buffer, data_len);
     end = std::chrono::high_resolution_clock::now();
 
     if (ret != SGX_SUCCESS) {
@@ -241,6 +265,7 @@ int SGX_CDECL main(int argc, char *argv[])
 
     /* Destroy the enclave */
     sgx_destroy_enclave(global_eid);
+    delete host_buffer;
     
     printf("Info: SampleEnclave successfully returned.\n");
 

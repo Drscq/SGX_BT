@@ -51,8 +51,8 @@ enclave {
     from "TrustedLibrary/Thread.edl" import *;
     
     trusted {
-        public void ecall_bandwidth_test([in, size=data_len] uint8_t* data, size_t data_len);
-        public void ecall_write_to_untrusted([out, size=data_len] uint8_t* data, size_t data_len);
+        public void ecall_bandwidth_test( [user_check]uint8_t* data, size_t data_len);
+        public void ecall_write_to_untrusted( [user_check]uint8_t* data, size_t data_len);
     };
     /* 
      * ocall_print_string - invokes OCALL to display string buffer inside the enclave.

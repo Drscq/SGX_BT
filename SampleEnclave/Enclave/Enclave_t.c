@@ -208,39 +208,11 @@ static sgx_status_t SGX_CDECL sgx_ecall_bandwidth_test(void* pms)
 	}
 	sgx_status_t status = SGX_SUCCESS;
 	uint8_t* _tmp_data = __in_ms.ms_data;
-	size_t _tmp_data_len = __in_ms.ms_data_len;
-	size_t _len_data = _tmp_data_len;
-	uint8_t* _in_data = NULL;
 
-	CHECK_UNIQUE_POINTER(_tmp_data, _len_data);
 
-	//
-	// fence after pointer checks
-	//
-	sgx_lfence();
+	ecall_bandwidth_test(_tmp_data, __in_ms.ms_data_len);
 
-	if (_tmp_data != NULL && _len_data != 0) {
-		if ( _len_data % sizeof(*_tmp_data) != 0)
-		{
-			status = SGX_ERROR_INVALID_PARAMETER;
-			goto err;
-		}
-		_in_data = (uint8_t*)malloc(_len_data);
-		if (_in_data == NULL) {
-			status = SGX_ERROR_OUT_OF_MEMORY;
-			goto err;
-		}
 
-		if (memcpy_s(_in_data, _len_data, _tmp_data, _len_data)) {
-			status = SGX_ERROR_UNEXPECTED;
-			goto err;
-		}
-
-	}
-	ecall_bandwidth_test(_in_data, _tmp_data_len);
-
-err:
-	if (_in_data) free(_in_data);
 	return status;
 }
 
@@ -258,40 +230,11 @@ static sgx_status_t SGX_CDECL sgx_ecall_write_to_untrusted(void* pms)
 	}
 	sgx_status_t status = SGX_SUCCESS;
 	uint8_t* _tmp_data = __in_ms.ms_data;
-	size_t _tmp_data_len = __in_ms.ms_data_len;
-	size_t _len_data = _tmp_data_len;
-	uint8_t* _in_data = NULL;
 
-	CHECK_UNIQUE_POINTER(_tmp_data, _len_data);
 
-	//
-	// fence after pointer checks
-	//
-	sgx_lfence();
+	ecall_write_to_untrusted(_tmp_data, __in_ms.ms_data_len);
 
-	if (_tmp_data != NULL && _len_data != 0) {
-		if ( _len_data % sizeof(*_tmp_data) != 0)
-		{
-			status = SGX_ERROR_INVALID_PARAMETER;
-			goto err;
-		}
-		if ((_in_data = (uint8_t*)malloc(_len_data)) == NULL) {
-			status = SGX_ERROR_OUT_OF_MEMORY;
-			goto err;
-		}
 
-		memset((void*)_in_data, 0, _len_data);
-	}
-	ecall_write_to_untrusted(_in_data, _tmp_data_len);
-	if (_in_data) {
-		if (memcpy_verw_s(_tmp_data, _len_data, _in_data, _len_data)) {
-			status = SGX_ERROR_UNEXPECTED;
-			goto err;
-		}
-	}
-
-err:
-	if (_in_data) free(_in_data);
 	return status;
 }
 
