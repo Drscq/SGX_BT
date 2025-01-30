@@ -34,6 +34,7 @@
 #include <stdarg.h>
 #include <stdio.h> /* vsnprintf */
 #include <string.h>
+#include <iostream>
 
 /* 
  * printf: 
@@ -68,4 +69,9 @@ void ecall_write_to_untrusted(uint8_t* data, size_t data_len) {
         data[i] = static_cast<uint8_t>(i & 0xFF);
     }
     // Upon return, SGX copies 'data' back out to untrusted memory
+}
+
+void ecall_print_hello_world(const char* /*str*/) {
+    printf("Hello from inside the enclave!\n");
+    // std::cout << "Hello from inside the enclave!" << std::endl;
 }

@@ -212,7 +212,7 @@ int SGX_CDECL main(int argc, char *argv[])
     }
     auto end1 = std::chrono::high_resolution_clock::now();
     double elapsedSec1 = std::chrono::duration_cast<std::chrono::duration<double>>(end1 - start1).count();
-    double mbps1 = (data_len / 1024 / 1024) / elapsedSec1;
+    double mbps1 = (static_cast<double>(data_len) / 1024 / 1024) / elapsedSec1;
     printf("Host->Host: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec1, mbps1);
     std::cout << "Sum: " << (int)sum << std::endl;
     start1 = std::chrono::high_resolution_clock::now();
@@ -221,7 +221,7 @@ int SGX_CDECL main(int argc, char *argv[])
     }
     end1 = std::chrono::high_resolution_clock::now();
     elapsedSec1 = std::chrono::duration_cast<std::chrono::duration<double>>(end1 - start1).count();
-    mbps1 = (data_len / 1024 / 1024) / elapsedSec1;
+    mbps1 = (static_cast<double>(data_len) / 1024 / 1024) / elapsedSec1;
     printf("Host->Host: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec1, mbps1);
     // data_len = 1024;
     auto start = std::chrono::high_resolution_clock::now();
@@ -233,7 +233,7 @@ int SGX_CDECL main(int argc, char *argv[])
         return -1;
     } else {
         double elapsedSec = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
-        double mbps = (data_len / 1024 / 1024) / elapsedSec;
+        double mbps = (static_cast<double>(data_len) / 1024 / 1024) / elapsedSec;
         printf("Host->Enclave: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec, mbps);
     }
     
@@ -248,7 +248,7 @@ int SGX_CDECL main(int argc, char *argv[])
         return -1;
     } else {
         double elapsedSec = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
-        double mbps = (data_len / 1024 / 1024) / elapsedSec;
+        double mbps = (static_cast<double>(data_len) / 1024 / 1024) / elapsedSec;
         printf("Enclave->Host: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec, mbps);
     }
  
@@ -269,8 +269,14 @@ int SGX_CDECL main(int argc, char *argv[])
     
     printf("Info: SampleEnclave successfully returned.\n");
 
-    printf("Enter a character before exit ...\n");
-    getchar();
+    const char* message = "Hello, from the untrusted side!\n";
+    
+    ocall_print_string(message);
+
+    ecall_print_hello_world(global_eid, message);
+
+    // printf("Enter a character before exit ...\n");
+    // getchar();
     return 0;
 }
 

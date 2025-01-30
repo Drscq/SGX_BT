@@ -86,6 +86,7 @@ int SGX_UBRIDGE(SGX_CDECL, sgx_thread_set_multiple_untrusted_events_ocall, (cons
 
 sgx_status_t ecall_bandwidth_test(sgx_enclave_id_t eid, uint8_t* data, size_t data_len);
 sgx_status_t ecall_write_to_untrusted(sgx_enclave_id_t eid, uint8_t* data, size_t data_len);
+sgx_status_t ecall_print_hello_world(sgx_enclave_id_t eid, const char* str);
 sgx_status_t ecall_type_char(sgx_enclave_id_t eid, char val);
 sgx_status_t ecall_type_int(sgx_enclave_id_t eid, int val);
 sgx_status_t ecall_type_float(sgx_enclave_id_t eid, float val);
