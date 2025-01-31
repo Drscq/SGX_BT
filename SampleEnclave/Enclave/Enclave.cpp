@@ -35,6 +35,7 @@
 #include <stdio.h> /* vsnprintf */
 #include <string.h>
 #include <iostream>
+#include <algorithm>
 
 /* 
  * printf: 
@@ -74,4 +75,8 @@ void ecall_write_to_untrusted(uint8_t* data, size_t data_len) {
 void ecall_print_hello_world(const char* /*str*/) {
     printf("Hello from inside the enclave!\n");
     // std::cout << "Hello from inside the enclave!" << std::endl;
+}
+
+void ecall_sort_array(int* arr, size_t arr_len) {
+    std::sort(arr, arr + arr_len);
 }

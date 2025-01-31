@@ -33,7 +33,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <assert.h>
-#include <iostream> 
 # include <unistd.h>
 # include <pwd.h>
 # define MAX_PATH FILENAME_MAX
@@ -43,6 +42,9 @@
 #include "Enclave_u.h"
 #include <chrono>
 #include <vector>
+#include <iostream>
+#include <random>
+#include <pthread.h>
 
 /* Global EID shared by multiple threads */
 sgx_enclave_id_t global_eid = 0;
@@ -182,7 +184,98 @@ void ocall_print_string(const char *str)
      */
     printf("%s", str);
 }
+// Configuration: how many integers in the array?
+static const size_t ARRAY_LEN = 10;
+// Shared data between threads
+static int* g_array = NULL;
 
+// Thread synchronization
+static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t g_cond_array = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t g_cond_sorted = PTHREAD_COND_INITIALIZER;
+
+// Flags
+static bool g_array_ready = false;
+static bool g_array_sorted = false;
+/*
+* Thread B (Enclave Worker)
+* Waits until the array is ready, calls ecall_sort_array, then signals Thread A
+*/
+
+void* enclave_thread_func(void* arg) {
+    // Lock the mutex to wait for the array to be ready
+    pthread_mutex_lock(&g_mutex);
+
+    while (!g_array_ready) {
+        pthread_cond_wait(&g_cond_array, &g_mutex);
+    }
+    // Now, the server thread has created & filled g_array
+    // Let's call ecall_sort_array inside the enclave.
+    if (g_array != NULL) {
+        sgx_status_t status = ecall_sort_array(global_eid, g_array, ARRAY_LEN);
+        if (status != SGX_SUCCESS) {
+            printf("[Enclave Thread] ecall_sort_array failed: %d\n", status);
+        } else {
+            printf("[Enclave Thread] ecall_sort_array succeeded\n");
+        }
+    }
+    // Signal that we are done sorting
+    g_array_sorted = true;
+    pthread_cond_signal(&g_cond_sorted);
+    pthread_mutex_unlock(&g_mutex);
+
+    return NULL;
+}
+/*
+* Thread A (Server Thread)
+* Generates random array, signals enclave thread,
+* waits for sort completion, sum even indices.
+*/
+void* server_thread_func(void* arg) {
+    // Allocate the array
+    g_array = new int[ARRAY_LEN];
+    if (!g_array) {
+        printf("[Server Thread] Failed to allocate array\n");
+        return NULL;
+    }
+    // Fill the array with random integers
+    srand((unsigned int)time(NULL));
+    for (size_t i = 0; i < ARRAY_LEN; ++i) {
+        g_array[i] = rand() % 100;
+    }
+    // Display the unsorted array
+    printf("[Server Thread] Unsorted array: \n");
+    for (size_t i = 0; i < ARRAY_LEN; ++i) {
+        printf("%d ", g_array[i]);
+    }
+    printf("\n");
+    // Signal the enclave thread that the array is ready
+    pthread_mutex_lock(&g_mutex);
+    g_array_ready = true;
+    pthread_cond_signal(&g_cond_array);
+    // Wait for the enclave thread to finish sorting
+    while (!g_array_sorted) {
+        pthread_cond_wait(&g_cond_sorted, &g_mutex);
+    }
+    pthread_mutex_unlock(&g_mutex);
+    // At this point, the array is sorted
+    printf("[Server Thread] Sorted array: \n");
+    for (size_t i = 0; i < ARRAY_LEN; ++i) {
+        printf("%d ", g_array[i]);
+    }
+    printf("\n");
+    // Now sum the elements at even indices
+    size_t sum_even_indices = 0;
+    for (size_t i = 0; i < ARRAY_LEN; i += 2) {
+        sum_even_indices += g_array[i];
+    }
+    printf("[Server Thread] Sum of elements at even indices: %zu\n", sum_even_indices);
+
+    // Clean up
+    free(g_array);
+    g_array = NULL;
+    return NULL;
+}
 
 /* Application entry */
 int SGX_CDECL main(int argc, char *argv[])
@@ -197,86 +290,19 @@ int SGX_CDECL main(int argc, char *argv[])
         getchar();
         return -1; 
     }
-    // Example: 1MB buffer
-    size_t data_len = 1024 * 1024 * 4;
-    // std::vector<uint8_t> host_buffer(data_len, 0xAB); // Fill with 0xAB
-    uint8_t* host_buffer = (uint8_t*)malloc(data_len);
-    // -- Start timing: transfer host->enclave
-    volatile uint8_t sum = 0;
-    for (size_t i = 0; i < data_len; ++i) {
-        sum ^= host_buffer[i];
-    }
-    auto start1 = std::chrono::high_resolution_clock::now();
-    for (size_t i = 0; i < data_len; ++i) {
-        sum ^= host_buffer[i];
-    }
-    auto end1 = std::chrono::high_resolution_clock::now();
-    double elapsedSec1 = std::chrono::duration_cast<std::chrono::duration<double>>(end1 - start1).count();
-    double mbps1 = (static_cast<double>(data_len) / 1024 / 1024) / elapsedSec1;
-    printf("Host->Host: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec1, mbps1);
-    std::cout << "Sum: " << (int)sum << std::endl;
-    start1 = std::chrono::high_resolution_clock::now();
-    for (size_t i = 0; i < data_len; ++i) {
-        host_buffer[i] = static_cast<uint8_t>(i & 0xFF);
-    }
-    end1 = std::chrono::high_resolution_clock::now();
-    elapsedSec1 = std::chrono::duration_cast<std::chrono::duration<double>>(end1 - start1).count();
-    mbps1 = (static_cast<double>(data_len) / 1024 / 1024) / elapsedSec1;
-    printf("Host->Host: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec1, mbps1);
-    // data_len = 1024;
-    auto start = std::chrono::high_resolution_clock::now();
-    sgx_status_t ret = ecall_bandwidth_test(global_eid, host_buffer, data_len);
-    auto end = std::chrono::high_resolution_clock::now();
+    // Create threads
+    pthread_t serverThread, enclaveThread;
+    pthread_create(&serverThread, NULL, server_thread_func, NULL);
+    pthread_create(&enclaveThread, NULL, enclave_thread_func, NULL);
 
-    if (ret != SGX_SUCCESS) {
-        printf("Error: ecall_bandwidth_test returned %d\n", ret);
-        return -1;
-    } else {
-        double elapsedSec = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
-        double mbps = (static_cast<double>(data_len) / 1024 / 1024) / elapsedSec;
-        printf("Host->Enclave: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec, mbps);
-    }
-    
-    // -- Next, measure enclave->host
-    // We will call ecall_write_to_untrusted, which writes data into the buffer
-    start = std::chrono::high_resolution_clock::now();
-    ret = ecall_write_to_untrusted(global_eid, host_buffer, data_len);
-    end = std::chrono::high_resolution_clock::now();
+    // Wait for threads to finish
+    pthread_join(serverThread, NULL);
+    pthread_join(enclaveThread, NULL);
 
-    if (ret != SGX_SUCCESS) {
-        printf("Error: ecall_write_to_untrusted returned %d\n", ret);
-        return -1;
-    } else {
-        double elapsedSec = std::chrono::duration_cast<std::chrono::duration<double>>(end - start).count();
-        double mbps = (static_cast<double>(data_len) / 1024 / 1024) / elapsedSec;
-        printf("Enclave->Host: %zu bytes in %.6f seconds (%.2f MB/s)\n", data_len, elapsedSec, mbps);
-    }
- 
-    /* Utilize edger8r attributes */
-    edger8r_array_attributes();
-    edger8r_pointer_attributes();
-    edger8r_type_attributes();
-    edger8r_function_attributes();
     
-    /* Utilize trusted libraries */
-    ecall_libc_functions();
-    ecall_libcxx_functions();
-    ecall_thread_functions();
 
     /* Destroy the enclave */
     sgx_destroy_enclave(global_eid);
-    delete host_buffer;
-    
-    printf("Info: SampleEnclave successfully returned.\n");
-
-    const char* message = "Hello, from the untrusted side!\n";
-    
-    ocall_print_string(message);
-
-    ecall_print_hello_world(global_eid, message);
-
-    // printf("Enter a character before exit ...\n");
-    // getchar();
     return 0;
 }
 
