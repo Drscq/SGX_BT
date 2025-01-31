@@ -1,14 +1,10 @@
-Below is an example **README.md** file that you can place in your **SGX_BT** repository. It explains the purpose of the project, how to set it up, build it, run it, and troubleshoot common issues (including enclave memory limits). Feel free to adjust or expand upon it as needed.
-
----
-
 # SGX_BT
 
-This project demonstrates **bandwidth measurements** between **host memory** and an Intel SGX **enclave**. It shows how to:
-1. Create an SGX enclave and configure its memory.
-2. Transfer data from the host to the enclave (“Host→Enclave”).
-3. Transfer data from the enclave to the host (“Enclave→Host”).
-4. Measure performance (MB/s) under various buffer sizes and enclave configurations.
+This project demonstrates **multi-threaded execution** between a **host thread** and an **Intel SGX enclave thread**:
+1. **A host thread (`thread_server`)** generates a random integer array.
+2. **An enclave thread (`thread_enclave`)** sorts the array inside the enclave.
+3. **The host thread sums up the even-indexed elements** of the sorted array.
+4. **The enclave directly accesses host memory** using `[user_check]`, avoiding unnecessary copying.
 
 ## Table of Contents
 - [Prerequisites](#prerequisites)
@@ -16,8 +12,9 @@ This project demonstrates **bandwidth measurements** between **host memory** and
 - [Setup and Installation](#setup-and-installation)
 - [Building](#building)
 - [Running](#running)
+- [Multi-threaded Execution](#multi-threaded-execution)
 - [Enclave Memory Configuration](#enclave-memory-configuration)
-- [Testing Different Buffer Sizes](#testing-different-buffer-sizes)
+- [Testing Different Array Sizes](#testing-different-array-sizes)
 - [Troubleshooting](#troubleshooting)
 - [License](#license)
 
@@ -63,9 +60,9 @@ SGX_BT/
 └── README.md             # This file
 ```
 
-- **Enclave.edl**: Contains definitions for `ecall_bandwidth_test` and `ecall_write_to_untrusted`.  
-- **Enclave.cpp**: Implements those ecalls.  
-- **App.cpp**: Allocates buffers on the host side, measures timing, and prints bandwidth results.
+- **Enclave.edl**: Defines `ecall_sort_array`, which allows sorting an array allocated in host memory.  
+- **Enclave.cpp**: Implements the sorting logic securely inside SGX.  
+- **App.cpp**: Spawns two threads—one to generate an array and another to call the enclave function.
 
 ---
 
@@ -89,15 +86,14 @@ SGX_BT/
 
 ## Building
 
-### Option 1: Build with a Single Top-Level Makefile
-If you have a **top-level Makefile**, simply run:
+### **Build Everything**
 ```bash
 make clean
 make
 ```
-This should build both the enclave (`Enclave.signed.so`) and the host application (`app`).
+This builds both the enclave (`Enclave.signed.so`) and the host application (`app`).
 
-### Option 2: Build Enclave and App Separately
+### **Build Separately**
 1. **Build the enclave**:
    ```bash
    cd Enclave
@@ -121,48 +117,67 @@ After building, you should have:
 
 ## Running
 
-From the **SGX_BT** or **App** directory, run:
+Run the application:
 ```bash
 ./app
 ```
-You should see output similar to:
+Expected output:
 ```
-Host->Enclave: 1024 bytes in 0.000038 seconds (XXXXX MB/s)
-Enclave->Host: 1024 bytes in 0.000009 seconds (YYYYY MB/s)
-Info: SampleEnclave successfully returned.
-Enter a character before exit ...
+Host generated array: [23, 8, 15, 42, 7, 3, 56, 21]
+Enclave sorted array: [3, 7, 8, 15, 21, 23, 42, 56]
+Sum of even-indexed elements: 3 + 8 + 21 + 42 = 74
 ```
-- **Host->Enclave** measurement times how long it takes for data to be copied into enclave memory.
-- **Enclave->Host** measurement times how long it takes for data to be copied out of the enclave.
 
-Press any key to exit.
+---
+
+## Multi-threaded Execution
+
+- **Host thread (`thread_server`)**:
+  - Generates an array with random integers.
+  - Calls `ecall_sort_array()` to send the array **directly to the enclave**.
+
+- **Enclave thread (`thread_enclave`)**:
+  - Sorts the array **inside SGX**.
+  - Uses `[user_check]` to **directly access** the host’s memory **without copying**.
+
+### **EDL Declaration**
+```c
+enclave {
+    trusted {
+        public void ecall_sort_array([user_check] int* arr, size_t size);
+    };
+};
+```
+
+### **Memory Validation in Enclave Code**
+```cpp
+void ecall_sort_array(int* arr, size_t size) {
+    if (!sgx_is_outside_enclave(arr, size * sizeof(int))) {
+        return;  // Invalid memory, reject access
+    }
+    std::sort(arr, arr + size);  // Sort in-place
+}
+```
 
 ---
 
 ## Enclave Memory Configuration
 
-If you want to handle larger buffers (e.g., multiple megabytes), you may need to **increase** the enclave’s heap (and possibly stack) in **`Enclave.config.xml`**. For example:
+Increase enclave heap size for larger arrays in **`Enclave.config.xml`**:
 ```xml
 <EnclaveConfiguration>
-    <StackMaxSize>0x200000</StackMaxSize>      <!-- 2 MB stack -->
-    <HeapMaxSize>0x2000000</HeapMaxSize>       <!-- 32 MB heap -->
-    <TCSNum>4</TCSNum>
-    <TCSPolicy>1</TCSPolicy>
-    <DisableDebug>0</DisableDebug>
-    <MiscSelect>0</MiscSelect>
-    <MiscMask>0xFFFFFFFF</MiscMask>
+    <HeapMaxSize>0x2000000</HeapMaxSize> <!-- 32 MB heap -->
 </EnclaveConfiguration>
 ```
-Then **rebuild** the enclave. Keep in mind that **Intel SGX** has a hardware-imposed **Enclave Page Cache (EPC)** limit (often around 128MB–256MB on modern CPUs). Exceeding that limit causes paging and drastically reduced performance.
+Then **rebuild** the enclave.
 
 ---
 
-## Testing Different Buffer Sizes
+## Testing Different Array Sizes
 
-1. **Edit** `App.cpp` to change `data_len`:
+1. **Modify** `App.cpp`:
    ```cpp
-   // Example: 10 MB buffer
-   const size_t data_len = 10 * 1024 * 1024;
+   const size_t array_size = 10 * 1024 * 1024; // 10 million elements
    ```
 2. **Rebuild** and run:
    ```bash
@@ -170,30 +185,25 @@ Then **rebuild** the enclave. Keep in mind that **Intel SGX** has a hardware-imp
    make
    ./app
    ```
-3. Observe how the reported bandwidth changes. Large buffers may cause performance drops if they exceed the EPC size.
 
 ---
 
 ## Troubleshooting
 
-- **`SGX_ERROR_INVALID_PARAMETER` (Error 4102)**:  
-  Check that your buffer pointer and size are valid in the ecall. Ensure the `[in, size=...]` or `[out, size=...]` annotations in the EDL match the actual parameters.
+- **SGX_ERROR_INVALID_PARAMETER (Error 4102)**:  
+  - Ensure buffer pointers and sizes match the `[user_check]` declaration.
+  
+- **SGX_ERROR_ENCLAVE_LOST (Error 3)**:  
+  - May indicate power transition or insufficient EPC.
+  
+- **Runtime crash or memory errors**:  
+  - Increase `<HeapMaxSize>` in `Enclave.config.xml`.
 
-- **`SGX_ERROR_ENCLAVE_LOST` (Error 3)**:  
-  Usually indicates a power transition or insufficient EPC. Check that the AESM service is running and your system hasn’t suspended. Sometimes, large heaps cause paging issues that can lead to errors.
-
-- **Runtime crash or out-of-memory**:  
-  Increase `<HeapMaxSize>` or `<StackMaxSize>` in `Enclave.config.xml`, or reduce your buffer size.
-
-- **Slow performance for large buffers**:  
-  Likely EPC paging. Try chunking the data into smaller pieces or reevaluate whether all data needs to be in the enclave at once.
+- **Slow performance for large arrays**:  
+  - Try **chunking data** into smaller pieces.
 
 ---
 
 ## License
 
-This project is based on Intel’s SGX sample code and is distributed under the [Intel Sample Code License](https://software.intel.com/content/www/us/en/develop/articles/intel-sample-source-code-license-agreement.html) or a similar license. Consult the header of each source file for detailed license information.
-
----
-
-**Happy experimenting with SGX bandwidth testing!** If you have any questions or run into issues, feel free to open an issue or contact the maintainers.
+This project is based on Intel’s SGX sample code and is distributed under the [Intel Sample Code License](https://software.intel.com/content/www/us/en/develop/articles/intel-sample-source-code-license-agreement.html).
