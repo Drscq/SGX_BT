@@ -1,3 +1,10 @@
 *.so
 *.o
 SampleEnclave/app
+SampleEnclave/App/Enclave_u.c
+SampleEnclave/App/Enclave_u.c
+SampleEnclave/App/Enclave_u.h
+SampleEnclave/Enclave/Enclave_t.c
+SampleEnclave/App/Enclave_u.h
+SampleEnclave/App/Enclave_u.c
+SampleEnclave/Enclave/Enclave_t.h
