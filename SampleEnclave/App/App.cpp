@@ -45,6 +45,58 @@
 #include <iostream>
 #include <random>
 #include <pthread.h>
+#include <vector>
+#include <fstream>
+#include <sys/stat.h>
+#include <chrono>
+#include <time.h>
+#include <cassert>
+#include <openssl/bn.h>
+#include <openssl/rand.h>
+#include <openssl/ec.h>
+#include "src/config.h"
+#include "src/Bucket.h"
+#include "src/Block.h"
+#include "src/Path.h"
+#include "src/Server.h"
+#include "src/Tree.h"
+#include "src/AES_CTR.h"  
+#include "src/ElGamal_parallel_ntl.h"
+#include "src/DurationLogger.h"  
+using namespace std::chrono;
+
+void InitializeElGamalParams() {
+    std::cout << "Initializing ElGamal Parameters..." << std::endl;
+    
+    // Set seed for random number generation
+    SetSeed(ElGamalNTLConfig::SEED);
+    
+    // Generate prime P
+    GenPrime(ElGamalNTLConfig::P, ElGamalNTLConfig::KEY_SIZE);
+    ZZ_p::init(ElGamalNTLConfig::P);
+//     std::cout << "P: " << ElGamalNTLConfig::P << std::endl;
+    
+    // Convert G to G_p
+    ElGamalNTLConfig::G_p = conv<ZZ_p>(ElGamalNTLConfig::G);
+//     std::cout << "G_p: " << ElGamalNTLConfig::G_p << std::endl;
+    
+    // Generate private key X and convert to X_p
+    ElGamalNTLConfig::X = RandomLen_ZZ(ElGamalNTLConfig::RANDOM_SIZE);
+    ElGamalNTLConfig::X_p = conv<ZZ_p>(ElGamalNTLConfig::X);
+//     std::cout << "X_p: " << ElGamalNTLConfig::X_p << std::endl;
+    
+    // Calculate public key Y and convert to Y_p
+    ElGamalNTLConfig::Y = PowerMod(ElGamalNTLConfig::G, ElGamalNTLConfig::X, ElGamalNTLConfig::P);
+    ElGamalNTLConfig::Y_p = conv<ZZ_p>(ElGamalNTLConfig::Y);
+//     std::cout << "Y_p: " << ElGamalNTLConfig::Y_p << std::endl;
+    
+    // Generate random K and convert to K_p
+    ElGamalNTLConfig::K = RandomLen_ZZ(ElGamalNTLConfig::RANDOM_SIZE);
+    ElGamalNTLConfig::K_p = conv<ZZ_p>(ElGamalNTLConfig::K);
+//     std::cout << "K_p: " << ElGamalNTLConfig::K_p << std::endl;
+     ElGamalNTLConfig::GPowK = power(ElGamalNTLConfig::G_p, ElGamalNTLConfig::K);
+     ElGamalNTLConfig::YPowK = power(ElGamalNTLConfig::Y_p, ElGamalNTLConfig::K);
+}
 
 /* Global EID shared by multiple threads */
 sgx_enclave_id_t global_eid = 0;
@@ -202,7 +254,7 @@ static bool g_array_sorted = false;
 * Waits until the array is ready, calls ecall_sort_array, then signals Thread A
 */
 
-void* enclave_thread_func(void* arg) {
+void* enclave_thread_func() {
     // Lock the mutex to wait for the array to be ready
     pthread_mutex_lock(&g_mutex);
 
@@ -231,7 +283,8 @@ void* enclave_thread_func(void* arg) {
 * Generates random array, signals enclave thread,
 * waits for sort completion, sum even indices.
 */
-void* server_thread_func(void* arg) {
+// void* server_thread_func(void* arg) {
+void* server_thread_func() {
     // Allocate the array
     g_array = new int[ARRAY_LEN];
     if (!g_array) {
@@ -290,14 +343,17 @@ int SGX_CDECL main(int argc, char *argv[])
         getchar();
         return -1; 
     }
-    // Create threads
-    pthread_t serverThread, enclaveThread;
-    pthread_create(&serverThread, NULL, server_thread_func, NULL);
-    pthread_create(&enclaveThread, NULL, enclave_thread_func, NULL);
+    LogConfig::CheckLogDir();
+    InitializeElGamalParams();
+    // std::cout << "Initializing Tree..." << std::endl;
+    // // Create threads
+    // pthread_t serverThread, enclaveThread;
+    // pthread_create(&serverThread, NULL, server_thread_func, NULL);
+    // pthread_create(&enclaveThread, NULL, enclave_thread_func, NULL);
 
-    // Wait for threads to finish
-    pthread_join(serverThread, NULL);
-    pthread_join(enclaveThread, NULL);
+    // // Wait for threads to finish
+    // pthread_join(serverThread, NULL);
+    // pthread_join(enclaveThread, NULL);
 
     
 

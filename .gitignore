@@ -8,3 +8,10 @@ SampleEnclave/Enclave/Enclave_t.c
 SampleEnclave/App/Enclave_u.h
 SampleEnclave/App/Enclave_u.c
 SampleEnclave/Enclave/Enclave_t.h
+SampleEnclave/Enclave/Enclave_t.h
+SampleEnclave/Enclave/Enclave_t.h
+.gitignore
+SampleEnclave/Enclave/Enclave_private_test.pem
+SampleEnclave/App/Enclave_u.h
+SampleEnclave/App/Enclave_u.c
+SampleEnclave/Enclave/Enclave_private_test.pem

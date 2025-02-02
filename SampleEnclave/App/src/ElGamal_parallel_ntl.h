@@ -147,7 +147,7 @@ private:
     static void* thread_func(void* arg) {
         ThreadArgs* args = static_cast<ThreadArgs*>(arg);
         // Set the CPU affinity for the thread
-        set_thread_affinity(pthread_self(), args->core_id);
+        set_thread_affinity(pthread_self(), static_cast<int>(args->core_id));
         auto& ciphertexts = *(args->ciphertexts);
         auto startIdx = args->startIdx;
         auto endIdx = args->endIdx;
@@ -178,7 +178,7 @@ private:
     };
     static void* thread_func_deserialize(void* arg) {
         ThreadArgsDeserialize* args = static_cast<ThreadArgsDeserialize*>(arg);
-        set_thread_affinity(pthread_self(), args->core_id);
+        set_thread_affinity(pthread_self(), static_cast<int>(args->core_id));
         const unsigned char* data_ptr = args->data_ptr;
         auto& ciphertexts = *(args->ciphertexts);
         auto startIdx = args->startIdx;

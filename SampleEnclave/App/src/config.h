@@ -84,9 +84,11 @@ namespace SizeConfig {
 #define MULTI_THREAD_THREAD_VERSION 0
 #define PRINT_BREAKDOWN_COST_RERANDOMIZE 0
 
+#define USE_INVERSE_PERM_TO_GEN_INTERMEDIATE_PERM 0
+
 #define BLOCK_SIZE_IS_64KB 1
 namespace ThreadConfig {
-    typedef u_int16_t TYPE_THREAD_NUM;
+    typedef unsigned int TYPE_THREAD_NUM;
     inline const TYPE_THREAD_NUM MAX_NUM_THREADS = std::thread::hardware_concurrency();
     inline std::vector<pthread_t> THREADS(MAX_NUM_THREADS);
 }
@@ -248,7 +250,7 @@ namespace BucketConfig {
     /// directory to store the bucket data
     inline std::string DATADIR = "data/";
     inline std::string BUCKETPREFIX = "bucket_";
-    typedef unsigned int TYPE_BUCKET_SIZE;
+    typedef long unsigned int TYPE_BUCKET_SIZE;
     // typedef unsigned int TYPE_SLOT_ID;
     typedef unsigned short TYPE_SLOT_ID;
     typedef short TYPE_SLOT_ID_S;
@@ -338,7 +340,7 @@ namespace BucketConfig {
                                                         + BUCKET_SIZE * sizeof(TYPE_SLOT_ID)
                                                         + sizeof(TYPE_SLOT_ID) * 2; 
 
-                                                         
+                                                    
                                                          
                                                             
     struct META_DATA {
@@ -941,7 +943,7 @@ namespace ElGamalConfig {
         std::uniform_int_distribution<int> distribution(0, 1);  // Generate random numbers between 0 and 1
 
         for (size_t i = 0; i < size; i++) {
-            data[i] = distribution(generator);
+            data[i] = static_cast<char>(distribution(generator));
         }
         return data;
     }
@@ -975,41 +977,7 @@ namespace ElGamalConfig {
 // }
 
 // namespace ECElGamalConfig {
-//     extern crtgamal_key_t global_key;
-//     extern crtgamal_params_t global_params;
-//     extern bsgs_table_t global_table;
 
-//     void initialize_config(int tablebits, int plainbits);
-//     inline void ListAllSupportedCurves() {
-//     size_t numCurves;
-//     EC_builtin_curve *curves;
-
-//     // Get the number of built-in curves
-//     numCurves = EC_get_builtin_curves(nullptr, 0);
-
-//     // Allocate memory for the curves
-//     curves = new EC_builtin_curve[numCurves];
-//     if (curves == nullptr) {
-//         std::cerr << "Memory allocation failed" << std::endl;
-//         return;
-//     }
-
-//     // Get the built-in curves
-//     if (!EC_get_builtin_curves(curves, numCurves)) {
-//         std::cerr << "Failed to get built-in curves" << std::endl;
-//         delete[] curves;
-//         return;
-//     }
-
-//     // Print the curve names and NIDs
-//     for (size_t i = 0; i < numCurves; ++i) {
-//         const char *curveName = OBJ_nid2sn(curves[i].nid);
-//         std::cout << "Curve Name: " << curveName << ", NID: " << curves[i].nid << std::endl;
-//     }
-
-//     // Free the allocated memory
-//     delete[] curves;
-// }
 // }
 
 #endif // CONFIG_H
