@@ -345,6 +345,13 @@ int SGX_CDECL main(int argc, char *argv[])
     }
     LogConfig::CheckLogDir();
     InitializeElGamalParams();
+    if (argc < 2) {
+        std::cout << "Usage: " << argv[0] << " <config_file>" << std::endl;
+        return 1;
+    } else if (argv[1] == std::string("server")) {
+        Server server(ServerConfig::PORT);
+        server.Start();
+    }
     // std::cout << "Initializing Tree..." << std::endl;
     // // Create threads
     // pthread_t serverThread, enclaveThread;

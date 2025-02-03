@@ -29,8 +29,8 @@ using namespace NTL;
 #define USE_COUT 0
 #define USE_PRINT_TARGET_BLOCK 0
 #define READ_PATH_SIMULATION 0
-#define LOG_READ_PATH_TOTAL_DELAY 0
-#define LOG_BREAKDOWN_COST 1
+#define LOG_READ_PATH_TOTAL_DELAY 1
+#define LOG_BREAKDOWN_COST 0
 #define LOG_BREAKDOWN_COST_READ_PATH_FURTHER 0
 #define EARLY_RESHUFFLE_SIMULATION 0
 #define LOG_EARLY_RESHUFFLE_TOTAL_DELAY 0
@@ -77,7 +77,7 @@ namespace SizeConfig {
 
 // Macros for the ElGamal_parallel_ntl
 #define MULTI_THREAD_SWITCH 0
-#define MULTI_THREAD_RERANDOMIZE_SWITCH 0
+#define MULTI_THREAD_RERANDOMIZE_SWITCH 1
 #define MULTI_THREAD_DESERIALIZE_SWITCH 0
 #define MULTI_THREAD_BASIC_THREAD_POOL 0
 #define MULTI_THREAD_FUTURE_VERSION 0
@@ -86,7 +86,7 @@ namespace SizeConfig {
 
 #define USE_INVERSE_PERM_TO_GEN_INTERMEDIATE_PERM 0
 
-#define BLOCK_SIZE_IS_64KB 1
+// #define BLOCK_SIZE_IS_64KB 1
 namespace ThreadConfig {
     typedef unsigned int TYPE_THREAD_NUM;
     inline const TYPE_THREAD_NUM MAX_NUM_THREADS = std::thread::hardware_concurrency();
@@ -107,16 +107,16 @@ namespace FileConfig
 
 namespace ServerConfig {
     #if  MULTI_THREAD_RERANDOMIZE_SWITCH
-        #if BLOCK_SIZE_IS_64KB
+        // #if BLOCK_SIZE_IS_64KB
         inline size_t num_threads = 32;
-        #endif
+        // #endif
     #else
         inline size_t num_threads = 1;
     #endif
     // communication related configurations
     typedef uint16_t TYPE_PORT_NUM;
     typedef int TYPE_CMD;
-    inline int PORT = 2000;
+    inline ServerConfig::TYPE_PORT_NUM PORT = 2000;
     // commannds for socket communication
     constexpr TYPE_CMD CMD_CREATE_DB = 12;
     constexpr TYPE_CMD CMD_READ_PATH = 13;
@@ -201,7 +201,7 @@ namespace ClientConfig {
     typedef int TYPE_PORT;
     // typedef unsigned long long TYPE_CHAR_SIZE;
     typedef size_t TYPE_CHAR_SIZE;
-    inline TYPE_HOST HOST = "198.82.162.130";
+    inline TYPE_HOST HOST = "198.82.162.120";
     inline TYPE_PORT PORT = 2000;
     inline PathConfig::TYPE_PATH_ID PATH_ID = 0;
     inline BlockConfig::TYPE_BLOCK_ID TARGET_BLOCK_ID = 0;

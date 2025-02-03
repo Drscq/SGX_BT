@@ -142,7 +142,7 @@ void Server::Start() {
 void Server::handleClient(int clientSockfd) {
     while (true) {
         if (!this->communicator.receiveCommand(clientSockfd, this->command)) {
-            std::cerr << "Error: Server failed to receive command" << std::endl;
+            // std::cerr << "Error: Server failed to receive command" << std::endl;
             return;
         } else {
             if (this->command == ServerConfig::CMD_CREATE_DB) {
