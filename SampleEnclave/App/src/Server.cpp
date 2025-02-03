@@ -1278,8 +1278,9 @@ void Server::handleClient(int clientSockfd) {
                                             this->targetBlockCipherData1.data(),
                                             BlockConfig::BLOCK_SIZE);
                 // this->communicator.receiveCommand(clientSockfd, this->cmd1);
-
-                
+                std::vector<char> bufferIn(sizeof(PathConfig::TYPE_PATH_SIZE) + BlockConfig::BLOCK_SIZE);
+                this->communicator.receiveData(clientSockfd, static_cast<char*>(bufferIn.data()), sizeof(PathConfig::TYPE_PATH_SIZE));
+                this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);               
             } else if (this->command == ServerConfig::CMD_EARLY_RESHUFFLE_SCHEME1_CLIENT_TO_SERVER) {
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
                 #if USE_COUT

@@ -17,3 +17,4 @@ SampleEnclave/App/Enclave_u.c
 SampleEnclave/Enclave/Enclave_private_test.pem
 SampleEnclave/data/
 SampleEnclave/logs/Height_4_BlockSize_1024.txt
+SampleEnclave/Enclave/Enclave_private_test.pem
