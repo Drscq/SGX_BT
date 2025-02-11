@@ -7,6 +7,7 @@
 #include "Tree.h"
 #include <fstream> 
 #include "DurationLogger.h"
+#include "sgx_urts.h"
 
 class Server {
 public:
@@ -166,6 +167,7 @@ public:
 
     // Functions for the scheme 1
     void EarlyReshuffleScheme1(BucketConfig::TYPE_BUCKET_ID bucketID = 0);
+    void SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_BUCKET_ID bucketID = 0);
     // EarlyReshuffleScheme1 variables
     BucketConfig::TYPE_BUCKET_ID bucketIDEarlyReshuffle1;
     std::vector<char> bucketMDataEarlyReshuffle1;

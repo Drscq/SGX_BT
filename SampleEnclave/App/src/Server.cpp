@@ -6,6 +6,8 @@
 #include <cassert>
 #include "Path.h"
 #include <thread>
+#include "../Enclave_u.h"
+#include <random>
 Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
                                                   tripletBucketIDs{0, 1, 2},
                                                   realBlockNumForEviction(BucketConfig::BUCKET_REAL_BLOCK_CAPACITY),
@@ -1283,9 +1285,9 @@ void Server::handleClient(int clientSockfd) {
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);               
             } else if (this->command == ServerConfig::CMD_EARLY_RESHUFFLE_SCHEME1_CLIENT_TO_SERVER) {
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                #if USE_COUT
+                // #if USE_COUT
                 std::cout << "Received command: CMD_EARLY_RESHUFFLE_SCHEME1_CLIENT_TO_SERVER" << std::endl;
-                #endif
+                // #endif
                 this->communicator.receiveData(clientSockfd,
                                             &this->bucketIDEarlyReshuffle1,
                                             sizeof(this->bucketIDEarlyReshuffle1));
@@ -1409,6 +1411,29 @@ void Server::EnsureConnectThirdParty() {
         std::cout << "Reconnecting to the third party" << std::endl;
         this->InitConnectThirdParty();
     }
+}
+
+void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_BUCKET_ID bucketID) {
+    int num = 4;
+    int* arr_ran = new int[num];
+    // Input random numbers into the array
+    for (int i = 0; i < num; ++i) {
+        arr_ran[i] = rand() % 100;
+    }
+    // cout all the elements in the array
+    std::cout << "The random numbers are: " << std::endl;
+    for (int i = 0; i < num; ++i) {
+        std::cout << arr_ran[i] << " ";
+    }
+    std::cout << std::endl;
+    // Call the ecall_sort_arry function to sort the array
+    ecall_sort_array(eid, arr_ran, num);
+    // cout all the elements in the array after sorting
+    std::cout << "The random numbers after sorting are: " << std::endl;
+    for (int i = 0; i < num; ++i) {
+        std::cout << arr_ran[i] << " ";
+    }
+    std::cout << std::endl;
 }
 
 void Server::EarlyReshuffleScheme1(BucketConfig::TYPE_BUCKET_ID bucketID) {
