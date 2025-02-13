@@ -36,8 +36,15 @@
 #include <string.h>
 #include <iostream>
 #include <algorithm>
-#include "../App/src/config.h"
-
+// #define AES_BLOCK_SIZE 16
+// static const uint32_t CTR_INC_BITS = 128;  // Full 128-bit counter increments
+#include "src/AES_CTR_SGX.h"
+unsigned char key[AES_BLOCK_SIZE] = {
+    0x2b, 0x7e, 0x15, 0x16,
+    0x28, 0xae, 0xd2, 0xa6,
+    0xab, 0xf7, 0x15, 0x88,
+    0x09, 0xcf, 0x4f, 0x3c
+};
 /* 
  * printf: 
  *   Invokes OCALL to display the enclave buffer to the terminal.
@@ -75,11 +82,7 @@ void ecall_write_to_untrusted(uint8_t* data, size_t data_len) {
 
 void ecall_print_hello_world(const char* /*str*/) {
     printf("Hello from inside the enclave!\n");
-    if (SgxConfig::sharedBucketBufferReady) {
-        printf("sharedBucketBufferReady is true\n");
-    } else {
-        printf("sharedBucketBufferReady is false\n");
-    }
+    AES_CTR_SGX aes(reinterpret_cast<const uint8_t*>(key));
     // std::cout << "Hello from inside the enclave!" << std::endl;
 }
 

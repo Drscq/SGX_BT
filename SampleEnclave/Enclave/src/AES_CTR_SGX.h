@@ -2,7 +2,7 @@
 
 #include "sgx_tcrypto.h"
 #include <cstdint>
-
+#define AES_BLOCK_SIZE 16
 class AES_CTR_SGX {
 public:
     /**
