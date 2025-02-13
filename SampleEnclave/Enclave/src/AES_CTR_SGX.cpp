@@ -1,6 +1,5 @@
 #include "AES_CTR_SGX.h"
 #include <cstring>     // for memcpy
-#include <stdexcept>   // for std::runtime_error
 
 // SGX CTR mode uses a 128-bit key (16 bytes).
 // The "counter" is also 128 bits, which you typically pass as your IV buffer.
@@ -30,11 +29,6 @@ void AES_CTR_SGX::encrypt(const uint8_t* input, uint32_t inputSize,
         output           // ciphertext output buffer
     );
 
-    // if (ret != SGX_SUCCESS) {
-    //     std::ostringstream oss;
-    //     oss << "sgx_aes_ctr_encrypt failed with status code " << ret;
-    //     throw std::runtime_error(oss.str());
-    // }
 }
 
 void AES_CTR_SGX::decrypt(const uint8_t* input, uint32_t inputSize,
@@ -49,10 +43,4 @@ void AES_CTR_SGX::decrypt(const uint8_t* input, uint32_t inputSize,
         CTR_INC_BITS,
         output
     );
-
-    // if (ret != SGX_SUCCESS) {
-    //     std::ostringstream oss;
-    //     oss << "sgx_aes_ctr_decrypt failed with status code " << ret;
-    //     throw std::runtime_error(oss.str());
-    // }
 }

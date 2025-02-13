@@ -86,14 +86,18 @@ void ecall_print_hello_world(const char* /*str*/) {
     AES_CTR_SGX  aes_sgx(reinterpret_cast<const uint8_t*>(key));
     // std::cout << "Hello from inside the enclave!" << std::endl;
     uint8_t iv[AES_BLOCK_SIZE] = {0};
+    uint8_t iv_copy[AES_BLOCK_SIZE] = {0};
     const char* plaintext = "Hello, World!";
     printf("Plaintext: %s\n", plaintext);
-    size_t plaintext_len = strlen(plaintext) + 1;  // Include null terminator
+    size_t plaintext_len = strlen(plaintext);  // Include null terminator
     std::vector<char> encrypted(plaintext_len, 0);
     aes_sgx.encrypt(reinterpret_cast<const uint8_t*>(plaintext), static_cast<uint32_t>(plaintext_len), 
-                    reinterpret_cast<uint8_t*>(encrypted.data()), reinterpret_cast<uint8_t*>(iv));                     
-
+                    reinterpret_cast<uint8_t*>(encrypted.data()), reinterpret_cast<uint8_t*>(iv));
+    printf("Encrypted: %s\n", encrypted.data());                     
     std::vector<char> decrypted(plaintext_len, 0);
+    aes_sgx.decrypt(reinterpret_cast<const uint8_t*>(encrypted.data()), static_cast<uint32_t>(plaintext_len), 
+                    reinterpret_cast<uint8_t*>(decrypted.data()), reinterpret_cast<uint8_t*>(iv_copy));
+    printf("Decrypted: %s\n", decrypted.data());
 }
 
 void ecall_sort_array(int* arr, size_t arr_len) {
