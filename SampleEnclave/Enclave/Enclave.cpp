@@ -36,6 +36,7 @@
 #include <string.h>
 #include <iostream>
 #include <algorithm>
+#include <vector>
 // #define AES_BLOCK_SIZE 16
 // static const uint32_t CTR_INC_BITS = 128;  // Full 128-bit counter increments
 #include "src/AES_CTR_SGX.h"
@@ -82,8 +83,17 @@ void ecall_write_to_untrusted(uint8_t* data, size_t data_len) {
 
 void ecall_print_hello_world(const char* /*str*/) {
     printf("Hello from inside the enclave!\n");
-    AES_CTR_SGX aes(reinterpret_cast<const uint8_t*>(key));
+    AES_CTR_SGX  aes_sgx(reinterpret_cast<const uint8_t*>(key));
     // std::cout << "Hello from inside the enclave!" << std::endl;
+    uint8_t iv[AES_BLOCK_SIZE] = {0};
+    const char* plaintext = "Hello, World!";
+    printf("Plaintext: %s\n", plaintext);
+    size_t plaintext_len = strlen(plaintext) + 1;  // Include null terminator
+    std::vector<char> encrypted(plaintext_len, 0);
+    aes_sgx.encrypt(reinterpret_cast<const uint8_t*>(plaintext), static_cast<uint32_t>(plaintext_len), 
+                    reinterpret_cast<uint8_t*>(encrypted.data()), reinterpret_cast<uint8_t*>(iv));                     
+
+    std::vector<char> decrypted(plaintext_len, 0);
 }
 
 void ecall_sort_array(int* arr, size_t arr_len) {
