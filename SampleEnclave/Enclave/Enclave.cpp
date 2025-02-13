@@ -36,6 +36,7 @@
 #include <string.h>
 #include <iostream>
 #include <algorithm>
+#include "../App/src/config.h"
 
 /* 
  * printf: 
@@ -74,6 +75,11 @@ void ecall_write_to_untrusted(uint8_t* data, size_t data_len) {
 
 void ecall_print_hello_world(const char* /*str*/) {
     printf("Hello from inside the enclave!\n");
+    if (SgxConfig::sharedBucketBufferReady) {
+        printf("sharedBucketBufferReady is true\n");
+    } else {
+        printf("sharedBucketBufferReady is false\n");
+    }
     // std::cout << "Hello from inside the enclave!" << std::endl;
 }
 

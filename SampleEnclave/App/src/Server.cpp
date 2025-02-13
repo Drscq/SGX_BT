@@ -119,6 +119,8 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
         inner_vector.resize(blockCiphertextsNumPairs);
         inner_vector.reserve(blockCiphertextsNumPairs);
     }
+    // SGX variables
+    this->sharedBucketBuffer.resize(BucketConfig::META_DATA_SIZE + BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
 }
 Server::~Server() {
     // std::cout << "Server destructor" << std::endl;
@@ -1413,27 +1415,14 @@ void Server::EnsureConnectThirdParty() {
     }
 }
 
+void Server::SgxEnclaveThreadFunc(void* arg) {
+    // pass the enclave id to the thread
+}
+
 void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_BUCKET_ID bucketID) {
-    int num = 4;
-    int* arr_ran = new int[num];
-    // Input random numbers into the array
-    for (int i = 0; i < num; ++i) {
-        arr_ran[i] = rand() % 100;
-    }
-    // cout all the elements in the array
-    std::cout << "The random numbers are: " << std::endl;
-    for (int i = 0; i < num; ++i) {
-        std::cout << arr_ran[i] << " ";
-    }
-    std::cout << std::endl;
-    // Call the ecall_sort_arry function to sort the array
-    ecall_sort_array(eid, arr_ran, num);
-    // cout all the elements in the array after sorting
-    std::cout << "The random numbers after sorting are: " << std::endl;
-    for (int i = 0; i < num; ++i) {
-        std::cout << arr_ran[i] << " ";
-    }
-    std::cout << std::endl;
+    FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
+    FileConfig::fileReadScheme1.read(this->sharedBucketBuffer.data(), BucketConfig::META_DATA_SIZE);
+    FileConfig::fileReadScheme1.close();
 }
 
 void Server::EarlyReshuffleScheme1(BucketConfig::TYPE_BUCKET_ID bucketID) {

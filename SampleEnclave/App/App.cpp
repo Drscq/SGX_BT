@@ -285,6 +285,7 @@ void* enclave_thread_func() {
 */
 // void* server_thread_func(void* arg) {
 void* server_thread_func() {
+    pthread_mutex_lock(&g_mutex);
     // Allocate the array
     g_array = new int[ARRAY_LEN];
     if (!g_array) {
@@ -303,10 +304,11 @@ void* server_thread_func() {
     }
     printf("\n");
     // Signal the enclave thread that the array is ready
-    pthread_mutex_lock(&g_mutex);
     g_array_ready = true;
     pthread_cond_signal(&g_cond_array);
+    pthread_mutex_unlock(&g_mutex);
     // Wait for the enclave thread to finish sorting
+    pthread_mutex_lock(&g_mutex);
     while (!g_array_sorted) {
         pthread_cond_wait(&g_cond_sorted, &g_mutex);
     }
@@ -343,6 +345,8 @@ int SGX_CDECL main(int argc, char *argv[])
         getchar();
         return -1; 
     }
+    char* str = "Hello, Enclave!";
+    ecall_print_hello_world(global_eid, str);
     LogConfig::CheckLogDir();
     InitializeElGamalParams();
     if (argc < 2) {

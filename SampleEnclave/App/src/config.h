@@ -71,6 +71,11 @@ using namespace NTL;
 #include <openssl/aes.h>
 // First scheme MACROS
 #define LOG_AES_CTR_ENCRYPTION_DECRIPTION 0
+namespace SgxConfig {
+    inline bool sharedBucketBufferReady = false;
+    static pthread_mutex_t sgx_mutex = PTHREAD_MUTEX_INITIALIZER;
+    static pthread_cond_t sgx_cond_shared_bucket_buffer = PTHREAD_COND_INITIALIZER;
+}
 namespace SizeConfig {
     typedef uint64_t TYPE_UNSIGNED_SIZE;
 }

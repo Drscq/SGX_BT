@@ -167,7 +167,11 @@ public:
 
     // Functions for the scheme 1
     void EarlyReshuffleScheme1(BucketConfig::TYPE_BUCKET_ID bucketID = 0);
+        //SGX related
     void SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_BUCKET_ID bucketID = 0);
+    void SgxEnclaveThreadFunc(void* arg);
+    pthread_t enclaveThread;
+
     // EarlyReshuffleScheme1 variables
     BucketConfig::TYPE_BUCKET_ID bucketIDEarlyReshuffle1;
     std::vector<char> bucketMDataEarlyReshuffle1;
@@ -197,6 +201,9 @@ public:
     // Multi-threading variables
     ElGamalNTLConfig::TYPE_BATCH_SIZE bucketCiphertextsNumPairs;
     ElGamalNTLConfig::TYPE_BATCH_SIZE blockCiphertextsNumPairs;
+    // SGX variables
+        // Early Reshuffle Scheme 1
+        std::vector<char> sharedBucketBuffer;
 };
 
 
