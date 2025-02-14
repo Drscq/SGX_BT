@@ -343,8 +343,8 @@ int SGX_CDECL main(int argc, char *argv[])
         getchar();
         return -1; 
     }
-    char* str = "Hello, Enclave!";
-    ecall_print_hello_world(global_eid, str);
+    const char* str = "Hello, Enclave!";
+    ecall_early_reshuffle_1(global_eid, str);
     LogConfig::CheckLogDir();
     InitializeElGamalParams();
     if (argc < 2) {

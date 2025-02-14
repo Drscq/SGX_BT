@@ -11,9 +11,9 @@ typedef struct ms_ecall_write_to_untrusted_t {
 	size_t ms_data_len;
 } ms_ecall_write_to_untrusted_t;
 
-typedef struct ms_ecall_print_hello_world_t {
-	const char* ms_str;
-} ms_ecall_print_hello_world_t;
+typedef struct ms_ecall_early_reshuffle_1_t {
+	const char* ms_buffer;
+} ms_ecall_early_reshuffle_1_t;
 
 typedef struct ms_ecall_sort_array_t {
 	int* ms_arr;
@@ -303,11 +303,11 @@ sgx_status_t ecall_write_to_untrusted(sgx_enclave_id_t eid, uint8_t* data, size_
 	return status;
 }
 
-sgx_status_t ecall_print_hello_world(sgx_enclave_id_t eid, const char* str)
+sgx_status_t ecall_early_reshuffle_1(sgx_enclave_id_t eid, const char* buffer)
 {
 	sgx_status_t status;
-	ms_ecall_print_hello_world_t ms;
-	ms.ms_str = str;
+	ms_ecall_early_reshuffle_1_t ms;
+	ms.ms_buffer = buffer;
 	status = sgx_ecall(eid, 2, &ocall_table_Enclave, &ms);
 	return status;
 }

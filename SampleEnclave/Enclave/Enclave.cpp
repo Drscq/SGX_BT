@@ -80,8 +80,9 @@ void ecall_write_to_untrusted(uint8_t* data, size_t data_len) {
     }
     // Upon return, SGX copies 'data' back out to untrusted memory
 }
-
-void ecall_print_hello_world(const char* /*str*/) {
+#include "../App/src/configSgx.h"
+void ecall_early_reshuffle_1(const char* buffer) {
+    printf("The test value is: %d\n", META_DATA_SIZE_SGX);
     printf("Hello from inside the enclave!\n");
     AES_CTR_SGX  aes_sgx(reinterpret_cast<const uint8_t*>(key));
     // std::cout << "Hello from inside the enclave!" << std::endl;

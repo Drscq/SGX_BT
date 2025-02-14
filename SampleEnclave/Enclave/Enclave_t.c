@@ -37,9 +37,9 @@ typedef struct ms_ecall_write_to_untrusted_t {
 	size_t ms_data_len;
 } ms_ecall_write_to_untrusted_t;
 
-typedef struct ms_ecall_print_hello_world_t {
-	const char* ms_str;
-} ms_ecall_print_hello_world_t;
+typedef struct ms_ecall_early_reshuffle_1_t {
+	const char* ms_buffer;
+} ms_ecall_early_reshuffle_1_t;
 
 typedef struct ms_ecall_sort_array_t {
 	int* ms_arr;
@@ -247,23 +247,23 @@ static sgx_status_t SGX_CDECL sgx_ecall_write_to_untrusted(void* pms)
 	return status;
 }
 
-static sgx_status_t SGX_CDECL sgx_ecall_print_hello_world(void* pms)
+static sgx_status_t SGX_CDECL sgx_ecall_early_reshuffle_1(void* pms)
 {
-	CHECK_REF_POINTER(pms, sizeof(ms_ecall_print_hello_world_t));
+	CHECK_REF_POINTER(pms, sizeof(ms_ecall_early_reshuffle_1_t));
 	//
 	// fence after pointer checks
 	//
 	sgx_lfence();
-	ms_ecall_print_hello_world_t* ms = SGX_CAST(ms_ecall_print_hello_world_t*, pms);
-	ms_ecall_print_hello_world_t __in_ms;
-	if (memcpy_s(&__in_ms, sizeof(ms_ecall_print_hello_world_t), ms, sizeof(ms_ecall_print_hello_world_t))) {
+	ms_ecall_early_reshuffle_1_t* ms = SGX_CAST(ms_ecall_early_reshuffle_1_t*, pms);
+	ms_ecall_early_reshuffle_1_t __in_ms;
+	if (memcpy_s(&__in_ms, sizeof(ms_ecall_early_reshuffle_1_t), ms, sizeof(ms_ecall_early_reshuffle_1_t))) {
 		return SGX_ERROR_UNEXPECTED;
 	}
 	sgx_status_t status = SGX_SUCCESS;
-	const char* _tmp_str = __in_ms.ms_str;
+	const char* _tmp_buffer = __in_ms.ms_buffer;
 
 
-	ecall_print_hello_world((const char*)_tmp_str);
+	ecall_early_reshuffle_1((const char*)_tmp_buffer);
 
 
 	return status;
@@ -1270,7 +1270,7 @@ SGX_EXTERNC const struct {
 	{
 		{(void*)(uintptr_t)sgx_ecall_bandwidth_test, 0, 0},
 		{(void*)(uintptr_t)sgx_ecall_write_to_untrusted, 0, 0},
-		{(void*)(uintptr_t)sgx_ecall_print_hello_world, 0, 0},
+		{(void*)(uintptr_t)sgx_ecall_early_reshuffle_1, 0, 0},
 		{(void*)(uintptr_t)sgx_ecall_sort_array, 0, 0},
 		{(void*)(uintptr_t)sgx_ecall_type_char, 0, 0},
 		{(void*)(uintptr_t)sgx_ecall_type_int, 0, 0},

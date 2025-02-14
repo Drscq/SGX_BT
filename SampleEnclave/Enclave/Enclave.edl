@@ -53,7 +53,7 @@ enclave {
     trusted {
         public void ecall_bandwidth_test([user_check]uint8_t* data, size_t data_len);
         public void ecall_write_to_untrusted([user_check]uint8_t* data, size_t data_len);
-        public void ecall_print_hello_world([user_check]const char* str);
+        public void ecall_early_reshuffle_1([user_check]const char* buffer);
         /* [user_check] indicates that 'arr' points to untrusted memory. */
         public void ecall_sort_array([user_check] int* arr, size_t arr_len);
     };
