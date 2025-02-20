@@ -1424,6 +1424,14 @@ void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_B
     FileConfig::fileReadScheme1.read(this->sharedBucketBuffer.data(), BucketConfig::META_DATA_SIZE);
     FileConfig::fileReadScheme1.close();
     ecall_early_reshuffle_1(eid, this->sharedBucketBuffer.data());
+    std::vector<BucketConfig::TYPE_SLOT_ID> realBlocksOffsetEarlyReshuffle1(BucketConfig::BUCKET_REAL_BLOCK_CAPACITY);
+    std::memcpy(realBlocksOffsetEarlyReshuffle1.data(), this->sharedBucketBuffer.data(), BucketConfig::BUCKET_REAL_BLOCK_CAPACITY * sizeof(BucketConfig::TYPE_SLOT_ID));
+    // Check the values in the realBlocksOffsetEarlyReshuffle1
+    for (auto& offset : realBlocksOffsetEarlyReshuffle1) {
+        std::cout << offset << " ";
+    }
+    std::cout << std::endl;
+
 }
 
 void Server::EarlyReshuffleScheme1(BucketConfig::TYPE_BUCKET_ID bucketID) {

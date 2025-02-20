@@ -102,12 +102,14 @@ void ecall_early_reshuffle_1(char* buffer) {
         }
         curProcessSlotIndexEarlyReshuffle1_sgx++;
     }
-    #if defined(UNIT_TEST_SGX)
+    // #if defined(UNIT_TEST_SGX)
     // Check the values in the realBlocksOffsetEarlyReshuffle1_sgx vector
     for (size_t i = 0; i < realBlocksOffsetEarlyReshuffle1_sgx.size(); ++i) {
         printf("realBlocksOffsetEarlyReshuffle1_sgx[%d] = %d\n", i, realBlocksOffsetEarlyReshuffle1_sgx[i]);
     }
-    #endif
+    // #endif
+    // copy the realBlocksOffsetEarlyReshuffle1_sgx vector to the buffer
+    memcpy(buffer, realBlocksOffsetEarlyReshuffle1_sgx.data(), realBlocksOffsetEarlyReshuffle1_sgx.size() * sizeof(TYPE_SLOT_ID_SGX));
     // uint8_t iv_copy[AES_BLOCK_SIZE] = {0};
     // const char* plaintext = "Hello, World!";
     // printf("Plaintext: %s\n", plaintext);
