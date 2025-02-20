@@ -1423,6 +1423,7 @@ void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_B
     FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
     FileConfig::fileReadScheme1.read(this->sharedBucketBuffer.data(), BucketConfig::META_DATA_SIZE);
     FileConfig::fileReadScheme1.close();
+    ecall_early_reshuffle_1(eid, this->sharedBucketBuffer.data());
 }
 
 void Server::EarlyReshuffleScheme1(BucketConfig::TYPE_BUCKET_ID bucketID) {

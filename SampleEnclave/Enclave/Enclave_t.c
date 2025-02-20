@@ -38,7 +38,7 @@ typedef struct ms_ecall_write_to_untrusted_t {
 } ms_ecall_write_to_untrusted_t;
 
 typedef struct ms_ecall_early_reshuffle_1_t {
-	const char* ms_buffer;
+	char* ms_buffer;
 } ms_ecall_early_reshuffle_1_t;
 
 typedef struct ms_ecall_sort_array_t {
@@ -260,10 +260,10 @@ static sgx_status_t SGX_CDECL sgx_ecall_early_reshuffle_1(void* pms)
 		return SGX_ERROR_UNEXPECTED;
 	}
 	sgx_status_t status = SGX_SUCCESS;
-	const char* _tmp_buffer = __in_ms.ms_buffer;
+	char* _tmp_buffer = __in_ms.ms_buffer;
 
 
-	ecall_early_reshuffle_1((const char*)_tmp_buffer);
+	ecall_early_reshuffle_1(_tmp_buffer);
 
 
 	return status;

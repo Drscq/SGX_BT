@@ -343,8 +343,8 @@ int SGX_CDECL main(int argc, char *argv[])
         getchar();
         return -1; 
     }
-    const char* str = "Hello, Enclave!";
-    ecall_early_reshuffle_1(global_eid, str);
+    // const char* str = "Hello, Enclave!";
+    // ecall_early_reshuffle_1(global_eid, str);
     LogConfig::CheckLogDir();
     InitializeElGamalParams();
     if (argc < 2) {
@@ -353,7 +353,7 @@ int SGX_CDECL main(int argc, char *argv[])
     } else if (argv[1] == std::string("server")) {
         Server server(ServerConfig::PORT);
         server.SgxEarlyReshuffleScheme1(global_eid, 0);
-        server.Start();
+        // server.Start();
     }
     // std::cout << "Initializing Tree..." << std::endl;
     // // Create threads

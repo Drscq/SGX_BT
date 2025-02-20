@@ -12,7 +12,7 @@ typedef struct ms_ecall_write_to_untrusted_t {
 } ms_ecall_write_to_untrusted_t;
 
 typedef struct ms_ecall_early_reshuffle_1_t {
-	const char* ms_buffer;
+	char* ms_buffer;
 } ms_ecall_early_reshuffle_1_t;
 
 typedef struct ms_ecall_sort_array_t {
@@ -303,7 +303,7 @@ sgx_status_t ecall_write_to_untrusted(sgx_enclave_id_t eid, uint8_t* data, size_
 	return status;
 }
 
-sgx_status_t ecall_early_reshuffle_1(sgx_enclave_id_t eid, const char* buffer)
+sgx_status_t ecall_early_reshuffle_1(sgx_enclave_id_t eid, char* buffer)
 {
 	sgx_status_t status;
 	ms_ecall_early_reshuffle_1_t ms;
