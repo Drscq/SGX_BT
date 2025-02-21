@@ -16,11 +16,8 @@ TYPE_UNSIGNED_SIZE_SGX META_DATA_SIZE_SGX = sizeof(size_t) + BUCKET_SIZE_SGX * (
 TYPE_UNSIGNED_SIZE_SGX PLAINMDSIZE_SGX = sizeof(size_t) + BUCKET_SIZE_SGX;
 typedef size_t TYPE_BUCKET_ID_SGX;
 typedef long unsigned int TYPE_BUCKET_SIZE_SGX;
-// static pthread_mutex_t G_MUTEX_SGX = PTHREAD_MUTEX_INITIALIZER;
-// static pthread_cond_t G_COND_BUFFER_METADATA_1_READY_SGX = PTHREAD_COND_INITIALIZER;
-// static pthread_cond_t G_COND_BUFFER_OFFSETS_1_READY_SGX = PTHREAD_COND_INITIALIZER;
-// Flags
-static volatile bool G_BUFFER_OFFSETS_1_READY_SGX = false;
+typedef unsigned long long TYPE_BLOCK_SIZE_SGX;
+inline TYPE_BLOCK_SIZE_SGX BLOCK_SIZE_SGX = 1024;
 // #define UNIT_TEST_SGX
 // const uint8_t iv[AES_BLOCK_SIZE] = {0};
 #include <unordered_set>

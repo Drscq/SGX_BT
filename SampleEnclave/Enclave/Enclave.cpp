@@ -37,6 +37,7 @@
 #include <iostream>
 #include <algorithm>
 #include <vector>
+#include <unordered_map>
 // #define AES_BLOCK_SIZE 16
 // static const uint32_t CTR_INC_BITS = 128;  // Full 128-bit counter increments
 #include "src/AES_CTR_SGX.h"
@@ -83,13 +84,16 @@ void ecall_write_to_untrusted(uint8_t* data, size_t data_len) {
 #include "../App/src/configSgx.h"
 META_DATA_SGX meta_data_sgx;
 std::vector<TYPE_SLOT_ID_SGX> realBlocksOffsetEarlyReshuffle1_sgx(BUCKET_REAL_BLOCK_CAPACITY_SGX, 0);
+std::unordered_map<TYPE_BLOCK_ID_SGX, std::vector<char>> stash_sgx;
+std::vector<char> decrypted_block_data_sgx(BLOCK_SIZE_SGX, 0);
+TYPE_BUCKET_ID_SGX bucket_id_sgx = 0;
 void ecall_early_reshuffle_1(char* buffer, uint8_t* flag) {
     printf("The test value is: %d\n", META_DATA_SIZE_SGX);
     printf("Hello from inside the enclave!\n");
     AES_CTR_SGX  aes_sgx(reinterpret_cast<const uint8_t*>(key));
     uint8_t iv[AES_BLOCK_SIZE] = {0};
     printf("The flag value is: %d\n", *flag);
-    while (!*flag) {
+    while (!flag[0]) {
         // Wait for the buffer to be ready
         __asm__ __volatile__("pause");
     }
@@ -115,19 +119,35 @@ void ecall_early_reshuffle_1(char* buffer, uint8_t* flag) {
     #endif
     // copy the realBlocksOffsetEarlyReshuffle1_sgx vector to the buffer
     memcpy(buffer, realBlocksOffsetEarlyReshuffle1_sgx.data(), realBlocksOffsetEarlyReshuffle1_sgx.size() * sizeof(TYPE_SLOT_ID_SGX));
-    G_BUFFER_OFFSETS_1_READY_SGX = true;
-    // uint8_t iv_copy[AES_BLOCK_SIZE] = {0};
-    // const char* plaintext = "Hello, World!";
-    // printf("Plaintext: %s\n", plaintext);
-    // size_t plaintext_len = strlen(plaintext);  // Include null terminator
-    // std::vector<char> encrypted(plaintext_len, 0);
-    // aes_sgx.encrypt(reinterpret_cast<const uint8_t*>(plaintext), static_cast<uint32_t>(plaintext_len), 
-    //                 reinterpret_cast<uint8_t*>(encrypted.data()), reinterpret_cast<uint8_t*>(iv));
-    // printf("Encrypted: %s\n", encrypted.data());                     
-    // std::vector<char> decrypted(plaintext_len, 0);
-    // aes_sgx.decrypt(reinterpret_cast<const uint8_t*>(encrypted.data()), static_cast<uint32_t>(plaintext_len), 
-    //                 reinterpret_cast<uint8_t*>(decrypted.data()), reinterpret_cast<uint8_t*>(iv_copy));
-    // printf("Decrypted: %s\n", decrypted.data());
+    flag[1] = 1;
+    // Store the real blocks into the stash
+    while(!flag[2]) {
+        __asm__ __volatile__("pause");
+    }
+    auto it = reinterpret_cast<char*>(buffer);
+    for (TYPE_SLOT_ID_SGX i = 0; i < meta_data_sgx.nextRealIndex; ++i) {
+        std::memset(iv, bucket_id_sgx + meta_data_sgx.offsets[i], AES_BLOCK_SIZE);
+        aes_sgx.decrypt(reinterpret_cast<const uint8_t*>(it),
+                        BLOCK_SIZE_SGX,
+                        reinterpret_cast<uint8_t*>(decrypted_block_data_sgx.data()),
+                        iv);
+        stash_sgx[meta_data_sgx.addrs[i]] = decrypted_block_data_sgx;
+        it += BLOCK_SIZE_SGX;
+    }
+    // reset the meta_data_sgx
+    meta_data_sgx.ResetEarlyReshuffle1();
+    // Re-construction the bucket data
+        // Step 1 write the real blocks to the this->bucketDataEarlyReshuffle1
+        for (TYPE_SLOT_ID_S_SGX i = 0; i < meta_data_sgx.nextRealIndex; ++i) {
+            it = reinterpret_cast<char*>(reinterpret_cast<uint8_t*>(buffer) + META_DATA_SIZE_SGX) +
+                    meta_data_sgx.offsets[i] * BLOCK_SIZE_SGX;
+            std::memset(iv, bucket_id_sgx +
+                        meta_data_sgx.offsets[i], AES_BLOCK_SIZE);
+            aes_sgx.encrypt(reinterpret_cast<const uint8_t*>(stash_sgx[meta_data_sgx.addrs[i]].data()),
+                            BLOCK_SIZE_SGX,
+                            reinterpret_cast<uint8_t*>(it),
+                            iv);
+        }
 }
 
 void ecall_sort_array(int* arr, size_t arr_len) {

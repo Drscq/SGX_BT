@@ -1420,10 +1420,11 @@ struct EnclaveThreadParams {
     sgx_enclave_id_t eid;
     char* buffer;
 };
-static uint8_t flag = 0;
+// static uint8_t flag_shared_sgx = 0;
+static std::vector<uint8_t> flag_shared_sgx(3, 0);
 void* SgxEnclaveThreadFunc(void* arg) {
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
-    ecall_early_reshuffle_1(params->eid, params->buffer, &flag);
+    ecall_early_reshuffle_1(params->eid, params->buffer, reinterpret_cast<uint8_t*>(&flag_shared_sgx[0]));
     return nullptr;
 }
 
@@ -1436,25 +1437,39 @@ void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_B
 
     FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
     FileConfig::fileReadScheme1.read(this->sharedBucketBuffer.data(), BucketConfig::META_DATA_SIZE);
+    // Set the flag to 1 to indicate that the data is ready
+    flag_shared_sgx[0] = 1;
     FileConfig::fileReadScheme1.close();
-    std::this_thread::sleep_for(std::chrono::seconds(1));
-    flag = 1;
-    pthread_join(this->enclaveThread, NULL);
-    // Pass the data to the enclave call as needed
-    // ecall_early_reshuffle_1(eid, this->sharedBucketBuffer.data());
-    // while (!G_BUFFER_OFFSETS_1_READY_SGX) {
-    // }
+
+    // Wait for the enclave thread to finish
+    while (flag_shared_sgx[1] == 0) {
+        // Wait for the buffer to be ready
+        __asm__ __volatile__("pause");
+    }
     std::vector<BucketConfig::TYPE_SLOT_ID> realBlocksOffsetEarlyReshuffle1(BucketConfig::BUCKET_REAL_BLOCK_CAPACITY);
     std::memcpy(realBlocksOffsetEarlyReshuffle1.data(), this->sharedBucketBuffer.data(), BucketConfig::BUCKET_REAL_BLOCK_CAPACITY * sizeof(BucketConfig::TYPE_SLOT_ID));
-
+    #if USE_COUT
     // Check the values in the realBlocksOffsetEarlyReshuffle1
     for (auto& offset : realBlocksOffsetEarlyReshuffle1) {
         std::cout << offset << " ";
     }
     std::cout << std::endl;
+    #endif
+    // Load the real blocks from the disk to the memory
+    FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
+    auto it = this->sharedBucketBuffer.data();
+    for (BucketConfig::TYPE_SLOT_ID i = 0; i < BucketConfig::BUCKET_REAL_BLOCK_CAPACITY; ++i) {
+        FileConfig::fileReadScheme1.seekg(BucketConfig::META_DATA_SIZE + this->realBlocksOffsetEarlyReshuffle1[i] * BlockConfig::BLOCK_SIZE, std::ios::beg);
+        FileConfig::fileReadScheme1.read(it, BlockConfig::BLOCK_SIZE);
+        it += BlockConfig::BLOCK_SIZE;
+    }
+    FileConfig::fileReadScheme1.close();
+    // Set the flag to 2 to indicate that the real blocks are ready
+    flag_shared_sgx[2] = 1;
 
     // Clean up allocated memory
     delete[] params;
+    pthread_join(this->enclaveThread, NULL);
 }
 
 void Server::EarlyReshuffleScheme1(BucketConfig::TYPE_BUCKET_ID bucketID) {
