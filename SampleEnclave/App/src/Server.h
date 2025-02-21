@@ -168,6 +168,7 @@ public:
     // Functions for the scheme 1
     void EarlyReshuffleScheme1(BucketConfig::TYPE_BUCKET_ID bucketID = 0);
         //SGX related
+    void SgxEarlyReshuffleScheme1Init(BucketConfig::TYPE_BUCKET_ID bucketID);
     void SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_BUCKET_ID bucketID = 0);
     // void SgxEnclaveThreadFunc(void* arg);
     pthread_t enclaveThread;

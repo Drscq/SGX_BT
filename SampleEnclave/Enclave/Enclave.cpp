@@ -86,6 +86,7 @@ META_DATA_SGX meta_data_sgx;
 std::vector<TYPE_SLOT_ID_SGX> realBlocksOffsetEarlyReshuffle1_sgx(BUCKET_REAL_BLOCK_CAPACITY_SGX, 0);
 std::unordered_map<TYPE_BLOCK_ID_SGX, std::vector<char>> stash_sgx;
 std::vector<char> decrypted_block_data_sgx(BLOCK_SIZE_SGX, 0);
+std::vector<char> dummy_block_data_sgx(BLOCK_SIZE_SGX, 0);
 TYPE_BUCKET_ID_SGX bucket_id_sgx = 0;
 void ecall_early_reshuffle_1(char* buffer, uint8_t* flag) {
     printf("The test value is: %d\n", META_DATA_SIZE_SGX);
@@ -148,6 +149,28 @@ void ecall_early_reshuffle_1(char* buffer, uint8_t* flag) {
                             reinterpret_cast<uint8_t*>(it),
                             iv);
         }
+        // Step 2 write the dummy blocks to the this->bucketDataEarlyReshuffle1
+        for (TYPE_SLOT_ID_SGX i = meta_data_sgx.nextRealIndex; i < BUCKET_SIZE_SGX; ++i) {
+            it = buffer + META_DATA_SIZE_SGX +
+                meta_data_sgx.offsets[i] * BLOCK_SIZE_SGX;
+            std::memset(iv, bucket_id_sgx +
+                        meta_data_sgx.offsets[i], AES_BLOCK_SIZE);
+            aes_sgx.encrypt(reinterpret_cast<const uint8_t*>(dummy_block_data_sgx.data()),
+                                BLOCK_SIZE_SGX,
+                                reinterpret_cast<uint8_t*>(it),
+                                iv);
+        }
+        // Step 3 write the meta data to the this->bucketDataEarlyReshuffle1
+        // Step 3.1 serialize the bucketMD to the bucketMDataEarlyReshuffle1
+        it = buffer;
+        meta_data_sgx.Serialize(it);
+        // Step 3.2 encrypt the bucketMDataEarlyReshuffle1
+        std::memset(iv, bucket_id_sgx, AES_BLOCK_SIZE);
+        aes_sgx.encrypt(reinterpret_cast<const uint8_t*>(it) + PLAINMDSIZE_SGX,
+                        META_DATA_SIZE_SGX - PLAINMDSIZE_SGX,
+                        reinterpret_cast<uint8_t*>(it) + PLAINMDSIZE_SGX,
+                        iv);
+        flag[3] = 1;
 }
 
 void ecall_sort_array(int* arr, size_t arr_len) {

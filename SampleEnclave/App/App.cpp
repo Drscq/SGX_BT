@@ -352,8 +352,8 @@ int SGX_CDECL main(int argc, char *argv[])
         return 1;
     } else if (argv[1] == std::string("server")) {
         Server server(ServerConfig::PORT);
+        server.SgxEarlyReshuffleScheme1Init(0);
         server.SgxEarlyReshuffleScheme1(global_eid, 0);
-        // server.Start();
     }
     // std::cout << "Initializing Tree..." << std::endl;
     // // Create threads

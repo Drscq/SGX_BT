@@ -1421,11 +1421,15 @@ struct EnclaveThreadParams {
     char* buffer;
 };
 // static uint8_t flag_shared_sgx = 0;
-static std::vector<uint8_t> flag_shared_sgx(3, 0);
+static std::vector<uint8_t> flag_shared_sgx(4, 0);
 void* SgxEnclaveThreadFunc(void* arg) {
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
     ecall_early_reshuffle_1(params->eid, params->buffer, reinterpret_cast<uint8_t*>(&flag_shared_sgx[0]));
     return nullptr;
+}
+void Server::SgxEarlyReshuffleScheme1Init(BucketConfig::TYPE_BUCKET_ID bucketID) {
+    // Allocate enough memory for eid and the meta data
+    this->tree.GenSingleBucketWithMD(bucketID);
 }
 
 void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_BUCKET_ID bucketID) {
@@ -1467,9 +1471,19 @@ void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_B
     // Set the flag to 2 to indicate that the real blocks are ready
     flag_shared_sgx[2] = 1;
 
+    // Wait for the enclave thread to finish
+    while(flag_shared_sgx[3] == 0) {
+        // Wait for the buffer to be ready
+        __asm__ __volatile__("pause");
+    }
+    it = this->sharedBucketBuffer.data();
+    FileConfig::fileWriteScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
+    FileConfig::fileWriteScheme1.write(it, this->bucketCipherDataEarlyReshuffle1Size);
+    FileConfig::fileWriteScheme1.close();
     // Clean up allocated memory
     delete[] params;
     pthread_join(this->enclaveThread, NULL);
+    std::cout << "Finished early reshuffle" << std::endl;
 }
 
 void Server::EarlyReshuffleScheme1(BucketConfig::TYPE_BUCKET_ID bucketID) {
