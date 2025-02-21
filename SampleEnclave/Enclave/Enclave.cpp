@@ -88,10 +88,10 @@ void ecall_early_reshuffle_1(char* buffer, uint8_t* flag) {
     printf("Hello from inside the enclave!\n");
     AES_CTR_SGX  aes_sgx(reinterpret_cast<const uint8_t*>(key));
     uint8_t iv[AES_BLOCK_SIZE] = {0};
-    uint8_t flag_sgx = *flag;
-    while (!flag_sgx) {
+    printf("The flag value is: %d\n", *flag);
+    while (!*flag) {
         // Wait for the buffer to be ready
-        printf("Waiting for the buffer to be ready...\n");
+        __asm__ __volatile__("pause");
     }
     aes_sgx.decrypt(reinterpret_cast<const uint8_t*>(buffer) + PLAINMDSIZE_SGX,
                     META_DATA_SIZE_SGX - PLAINMDSIZE_SGX, 

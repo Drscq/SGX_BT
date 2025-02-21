@@ -1420,7 +1420,7 @@ struct EnclaveThreadParams {
     sgx_enclave_id_t eid;
     char* buffer;
 };
-uint8_t flag = 0;
+static uint8_t flag = 0;
 void* SgxEnclaveThreadFunc(void* arg) {
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
     ecall_early_reshuffle_1(params->eid, params->buffer, &flag);
@@ -1437,6 +1437,7 @@ void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_B
     FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
     FileConfig::fileReadScheme1.read(this->sharedBucketBuffer.data(), BucketConfig::META_DATA_SIZE);
     FileConfig::fileReadScheme1.close();
+    std::this_thread::sleep_for(std::chrono::seconds(1));
     flag = 1;
     pthread_join(this->enclaveThread, NULL);
     // Pass the data to the enclave call as needed
