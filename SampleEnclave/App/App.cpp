@@ -350,10 +350,15 @@ int SGX_CDECL main(int argc, char *argv[])
     if (argc < 2) {
         std::cout << "Usage: " << argv[0] << " <config_file>" << std::endl;
         return 1;
-    } else if (argv[1] == std::string("server")) {
+    } else if (argv[1] == std::string("earlyReshuffle1")) {
+        DurationLogger durationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
         Server server(ServerConfig::PORT);
         server.SgxEarlyReshuffleScheme1Init(0);
+        std::string logMessage = "EarlyReshuffleScheme1";
+        durationLogger.startTiming(logMessage);
         server.SgxEarlyReshuffleScheme1(global_eid, 0);
+        durationLogger.stopTiming(logMessage);
+        
     }
     // std::cout << "Initializing Tree..." << std::endl;
     // // Create threads

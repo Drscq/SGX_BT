@@ -1483,7 +1483,6 @@ void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_B
     // Clean up allocated memory
     delete[] params;
     pthread_join(this->enclaveThread, NULL);
-    std::cout << "Finished early reshuffle" << std::endl;
 }
 
 void Server::EarlyReshuffleScheme1(BucketConfig::TYPE_BUCKET_ID bucketID) {
