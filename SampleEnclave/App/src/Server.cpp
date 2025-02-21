@@ -8,6 +8,7 @@
 #include <thread>
 #include "../Enclave_u.h"
 #include <random>
+#include "configSgx.h"
 Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
                                                   tripletBucketIDs{0, 1, 2},
                                                   realBlockNumForEviction(BucketConfig::BUCKET_REAL_BLOCK_CAPACITY),
@@ -1415,23 +1416,44 @@ void Server::EnsureConnectThirdParty() {
     }
 }
 
-void Server::SgxEnclaveThreadFunc(void* arg) {
-    // pass the enclave id to the thread
+struct EnclaveThreadParams {
+    sgx_enclave_id_t eid;
+    char* buffer;
+};
+uint8_t flag = 0;
+void* SgxEnclaveThreadFunc(void* arg) {
+    EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
+    ecall_early_reshuffle_1(params->eid, params->buffer, &flag);
+    return nullptr;
 }
 
 void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_BUCKET_ID bucketID) {
+    // Allocate enough memory for eid and the meta data
+    EnclaveThreadParams* params = new EnclaveThreadParams;
+    params->eid = eid;
+    params->buffer = this->sharedBucketBuffer.data();
+    pthread_create(&this->enclaveThread, NULL, &SgxEnclaveThreadFunc, params);
+
     FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
     FileConfig::fileReadScheme1.read(this->sharedBucketBuffer.data(), BucketConfig::META_DATA_SIZE);
     FileConfig::fileReadScheme1.close();
-    ecall_early_reshuffle_1(eid, this->sharedBucketBuffer.data());
+    flag = 1;
+    pthread_join(this->enclaveThread, NULL);
+    // Pass the data to the enclave call as needed
+    // ecall_early_reshuffle_1(eid, this->sharedBucketBuffer.data());
+    // while (!G_BUFFER_OFFSETS_1_READY_SGX) {
+    // }
     std::vector<BucketConfig::TYPE_SLOT_ID> realBlocksOffsetEarlyReshuffle1(BucketConfig::BUCKET_REAL_BLOCK_CAPACITY);
     std::memcpy(realBlocksOffsetEarlyReshuffle1.data(), this->sharedBucketBuffer.data(), BucketConfig::BUCKET_REAL_BLOCK_CAPACITY * sizeof(BucketConfig::TYPE_SLOT_ID));
+
     // Check the values in the realBlocksOffsetEarlyReshuffle1
     for (auto& offset : realBlocksOffsetEarlyReshuffle1) {
         std::cout << offset << " ";
     }
     std::cout << std::endl;
 
+    // Clean up allocated memory
+    delete[] params;
 }
 
 void Server::EarlyReshuffleScheme1(BucketConfig::TYPE_BUCKET_ID bucketID) {

@@ -83,11 +83,16 @@ void ecall_write_to_untrusted(uint8_t* data, size_t data_len) {
 #include "../App/src/configSgx.h"
 META_DATA_SGX meta_data_sgx;
 std::vector<TYPE_SLOT_ID_SGX> realBlocksOffsetEarlyReshuffle1_sgx(BUCKET_REAL_BLOCK_CAPACITY_SGX, 0);
-void ecall_early_reshuffle_1(char* buffer) {
+void ecall_early_reshuffle_1(char* buffer, uint8_t* flag) {
     printf("The test value is: %d\n", META_DATA_SIZE_SGX);
     printf("Hello from inside the enclave!\n");
     AES_CTR_SGX  aes_sgx(reinterpret_cast<const uint8_t*>(key));
     uint8_t iv[AES_BLOCK_SIZE] = {0};
+    uint8_t flag_sgx = *flag;
+    while (!flag_sgx) {
+        // Wait for the buffer to be ready
+        printf("Waiting for the buffer to be ready...\n");
+    }
     aes_sgx.decrypt(reinterpret_cast<const uint8_t*>(buffer) + PLAINMDSIZE_SGX,
                     META_DATA_SIZE_SGX - PLAINMDSIZE_SGX, 
                     reinterpret_cast<uint8_t*>(buffer) + PLAINMDSIZE_SGX, iv); 
@@ -102,14 +107,15 @@ void ecall_early_reshuffle_1(char* buffer) {
         }
         curProcessSlotIndexEarlyReshuffle1_sgx++;
     }
-    // #if defined(UNIT_TEST_SGX)
+    #if defined(UNIT_TEST_SGX)
     // Check the values in the realBlocksOffsetEarlyReshuffle1_sgx vector
     for (size_t i = 0; i < realBlocksOffsetEarlyReshuffle1_sgx.size(); ++i) {
         printf("realBlocksOffsetEarlyReshuffle1_sgx[%d] = %d\n", i, realBlocksOffsetEarlyReshuffle1_sgx[i]);
     }
-    // #endif
+    #endif
     // copy the realBlocksOffsetEarlyReshuffle1_sgx vector to the buffer
     memcpy(buffer, realBlocksOffsetEarlyReshuffle1_sgx.data(), realBlocksOffsetEarlyReshuffle1_sgx.size() * sizeof(TYPE_SLOT_ID_SGX));
+    G_BUFFER_OFFSETS_1_READY_SGX = true;
     // uint8_t iv_copy[AES_BLOCK_SIZE] = {0};
     // const char* plaintext = "Hello, World!";
     // printf("Plaintext: %s\n", plaintext);

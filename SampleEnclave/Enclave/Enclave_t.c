@@ -39,6 +39,7 @@ typedef struct ms_ecall_write_to_untrusted_t {
 
 typedef struct ms_ecall_early_reshuffle_1_t {
 	char* ms_buffer;
+	uint8_t* ms_flag;
 } ms_ecall_early_reshuffle_1_t;
 
 typedef struct ms_ecall_sort_array_t {
@@ -261,9 +262,10 @@ static sgx_status_t SGX_CDECL sgx_ecall_early_reshuffle_1(void* pms)
 	}
 	sgx_status_t status = SGX_SUCCESS;
 	char* _tmp_buffer = __in_ms.ms_buffer;
+	uint8_t* _tmp_flag = __in_ms.ms_flag;
 
 
-	ecall_early_reshuffle_1(_tmp_buffer);
+	ecall_early_reshuffle_1(_tmp_buffer, _tmp_flag);
 
 
 	return status;
