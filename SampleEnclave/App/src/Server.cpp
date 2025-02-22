@@ -1657,6 +1657,7 @@ void Server::SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID path
     EnclaveThreadParams* params = new EnclaveThreadParams;
     params->eid = eid;
     params->buffer = this->tripletBucketsDataEviction1.data();
+    pthread_create(&this->enclaveThread, NULL, &SgxEnclaveThreadFuncEvict, params);
     // Convert the path_id to the bunch of bucket IDs in the reverselexicographical order
     TreeConfig::GenPathBucketIDsInReverseOrder(path_id,
         TreeConfig::HEIGHT,
@@ -1693,7 +1694,8 @@ void Server::SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID path
             std::memcpy(it_md, it, BucketConfig::META_DATA_SIZE);
         }
     }
-    pthread_create(&this->enclaveThread, NULL, &SgxEnclaveThreadFuncEvict, params);
+    // Set the flag to 1 to indicate that the data is ready
+    flag_shared_sgx_evict[0] = 1;
     pthread_join(this->enclaveThread, NULL);
 }
 

@@ -173,44 +173,67 @@ void ecall_early_reshuffle_1(char* buffer, uint8_t* flag) {
         flag[3] = 1;
 }
 // Eviction Scheme 1
+void SgxDecryptMD(void* serializedMDData, TYPE_BUCKET_ID_SGX bucketID) {
+    static_cast<char*>(serializedMDData);
+    std::memset(iv, bucketID, AES_BLOCK_SIZE);
+    aes_sgx.decrypt(reinterpret_cast<const uint8_t*>(serializedMDData) + PLAINMDSIZE_SGX,
+                    META_DATA_SIZE_SGX - PLAINMDSIZE_SGX,
+                    reinterpret_cast<uint8_t*>(serializedMDData) + PLAINMDSIZE_SGX,
+                    iv);
+}
 std::vector<TYPE_BUCKET_ID_SGX> tripletBucketIDsEviction1(3, 0);
+TYPE_PATH_SIZE_SGX curLevelEviction1 = 0;
+META_DATA_SGX tripletBucketMDs[3];
+std::vector<TYPE_SLOT_ID_SGX> tripletBucketRealBlocksOffsetEviction1(3 * BUCKET_REAL_BLOCK_CAPACITY_SGX, 0);
 void ecall_evict_1(char* buffer, uint8_t* flags) {
+    // Wait for the buffer to be ready
+    while (!flags[0]) {
+        __asm__ __volatile__("pause");
+    }
     // Decrypt the meta data
     auto it = buffer;
     std::memcpy(tripletBucketIDsEviction1.data(), it, sizeof(TYPE_BUCKET_ID_SGX));
     for (TYPE_SMALL_INDEX_U_SGX i = 1; i < 3; ++i) {
         tripletBucketIDsEviction1[i] = 2 * tripletBucketIDsEviction1[0] + i;
     }
+    #if defined(UNIT_TEST_SGX)
     for (TYPE_SMALL_INDEX_U_SGX i = 0; i < 3; ++i) {
         printf("tripletBucketIDsEviction1[%d] = %d\n", i, tripletBucketIDsEviction1[i]);
     }
-    // it += sizeof(BucketConfig::TYPE_BUCKET_ID);
-    // std::memcpy(&this->curLevelEviction1, it, sizeof(PathConfig::TYPE_PATH_SIZE));
-    // #if USE_COUT
-    // std::cout << "curLevelEviction1: " << this->curLevelEviction1 << std::endl;
-    // #endif
-    // it += sizeof(PathConfig::TYPE_PATH_SIZE);
-    // for (BucketConfig::TYPE_SMALL_INDEX_U i = 0; i < 3; ++i) {
-    //     this->tree.DecryptMD(it, this->tripletBucketIDsEviction1[i]);
-    //     this->tripletBucketMDs[i].Deserialize(it);
-    //     #if USE_COUT
-    //     std::cout << "tripletBucketIDsEviction1[" << i << "]: " << this->tripletBucketIDsEviction1[i] << std::endl;
-    //     #endif
-    //     this->curEmptySlotIndexEarlyReshuffle1 = 0;
-    //     this->curProcessSlotIndexEarlyReshuffle1 = 0;
-    //     while (this->curEmptySlotIndexEarlyReshuffle1 < BucketConfig::BUCKET_REAL_BLOCK_CAPACITY && 
-    //             this->curProcessSlotIndexEarlyReshuffle1 < BucketConfig::BUCKET_SIZE) {
-    //         if (this->tripletBucketMDs[i].valids[this->tripletBucketMDs[i].offsets[this->curProcessSlotIndexEarlyReshuffle1]]) {
-    //             this->tripletBucketRealBlocksOffsetEviction1[i * BucketConfig::BUCKET_REAL_BLOCK_CAPACITY + this->curEmptySlotIndexEarlyReshuffle1] = this->tripletBucketMDs[i].offsets[this->curProcessSlotIndexEarlyReshuffle1];
-    //             this->curEmptySlotIndexEarlyReshuffle1++;
-    //         }
-    //         this->curProcessSlotIndexEarlyReshuffle1++;
-    //     }
-    //     #if USE_COUT
-    //     this->tripletBucketMDs[i].print();
-    //     #endif
-    //     it += BucketConfig::META_DATA_SIZE;
-    // }
+    #endif
+    it += sizeof(TYPE_BUCKET_ID_SGX);
+    std::memcpy(&curLevelEviction1, it, sizeof(TYPE_PATH_SIZE_SGX));
+    #if defined(UNIT_TEST_SGX)
+    printf("curLevelEviction1 = %d\n", curLevelEviction1);
+    #endif
+    it += sizeof(TYPE_PATH_SIZE_SGX);
+    for (TYPE_SMALL_INDEX_U_SGX i = 0; i < 3; ++i) {
+        SgxDecryptMD(it, tripletBucketIDsEviction1[i]);
+        tripletBucketMDs[i].Deserialize(it);
+        #if USE_COUT
+        std::cout << "tripletBucketIDsEviction1[" << i << "]: " << this->tripletBucketIDsEviction1[i] << std::endl;
+        #endif
+        TYPE_SLOT_ID_SGX curEmptySlotIndexEarlyReshuffle1 = 0;
+        TYPE_SLOT_ID_SGX curProcessSlotIndexEarlyReshuffle1 = 0;
+        while (curEmptySlotIndexEarlyReshuffle1 < BUCKET_REAL_BLOCK_CAPACITY_SGX && 
+                curProcessSlotIndexEarlyReshuffle1 < BUCKET_SIZE_SGX) {
+            if (tripletBucketMDs[i].valids[tripletBucketMDs[i].offsets[curProcessSlotIndexEarlyReshuffle1]]) {
+                tripletBucketRealBlocksOffsetEviction1[i * BUCKET_REAL_BLOCK_CAPACITY_SGX + curEmptySlotIndexEarlyReshuffle1] = tripletBucketMDs[i].offsets[curProcessSlotIndexEarlyReshuffle1];
+                curEmptySlotIndexEarlyReshuffle1++;
+            }
+            curProcessSlotIndexEarlyReshuffle1++;
+        }
+        #if USE_COUT
+        this->tripletBucketMDs[i].print();
+        #endif
+        it += META_DATA_SIZE_SGX;
+    }
+    #if defined(UNIT_TEST_SGX)
+    // check the values in the tripletBucketRealBlocksOffsetEviction1 vector
+    for (size_t i = 0; i < tripletBucketRealBlocksOffsetEviction1.size(); ++i) {
+        printf("tripletBucketRealBlocksOffsetEviction1[%d] = %d\n", i, tripletBucketRealBlocksOffsetEviction1[i]);
+    }
+    #endif
 }
 
 void ecall_sort_array(int* arr, size_t arr_len) {
