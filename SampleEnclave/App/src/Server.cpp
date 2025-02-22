@@ -1646,6 +1646,45 @@ void Server::TestBucketContent(std::vector<char>& bucketData, const BucketConfig
     }
 }
 
+void Server::SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID path_id) {
+    // Convert the path_id to the bunch of bucket IDs in the reverselexicographical order
+    TreeConfig::GenPathBucketIDsInReverseOrder(path_id,
+        TreeConfig::HEIGHT,
+        this->evictPathBucketIDsComplete);
+    auto it = this->pathBucketsDataEviction1.data();
+    // Read the root bucket from the disk to the memory
+    FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0), std::ios::binary);
+    FileConfig::fileReadScheme1.read(it, this->bucketSizeEviction1);
+    FileConfig::fileReadScheme1.close();
+    for (const auto& bucketID : this->evictPathBucketIDsComplete) {
+        it += this->bucketSizeEviction1;
+        FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(2 * bucketID + 1), std::ios::binary);
+        FileConfig::fileReadScheme1.read(it, this->bucketSizeEviction1);
+        FileConfig::fileReadScheme1.close();
+        it += this->bucketSizeEviction1;
+        FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(2 * bucketID + 2), std::ios::binary);
+        FileConfig::fileReadScheme1.read(it, this->bucketSizeEviction1);
+        FileConfig::fileReadScheme1.close();
+    }
+    // Process the first triplet buckets
+    // 1. Read the triplet buckets MD from the disk to the memory
+    it = this->pathBucketsDataEviction1.data();
+    auto it_md = tripletBucketsDataEviction1.data();
+    std::memcpy(it_md, this->evictPathBucketIDsComplete.data(), sizeof(BucketConfig::TYPE_BUCKET_ID));
+    it_md += sizeof(BucketConfig::TYPE_BUCKET_ID);
+    std::memcpy(it_md, &this->curLevel, sizeof(PathConfig::TYPE_PATH_SIZE));
+    it_md += sizeof(PathConfig::TYPE_PATH_SIZE);
+    for (BucketConfig::TYPE_SMALL_INDEX_U j = 0; j < 3; ++j) {
+        if (j == 0) {
+            std::memcpy(it_md, it, BucketConfig::META_DATA_SIZE);
+        } else {
+            it += this->bucketSizeEviction1;
+            it_md += BucketConfig::META_DATA_SIZE;
+            std::memcpy(it_md, it, BucketConfig::META_DATA_SIZE);
+        }
+    }
+}
+
 void Server::EvictScheme1(PathConfig::TYPE_PATH_ID path_id) {
     #if PRINT_EVICT_BREAKDOWN_COST_FOR_SCHEME1_SERVER
     auto start = std::chrono::high_resolution_clock::now();

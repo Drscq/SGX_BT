@@ -185,6 +185,7 @@ public:
     // Eviction variables
     PathConfig::TYPE_PATH_ID pathIDEviction1;
     void EvictScheme1(PathConfig::TYPE_PATH_ID);
+    void SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID pathID);
     std::vector<char> pathBucketsDataEviction1;
     ClientConfig::TYPE_CHAR_SIZE pathBucketsDataEviction1Size;
     ClientConfig::TYPE_CHAR_SIZE bucketSizeEviction1;

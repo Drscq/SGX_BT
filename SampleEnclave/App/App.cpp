@@ -359,6 +359,13 @@ int SGX_CDECL main(int argc, char *argv[])
         server.SgxEarlyReshuffleScheme1(global_eid, 0);
         durationLogger.stopTiming(logMessage);
         
+    } else if (argv[1] == std::string("eviction1")) {
+        Server server(ServerConfig::PORT);
+        // Initialize the path
+        PathConfig::TYPE_PATH_ID pathID = 0;
+        server.tree.GenEvictPathWithMDs(pathID);
+        server.SgxEvictScheme1(global_eid, pathID);
+        std::cout << "Eviction Scheme 1 completed" << std::endl;
     }
     // std::cout << "Initializing Tree..." << std::endl;
     // // Create threads
