@@ -210,9 +210,6 @@ void ecall_evict_1(char* buffer, uint8_t* flags) {
     for (TYPE_SMALL_INDEX_U_SGX i = 0; i < 3; ++i) {
         SgxDecryptMD(it, tripletBucketIDsEviction1[i]);
         tripletBucketMDs[i].Deserialize(it);
-        #if USE_COUT
-        std::cout << "tripletBucketIDsEviction1[" << i << "]: " << this->tripletBucketIDsEviction1[i] << std::endl;
-        #endif
         TYPE_SLOT_ID_SGX curEmptySlotIndexEarlyReshuffle1 = 0;
         TYPE_SLOT_ID_SGX curProcessSlotIndexEarlyReshuffle1 = 0;
         while (curEmptySlotIndexEarlyReshuffle1 < BUCKET_REAL_BLOCK_CAPACITY_SGX && 
@@ -234,6 +231,9 @@ void ecall_evict_1(char* buffer, uint8_t* flags) {
         printf("tripletBucketRealBlocksOffsetEviction1[%d] = %d\n", i, tripletBucketRealBlocksOffsetEviction1[i]);
     }
     #endif
+    // copy the tripletBucketRealBlocksOffsetEviction1 vector to the buffer
+    memcpy(buffer, tripletBucketRealBlocksOffsetEviction1.data(), tripletBucketRealBlocksOffsetEviction1.size() * sizeof(TYPE_SLOT_ID_SGX));
+    flags[1] = 1;
 }
 
 void ecall_sort_array(int* arr, size_t arr_len) {

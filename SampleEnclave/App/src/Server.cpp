@@ -1696,6 +1696,19 @@ void Server::SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID path
     }
     // Set the flag to 1 to indicate that the data is ready
     flag_shared_sgx_evict[0] = 1;
+    // Wait for the enclave thread to finish
+    while (flag_shared_sgx_evict[1] == 0) {
+        // Wait for the buffer to be ready
+        __asm__ __volatile__("pause");
+    }
+    // copy the real blocks offsets from the tripletBucketsDataEviction1 to the tripletBucketRealBlocksOffsetEviction1
+    std::memcpy(this->tripletBucketRealBlocksOffsetEviction1.data(), this->tripletBucketsDataEviction1.data(), this->tripletBucketRealBlocksOffsetEviction1Size);
+    #if defined(UNIT_TEST_SGX)
+    for (auto& offset : this->tripletBucketRealBlocksOffsetEviction1) {
+        std::cout << offset << " ";
+    }
+    std::cout << std::endl;
+    #endif
     pthread_join(this->enclaveThread, NULL);
 }
 
