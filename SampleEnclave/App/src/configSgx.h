@@ -17,6 +17,7 @@ TYPE_UNSIGNED_SIZE_SGX PLAINMDSIZE_SGX = sizeof(size_t) + BUCKET_SIZE_SGX;
 typedef size_t TYPE_BUCKET_ID_SGX;
 typedef long unsigned int TYPE_BUCKET_SIZE_SGX;
 typedef unsigned long long TYPE_BLOCK_SIZE_SGX;
+typedef uint_fast16_t TYPE_SMALL_INDEX_U_SGX;
 inline TYPE_BLOCK_SIZE_SGX BLOCK_SIZE_SGX = 1024;
 // #define UNIT_TEST_SGX
 // const uint8_t iv[AES_BLOCK_SIZE] = {0};

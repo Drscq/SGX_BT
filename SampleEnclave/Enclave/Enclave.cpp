@@ -172,6 +172,46 @@ void ecall_early_reshuffle_1(char* buffer, uint8_t* flag) {
                         iv);
         flag[3] = 1;
 }
+// Eviction Scheme 1
+std::vector<TYPE_BUCKET_ID_SGX> tripletBucketIDsEviction1(3, 0);
+void ecall_evict_1(char* buffer, uint8_t* flags) {
+    // Decrypt the meta data
+    auto it = buffer;
+    std::memcpy(tripletBucketIDsEviction1.data(), it, sizeof(TYPE_BUCKET_ID_SGX));
+    for (TYPE_SMALL_INDEX_U_SGX i = 1; i < 3; ++i) {
+        tripletBucketIDsEviction1[i] = 2 * tripletBucketIDsEviction1[0] + i;
+    }
+    for (TYPE_SMALL_INDEX_U_SGX i = 0; i < 3; ++i) {
+        printf("tripletBucketIDsEviction1[%d] = %d\n", i, tripletBucketIDsEviction1[i]);
+    }
+    // it += sizeof(BucketConfig::TYPE_BUCKET_ID);
+    // std::memcpy(&this->curLevelEviction1, it, sizeof(PathConfig::TYPE_PATH_SIZE));
+    // #if USE_COUT
+    // std::cout << "curLevelEviction1: " << this->curLevelEviction1 << std::endl;
+    // #endif
+    // it += sizeof(PathConfig::TYPE_PATH_SIZE);
+    // for (BucketConfig::TYPE_SMALL_INDEX_U i = 0; i < 3; ++i) {
+    //     this->tree.DecryptMD(it, this->tripletBucketIDsEviction1[i]);
+    //     this->tripletBucketMDs[i].Deserialize(it);
+    //     #if USE_COUT
+    //     std::cout << "tripletBucketIDsEviction1[" << i << "]: " << this->tripletBucketIDsEviction1[i] << std::endl;
+    //     #endif
+    //     this->curEmptySlotIndexEarlyReshuffle1 = 0;
+    //     this->curProcessSlotIndexEarlyReshuffle1 = 0;
+    //     while (this->curEmptySlotIndexEarlyReshuffle1 < BucketConfig::BUCKET_REAL_BLOCK_CAPACITY && 
+    //             this->curProcessSlotIndexEarlyReshuffle1 < BucketConfig::BUCKET_SIZE) {
+    //         if (this->tripletBucketMDs[i].valids[this->tripletBucketMDs[i].offsets[this->curProcessSlotIndexEarlyReshuffle1]]) {
+    //             this->tripletBucketRealBlocksOffsetEviction1[i * BucketConfig::BUCKET_REAL_BLOCK_CAPACITY + this->curEmptySlotIndexEarlyReshuffle1] = this->tripletBucketMDs[i].offsets[this->curProcessSlotIndexEarlyReshuffle1];
+    //             this->curEmptySlotIndexEarlyReshuffle1++;
+    //         }
+    //         this->curProcessSlotIndexEarlyReshuffle1++;
+    //     }
+    //     #if USE_COUT
+    //     this->tripletBucketMDs[i].print();
+    //     #endif
+    //     it += BucketConfig::META_DATA_SIZE;
+    // }
+}
 
 void ecall_sort_array(int* arr, size_t arr_len) {
     std::sort(arr, arr + arr_len);
