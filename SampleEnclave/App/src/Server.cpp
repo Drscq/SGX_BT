@@ -1646,7 +1646,9 @@ void Server::TestBucketContent(std::vector<char>& bucketData, const BucketConfig
     }
 }
 
-static std::vector<uint8_t> flag_shared_sgx_evict(4, 0);
+int offset_base_flag = 4;
+int num_flags = (TreeConfig::HEIGHT - 1) * offset_base_flag;
+static std::vector<uint8_t> flag_shared_sgx_evict(num_flags, 0);
 void* SgxEnclaveThreadFuncEvict(void* arg) {
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
     ecall_evict_1(params->eid, params->buffer, reinterpret_cast<uint8_t*>(&flag_shared_sgx_evict[0]));
@@ -1709,6 +1711,124 @@ void Server::SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID path
     }
     std::cout << std::endl;
     #endif
+    // Load the real blocks from the this->pathBucketsDataEviction1 to the this->tripletBucketsRealBlocksDataEviction1
+    it = this->pathBucketsDataEviction1.data();
+    auto it_block = this->tripletBucketsDataEviction1.data();
+    for (BucketConfig::TYPE_SMALL_INDEX_U i = 0; i < 3; ++i) {
+        offset_base = i * BucketConfig::BUCKET_REAL_BLOCK_CAPACITY;
+        for (BucketConfig::TYPE_SLOT_ID j = 0; j < BucketConfig::BUCKET_REAL_BLOCK_CAPACITY; ++j) {
+            std::memcpy(it_block, it + BucketConfig::META_DATA_SIZE + this->tripletBucketRealBlocksOffsetEviction1[offset_base + j] * BlockConfig::BLOCK_SIZE, BlockConfig::BLOCK_SIZE);
+            it_block += BlockConfig::BLOCK_SIZE;
+        }
+        it += this->bucketSizeEviction1;
+    }
+    // Set the flag to 2 to indicate that the real blocks are ready
+    flag_shared_sgx_evict[2] = 1;
+    // Wait for the enclave thread to finish
+    while (flag_shared_sgx_evict[3] == 0) {
+        // Wait for the buffer to be ready
+        __asm__ __volatile__("pause");
+    }
+    for (BucketConfig::TYPE_SMALL_INDEX_U i = 0; i < 3; ++i) {
+        it = this->pathBucketsDataEviction1.data() + i * this->bucketSizeEviction1;
+        it_block = this->tripletBucketsDataEviction1.data() + i * this->bucketSizeEviction1;
+        std::memcpy(it, it_block, this->bucketSizeEviction1);
+    }
+    // For the remaining of the triplet buckets
+    for (BucketConfig::TYPE_SLOT_ID i = 1; i < this->evictPathBucketIDsComplete.size(); ++i) {
+        it = this->pathBucketsDataEviction1.data() + (1 + i * 2) * this->bucketSizeEviction1;
+        it_md = this->tripletBucketMDsDataEviction1.data();
+        std::memcpy(it_md, this->evictPathBucketIDsComplete.data() + i, sizeof(BucketConfig::TYPE_BUCKET_ID));
+        it_md += sizeof(BucketConfig::TYPE_BUCKET_ID);
+        this->curLevel = i + 1;
+        std::memcpy(it_md, &this->curLevel, sizeof(PathConfig::TYPE_PATH_SIZE));
+        it_md += sizeof(PathConfig::TYPE_PATH_SIZE);
+        for (BucketConfig::TYPE_SMALL_INDEX_U j = 0; j < 3; ++j) {
+            if (j == 0) {
+                if (this->evictPathBucketIDsComplete[i] % 2 == 0) {
+                    std::memcpy(it_md, it - this->bucketSizeEviction1, BucketConfig::META_DATA_SIZE);
+                } else {
+                    std::memcpy(it_md, it - 2 * this->bucketSizeEviction1, BucketConfig::META_DATA_SIZE);
+                }
+            } else {
+                std::memcpy(it_md, it + (j - 1) * this->bucketSizeEviction1, BucketConfig::META_DATA_SIZE);
+            }
+            it_md += BucketConfig::META_DATA_SIZE;
+        }
+        // this->communicator2ThirdParty.sendData(this->communicator2ThirdParty.getSockfd(),
+        //                                     this->tripletBucketMDsDataEviction1.data(),
+        //                                     this->tripletBucketMDsDataEviction1Size);
+        // this->communicator2ThirdParty.receiveCommand(this->communicator2ThirdParty.getSockfd(), this->cmd1);
+        std::memcpy(this->tripletBucketsDataEviction1.data(), this->tripletBucketMDsDataEviction1.data(), this->tripletBucketMDsDataEviction1Size);
+        flag_shared_sgx_evict[i * offset_base_flag] = 1;
+        // this->communicator2ThirdParty.receiveData(this->communicator2ThirdParty.getSockfd(),
+        //                                         this->tripletBucketRealBlocksOffsetEviction1.data(),
+        //                                         this->tripletBucketRealBlocksOffsetEviction1Size);
+        // this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(), ServerConfig::CMD_SUCCESS);
+        while(flag_shared_sgx_evict[i * offset_base_flag + 1] == 0) {
+            // Wait for the buffer to be ready
+            __asm__ __volatile__("pause");
+        }
+        std::memcpy(this->tripletBucketRealBlocksOffsetEviction1.data(), this->tripletBucketsDataEviction1.data(), this->tripletBucketRealBlocksOffsetEviction1Size);
+        it_block = this->tripletBucketsRealBlocksDataEviction1.data();
+        for (BucketConfig::TYPE_SMALL_INDEX_U ii = 0; ii < 3; ++ii) {
+            if (ii == 0) {
+                if (this->evictPathBucketIDsComplete[i] % 2 == 0) {
+                    it = this->pathBucketsDataEviction1.data() + i * 2 * this->bucketSizeEviction1;
+                } else {
+                    it = this->pathBucketsDataEviction1.data() + (i * 2 - 1) * this->bucketSizeEviction1;
+                }
+            } else {
+                it = this->pathBucketsDataEviction1.data() + (i * 2 + ii) * this->bucketSizeEviction1;
+            }
+            for (BucketConfig::TYPE_SLOT_ID j = 0; j < BucketConfig::BUCKET_REAL_BLOCK_CAPACITY; ++j) {
+                std::memcpy(it_block, it + BucketConfig::META_DATA_SIZE + this->tripletBucketRealBlocksOffsetEviction1[ii * BucketConfig::BUCKET_REAL_BLOCK_CAPACITY + j] * BlockConfig::BLOCK_SIZE, BlockConfig::BLOCK_SIZE);
+                it_block += BlockConfig::BLOCK_SIZE;
+            }
+        }
+        // this->communicator2ThirdParty.sendData(this->communicator2ThirdParty.getSockfd(),
+        //                                     this->tripletBucketsRealBlocksDataEviction1.data(),
+        //                                     this->tripletBucketsRealBlocksDataEviction1Size);
+        // this->communicator2ThirdParty.receiveCommand(this->communicator2ThirdParty.getSockfd(), this->cmd1);
+        std::memcpy(this->tripletBucketsDataEviction1.data(), this->tripletBucketsRealBlocksDataEviction1.data(), this->tripletBucketsRealBlocksDataEviction1Size);
+        flag_shared_sgx_evict[i * offset_base_flag + 2] = 1;
+        while (flag_shared_sgx_evict[i * offset_base_flag + 3] == 0) {
+            // Wait for the buffer to be ready
+            __asm__ __volatile__("pause");
+        }
+        for (BucketConfig::TYPE_SLOT_ID ii = 0; ii < 3; ++ii) {
+            if (ii == 0) {
+                if (this->evictPathBucketIDsComplete[i] % 2 == 0) {
+                    it = this->pathBucketsDataEviction1.data() + i * 2 * this->bucketSizeEviction1;
+                } else {
+                    it = this->pathBucketsDataEviction1.data() + (i * 2 - 1) * this->bucketSizeEviction1;
+                }
+            } else {
+                it = this->pathBucketsDataEviction1.data() + (i * 2 + ii) * this->bucketSizeEviction1;
+            }
+            // // std::vector<char> bucketCipherData(this->bucketSizeEviction1);
+            // this->communicator2ThirdParty.receiveData(this->communicator2ThirdParty.getSockfd(),
+            //                                         it,
+            //                                         this->bucketSizeEviction1);
+            // this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(), ServerConfig::CMD_SUCCESS);
+            std::memcpy(it, this->tripletBucketsDataEviction1.data() + ii * this->bucketSizeEviction1, this->bucketSizeEviction1);
+        }
+    }
+    // Write the pathBucketsDataEviction1 to the disk
+    it = this->pathBucketsDataEviction1.data();
+    FileConfig::fileWriteScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0), std::ios::binary);
+    FileConfig::fileWriteScheme1.write(it, this->bucketSizeEviction1);
+    FileConfig::fileWriteScheme1.close();
+    for (const auto& bucketID : this->evictPathBucketIDsComplete) {
+        it += this->bucketSizeEviction1;
+        FileConfig::fileWriteScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(2 * bucketID + 1), std::ios::binary);
+        FileConfig::fileWriteScheme1.write(it, this->bucketSizeEviction1);
+        FileConfig::fileWriteScheme1.close();
+        it += this->bucketSizeEviction1;
+        FileConfig::fileWriteScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(2 * bucketID + 2), std::ios::binary);
+        FileConfig::fileWriteScheme1.write(it, this->bucketSizeEviction1);
+        FileConfig::fileWriteScheme1.close();
+    }
     pthread_join(this->enclaveThread, NULL);
 }
 

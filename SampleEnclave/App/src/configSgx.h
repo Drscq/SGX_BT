@@ -21,6 +21,7 @@ typedef unsigned long long TYPE_BLOCK_SIZE_SGX;
 typedef uint_fast16_t TYPE_SMALL_INDEX_U_SGX;
 typedef size_t TYPE_PATH_SIZE_SGX;
 inline TYPE_BLOCK_SIZE_SGX BLOCK_SIZE_SGX = 1024;
+typedef size_t TYPE_PATH_SIZE_SGX;
 // const uint8_t iv[AES_BLOCK_SIZE] = {0};
 #include <unordered_set>
 #include <algorithm>
@@ -421,5 +422,37 @@ struct META_DATA_SGX {
         block_ids.clear();
     }
 };
+
+namespace TreeConfigSgx {
+    inline constexpr TYPE_PATH_SIZE_SGX HEIGHT = 4;
+    inline bool CanBlockGoThroughBucket(TYPE_PATH_ID_SGX pathID,
+                                        TYPE_PATH_SIZE_SGX height,
+                                        TYPE_BUCKET_ID_SGX bucketID,
+                                        TYPE_PATH_SIZE_SGX curLevel) {
+        std::string pathBinary = std::bitset<64>(pathID).to_string().substr(64 - (height - 1), height - 1);
+        std::string currentLevelBits = pathBinary.substr(0, curLevel);
+        TYPE_BUCKET_ID_SGX newBucketID = 0;
+        for (auto bit : currentLevelBits) {
+            newBucketID = newBucketID * 2 + (bit - '0') + 1;
+        }
+        return newBucketID == bucketID;                                  
+    }
+    inline void GenPathBucketIDsInReverseOrder(TYPE_PATH_ID_SGX pathID,
+                                               const TYPE_PATH_SIZE_SGX height,
+                                               std::vector<TYPE_BUCKET_ID_SGX>& bucketIDs) {
+        #if USE_ASSERT
+        assert(bucketIDs.size() == height - 1 && "The size of the bucketIDs should be equal to height - 1");
+        #endif
+        std::bitset<HEIGHT - 1> pathBinary(pathID);
+        for (TYPE_PATH_SIZE_SGX i = 0; i < height - 1; i++) {
+            if (i == 0) {
+                bucketIDs[i] = 0;
+            } else {
+                bucketIDs[i] = bucketIDs[i - 1] * 2 + (pathBinary[i - 1] ? 2 : 1);
+            }
+        }
+
+    }
+}
 
 #endif // CONFIGSGX_H
