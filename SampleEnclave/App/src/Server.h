@@ -118,8 +118,10 @@ public:
     // Read Path Scheme 1
     std::string LogReadPathGenBucketIDsScheme1 = "ServerComputationReadPathGenBucketIDsScheme1";
     std::string LogReadPathLoadMDsScheme1 = "ServerIOReadPathLoadMDsScheme1";
+    std::string LogReadPathSendMDsScheme1 = "ClientServerBandwidthReadPathSendMDsScheme1";
     std::string LogReadPathLoadBlocksScheme1 = "ServerIOReadPathLoadBlocksScheme1";
     std::string LogReadPathXORBlocksScheme1 = "ServerComputationReadPathXORBlocksScheme1";
+    std::string LogReadPathSendTargetBlockScheme1 = "ClientServerBandwidthReadPathSendTargetBlockScheme1";
     // Early Reshuffle Scheme 1
     std::string LogEarlyReshuffleLoadBucketMDScheme1 = "ServerIOEarlyReshuffleLoadBucketMDScheme1";
     std::string LogEarlyReshuffleLoadReadBlocksScheme1 = "ServerIOEarlyReshuffleLoadReadBlocksScheme1";

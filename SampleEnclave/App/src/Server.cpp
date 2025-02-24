@@ -1171,9 +1171,17 @@ void Server::handleClient(int clientSockfd) {
                 #if PRINT_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_SERVER
                 start = std::chrono::high_resolution_clock::now();
                 #endif
+                #if LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_SERVER
+                this->logger.startTiming(this->LogReadPathSendMDsScheme1);
+                #endif
                 this->communicator.sendData(clientSockfd,
                                             this->pathBucketMDData1.data(),
                                             this->pathBucketMDData1.size());
+                this->communicator.receiveCommand(clientSockfd, this->cmd1);
+                #if LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_SERVER
+                this->logger.stopTiming(this->LogReadPathSendMDsScheme1);
+                this->logger.writeToFile();
+                #endif
                 #if PRINT_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_SERVER
                 end = std::chrono::high_resolution_clock::now();
                 duration = end - start;
@@ -1194,7 +1202,7 @@ void Server::handleClient(int clientSockfd) {
                 this->communicator.receiveData(clientSockfd,
                                                 this->pathCompleteOffsets.data(),
                                                 this->pathCompleteOffsetsSize);
-                // this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
+                this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
                 #if USE_COUT
                 std::cout << "The pathCompleteOffsets: ";
                 for (auto& offset : this->pathCompleteOffsets) {
@@ -1206,7 +1214,7 @@ void Server::handleClient(int clientSockfd) {
                 this->communicator.receiveData(clientSockfd,
                                                 this->pathBucketMDData1.data(),
                                                 this->pathBucketMDDataSize1);
-                // this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
+                this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
                 #if USE_COUT
                 std::cout << "The pathBucketMDData1: " << std::endl;
                 it = this->pathBucketMDData1.data();
@@ -1279,10 +1287,17 @@ void Server::handleClient(int clientSockfd) {
                 std::cout << "[Server Computation] XOR operation: " << duration.count() << " ns" << std::endl;
                 #endif
                 // Send the targetBlockData1 to the client
+                #if LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_SERVER
+                this->logger.startTiming(this->LogReadPathSendTargetBlockScheme1);
+                #endif
                 this->communicator.sendData(clientSockfd,
                                             this->targetBlockCipherData1.data(),
                                             BlockConfig::BLOCK_SIZE);
-                // this->communicator.receiveCommand(clientSockfd, this->cmd1);
+                this->communicator.receiveCommand(clientSockfd, this->cmd1);
+                #if LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_SERVER
+                this->logger.stopTiming(this->LogReadPathSendTargetBlockScheme1);
+                this->logger.writeToFile();
+                #endif
                 std::vector<char> bufferIn(sizeof(PathConfig::TYPE_PATH_SIZE) + BlockConfig::BLOCK_SIZE);
                 this->communicator.receiveData(clientSockfd, static_cast<char*>(bufferIn.data()), sizeof(PathConfig::TYPE_PATH_SIZE));
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);               

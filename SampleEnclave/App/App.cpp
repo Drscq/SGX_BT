@@ -366,6 +366,9 @@ int SGX_CDECL main(int argc, char *argv[])
         server.tree.GenEvictPathWithMDs(pathID);
         server.SgxEvictScheme1(global_eid, pathID);
         std::cout << "Eviction Scheme 1 completed" << std::endl;
+    } else if (argv[1] == std::string("server")) {
+        Server server(ServerConfig::PORT);
+        server.Start();
     }
     // std::cout << "Initializing Tree..." << std::endl;
     // // Create threads
