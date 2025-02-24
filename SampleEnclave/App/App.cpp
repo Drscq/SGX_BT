@@ -346,26 +346,30 @@ int SGX_CDECL main(int argc, char *argv[])
     // const char* str = "Hello, Enclave!";
     // ecall_early_reshuffle_1(global_eid, str);
     LogConfig::CheckLogDir();
+    DurationLogger durationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
     InitializeElGamalParams();
     if (argc < 2) {
         std::cout << "Usage: " << argv[0] << " <config_file>" << std::endl;
         return 1;
     } else if (argv[1] == std::string("earlyReshuffle1")) {
-        DurationLogger durationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
         Server server(ServerConfig::PORT);
         server.SgxEarlyReshuffleScheme1Init(0);
         std::string logMessage = "EarlyReshuffleScheme1";
         durationLogger.startTiming(logMessage);
         server.SgxEarlyReshuffleScheme1(global_eid, 0);
         durationLogger.stopTiming(logMessage);
+        durationLogger.writeToFile();
         
     } else if (argv[1] == std::string("eviction1")) {
         Server server(ServerConfig::PORT);
         // Initialize the path
         PathConfig::TYPE_PATH_ID pathID = 0;
         server.tree.GenEvictPathWithMDs(pathID);
+        std::string logMessage = "EvictionScheme1";
+        durationLogger.startTiming(logMessage);
         server.SgxEvictScheme1(global_eid, pathID);
-        std::cout << "Eviction Scheme 1 completed" << std::endl;
+        durationLogger.stopTiming(logMessage);
+        durationLogger.writeToFile();
     } else if (argv[1] == std::string("server")) {
         Server server(ServerConfig::PORT);
         server.Start();
