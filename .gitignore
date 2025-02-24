@@ -23,3 +23,4 @@ experimentalResults/CSH_SGX/readPath/64KB/bin/CSH_TNRB_*
 SampleEnclave/bin/CSH_TNRB_*
 SampleEnclave/bin/readPathScheme1/CSH_TNRB_*
 SampleEnclave/bin/earlyReshuffle1/CSH_TNRB_18
+SampleEnclave/bin/eviction1/CSH_TNRB_*

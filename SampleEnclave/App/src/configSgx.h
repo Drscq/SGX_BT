@@ -424,7 +424,7 @@ struct META_DATA_SGX {
 };
 
 namespace TreeConfigSgx {
-    inline constexpr TYPE_PATH_SIZE_SGX HEIGHT = 15;
+    inline constexpr TYPE_PATH_SIZE_SGX HEIGHT = 20;
     inline bool CanBlockGoThroughBucket(TYPE_PATH_ID_SGX pathID,
                                         TYPE_PATH_SIZE_SGX height,
                                         TYPE_BUCKET_ID_SGX bucketID,
