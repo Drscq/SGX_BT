@@ -34,9 +34,9 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     this->permDataSize = BucketConfig::BUCKET_SIZE * sizeof(BucketConfig::TYPE_SLOT_ID);
     this->permData2.resize(this->permDataSize);
     this->perm2.resize(BucketConfig::BUCKET_SIZE);
-    #if !LOG_READ_PATH_TOTAL_DELAY
-    this->InitConnectThirdParty();
-    #endif
+    // #if !LOG_READ_PATH_TOTAL_DELAY
+    // this->InitConnectThirdParty();
+    // #endif
     // std::cout << "The BLOCK_CIPHERTEXT_NUM_CHARS: " << ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS << std::endl;
     this->blockCiphertextsSerializedData.reserve(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
     this->blockCiphertextsSerializedData.resize(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);

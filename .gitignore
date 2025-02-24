@@ -18,3 +18,5 @@ SampleEnclave/Enclave/Enclave_private_test.pem
 SampleEnclave/data/
 SampleEnclave/logs/Height_4_BlockSize_1024.txt
 SampleEnclave/Enclave/Enclave_private_test.pem
+SampleEnclave/App/src/config.h
+experimentalResults/CSH_SGX/readPath/64KB/bin/CSH_TNRB_*

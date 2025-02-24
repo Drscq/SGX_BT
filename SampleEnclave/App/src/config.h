@@ -29,7 +29,7 @@ using namespace NTL;
 #define USE_COUT 0
 #define USE_PRINT_TARGET_BLOCK 0
 #define READ_PATH_SIMULATION 0
-#define LOG_READ_PATH_TOTAL_DELAY 1
+#define LOG_READ_PATH_TOTAL_DELAY 0
 #define LOG_BREAKDOWN_COST 0
 #define LOG_BREAKDOWN_COST_READ_PATH_FURTHER 0
 #define EARLY_RESHUFFLE_SIMULATION 0
@@ -44,7 +44,7 @@ using namespace NTL;
 #define PRINT_READ_PATH_DELAY_FOR_SCHEME1 0
 #define ASSERT_CORRECTNESS_TARGET_BLOCK_SCHEME1 0
 #define PRINT_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1 0
-#define LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_CLIENT 0
+#define LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_CLIENT 1
 #define  LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_CLIENT_BLOCKS_STASH 0
 #define PRINT_READ_PATH_ASSERT_SCHEME1 0
 #define PRINT_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_SERVER 0
@@ -82,7 +82,7 @@ namespace SizeConfig {
 
 // Macros for the ElGamal_parallel_ntl
 #define MULTI_THREAD_SWITCH 0
-#define MULTI_THREAD_RERANDOMIZE_SWITCH 1
+#define MULTI_THREAD_RERANDOMIZE_SWITCH 0
 #define MULTI_THREAD_DESERIALIZE_SWITCH 0
 #define MULTI_THREAD_BASIC_THREAD_POOL 0
 #define MULTI_THREAD_FUTURE_VERSION 0
@@ -168,7 +168,7 @@ namespace ServerConfig {
 namespace PathConfig {
     typedef long long TYPE_PATH_ID;
     typedef size_t TYPE_PATH_SIZE;
-    inline constexpr TYPE_PATH_SIZE HEIGHT = 4;
+    inline constexpr TYPE_PATH_SIZE HEIGHT = 27;
     inline TYPE_PATH_SIZE REAL_BLOCK_NUM = 2 * HEIGHT;
     inline TYPE_PATH_ID GenPathID() {
         std::random_device rd;
@@ -183,7 +183,7 @@ namespace PathConfig {
 namespace BlockConfig {
     typedef long long TYPE_BLOCK_ID;
     typedef unsigned long long TYPE_BLOCK_SIZE;
-    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 1024;
+    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 65536;
 }
 
 namespace AESConfig {
