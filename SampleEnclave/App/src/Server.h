@@ -208,6 +208,7 @@ public:
     // SGX variables
         // Early Reshuffle Scheme 1
         std::vector<char> sharedBucketBuffer;
+        std::vector<char> bufferSgx;
 };
 
 
