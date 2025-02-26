@@ -168,7 +168,7 @@ namespace ServerConfig {
 namespace PathConfig {
     typedef long long TYPE_PATH_ID;
     typedef size_t TYPE_PATH_SIZE;
-    inline constexpr TYPE_PATH_SIZE HEIGHT = 20;
+    inline constexpr TYPE_PATH_SIZE HEIGHT = 4;
     inline TYPE_PATH_SIZE REAL_BLOCK_NUM = 2 * HEIGHT;
     inline TYPE_PATH_ID GenPathID() {
         std::random_device rd;
@@ -183,7 +183,7 @@ namespace PathConfig {
 namespace BlockConfig {
     typedef long long TYPE_BLOCK_ID;
     typedef unsigned long long TYPE_BLOCK_SIZE;
-    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 65536;
+    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 1024;
 }
 
 namespace AESConfig {
