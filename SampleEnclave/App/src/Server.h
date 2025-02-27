@@ -211,7 +211,6 @@ public:
         std::vector<char> sharedBucketBuffer;
         std::vector<char> bufferSgx;
         ClientConfig::TYPE_CHAR_SIZE permsAddIdSizeEarlyReshuffleSgx;
-        std::vector<char> sharedBufferEarlyReshuffle2Sgx;
         sgx_enclave_id_t eidSgx;
 };
 

@@ -122,7 +122,6 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     }
     // SGX variables
     this->sharedBucketBuffer.resize(BucketConfig::META_DATA_SIZE + BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
-    this->sharedBufferEarlyReshuffle2Sgx.resize(BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
     this->bufferSgx.resize(BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
     this->permsAddIdSizeEarlyReshuffleSgx = this->permDataSize * 2 + sizeof(BucketConfig::TYPE_BUCKET_ID);
 }
