@@ -584,7 +584,7 @@ void Server::handleClient(int clientSockfd) {
                                 ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
                     this->offsetEarlyReshuffleComplete += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
                 }
-                // #if USE_COUT
+                #if USE_COUT
                     // // Test above Serialization
                     this->offsetEarlyReshuffleComplete = 0;
                     for (auto &blockCiphertexts : this->bucketCiphertexts) {
@@ -599,7 +599,9 @@ void Server::handleClient(int clientSockfd) {
                         std::cout << "Block ID: " << blockID << std::endl;
                         this->offsetEarlyReshuffleComplete += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
                     }
-                // #endif
+                #endif
+                std::cout << "The size of the bucketCiphertextsSerializedData: " << this->bucketCiphertextsSerializedData.size() << std::endl;
+                std::cout << "The size of BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE * 2: " << BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE * 3 << std::endl;
                 // this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(),
                 //                                           ServerConfig::CMD_COMPLETE_EARLY_RESHUFFLE_SERVER_THIRD_PARTY);
                 // #if LOG_BREAKDOWN_COST
@@ -1473,6 +1475,10 @@ void Server::EnsureConnectThirdParty() {
 // // static uint8_t flag_shared_sgx = 0;
 // static std::vector<uint8_t> flag_shared_sgx(4, 0);
 void* SgxEnclaveThreadFunc(void* arg) {
+    // Reset the flag to 0
+    for (auto val : flag_shared_sgx) {
+        val = 0;
+    }
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
     ecall_early_reshuffle_1(params->eid, params->buffer, reinterpret_cast<uint8_t*>(&flag_shared_sgx[0]));
     return nullptr;
@@ -1488,7 +1494,7 @@ void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_B
     params->eid = eid;
     params->buffer = this->sharedBucketBuffer.data();
     pthread_create(&this->enclaveThread, NULL, &SgxEnclaveThreadFunc, params);
-
+    this->logger.startTiming(this->LogEarlyReshuffleTotalDealyScheme1);
     FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
     FileConfig::fileReadScheme1.read(this->sharedBucketBuffer.data(), BucketConfig::META_DATA_SIZE);
     // Set the flag to 1 to indicate that the data is ready
@@ -1530,6 +1536,8 @@ void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_B
     FileConfig::fileWriteScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
     FileConfig::fileWriteScheme1.write(it, this->bucketCipherDataEarlyReshuffle1Size);
     FileConfig::fileWriteScheme1.close();
+    this->logger.stopTiming(this->LogEarlyReshuffleTotalDealyScheme1);
+    this->logger.writeToFile();
     // Clean up allocated memory
     delete[] params;
     pthread_join(this->enclaveThread, NULL);

@@ -354,11 +354,7 @@ int SGX_CDECL main(int argc, char *argv[])
     } else if (argv[1] == std::string("earlyReshuffle1")) {
         Server server(ServerConfig::PORT);
         server.SgxEarlyReshuffleScheme1Init(0);
-        std::string logMessage = "EarlyReshuffleScheme1";
-        durationLogger.startTiming(logMessage);
         server.SgxEarlyReshuffleScheme1(global_eid, 0);
-        durationLogger.stopTiming(logMessage);
-        durationLogger.writeToFile();
         
     } else if (argv[1] == std::string("eviction1")) {
         Server server(ServerConfig::PORT);

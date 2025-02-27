@@ -1,6 +1,6 @@
 #ifndef CONFIGSGX_H
 #define CONFIGSGX_H
-#define UNIT_TEST_SGX
+// #define UNIT_TEST_SGX
 typedef long long TYPE_BLOCK_ID_SGX;
 typedef unsigned long TYPE_UNSIGNED_SIZE_SGX;
 typedef long long TYPE_PATH_ID_SGX;
@@ -20,7 +20,7 @@ typedef long unsigned int TYPE_BUCKET_SIZE_SGX;
 typedef unsigned long long TYPE_BLOCK_SIZE_SGX;
 typedef uint_fast16_t TYPE_SMALL_INDEX_U_SGX;
 typedef size_t TYPE_PATH_SIZE_SGX;
-inline TYPE_BLOCK_SIZE_SGX BLOCK_SIZE_SGX = 65536;
+inline TYPE_BLOCK_SIZE_SGX BLOCK_SIZE_SGX = 1024;
 typedef size_t TYPE_PATH_SIZE_SGX;
 // const uint8_t iv[AES_BLOCK_SIZE] = {0};
 #include <unordered_set>

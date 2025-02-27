@@ -124,6 +124,7 @@ public:
     std::string LogReadPathXORBlocksScheme1 = "ServerComputationReadPathXORBlocksScheme1";
     std::string LogReadPathSendTargetBlockScheme1 = "ClientServerBandwidthReadPathSendTargetBlockScheme1";
     // Early Reshuffle Scheme 1
+    std::string LogEarlyReshuffleTotalDealyScheme1 = "EarlyReshuffleTotalDealyScheme1";
     std::string LogEarlyReshuffleLoadBucketMDScheme1 = "ServerIOEarlyReshuffleLoadBucketMDScheme1";
     std::string LogEarlyReshuffleLoadReadBlocksScheme1 = "ServerIOEarlyReshuffleLoadReadBlocksScheme1";
     std::string LogEarlyReshuffleWriteBucketScheme1 = "ServerIOEarlyReshuffleWriteBucketScheme1";
