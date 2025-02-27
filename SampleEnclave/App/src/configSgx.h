@@ -1,6 +1,6 @@
 #ifndef CONFIGSGX_H
 #define CONFIGSGX_H
-// #define UNIT_TEST_SGX
+#define UNIT_TEST_SGX
 typedef long long TYPE_BLOCK_ID_SGX;
 typedef unsigned long TYPE_UNSIGNED_SIZE_SGX;
 typedef long long TYPE_PATH_ID_SGX;

@@ -122,7 +122,7 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     }
     // SGX variables
     this->sharedBucketBuffer.resize(BucketConfig::META_DATA_SIZE + BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
-    this->bufferSgx.resize(BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
+    this->bufferSgx.resize(BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE * 3);
     this->permsAddIdSizeEarlyReshuffleSgx = this->permDataSize * 2 + sizeof(BucketConfig::TYPE_BUCKET_ID);
 }
 Server::Server(ServerConfig::TYPE_PORT_NUM port, sgx_enclave_id_t eid) : Server(port) {
@@ -503,28 +503,30 @@ void Server::handleClient(int clientSockfd) {
                 // this->bufferSgx.resize(this->permDataSize * 2 + sizeof(this->bucketIDEarlyReshuffleComplete));
                 this->communicator.receiveData(clientSockfd, this->bufferSgx.data(), this->permsAddIdSizeEarlyReshuffleSgx);
                 flag_shared_sgx[0] = 1;
+                #if defined(UNIT_TEST_SGX)
                 std::cout << "Received command: CMD_COMPLETE_EARLY_RESHUFFLE" << std::endl;
+                #endif
                 std::memcpy(this->perm2EarlyReshuffleComplete.data(),
                             this->bufferSgx.data() + this->permDataSize,
                             this->permDataSize);
-                // #if USE_COUT
+                #if defined(UNIT_TEST_SGX)
                 // Check the values in the perm2EarlyReshuffleComplete
                 for (auto& p : this->perm2EarlyReshuffleComplete) {
                     std::cout << p << " ";
                 }
                 std::cout << std::endl;
-                // #endif
+                #endif
                 std::memcpy(&this->bucketIDEarlyReshuffleComplete,
                             this->bufferSgx.data() + this->permDataSize * 2,
                             sizeof(this->bucketIDEarlyReshuffleComplete));
-                // #if USE_COUT
+                #if defined(UNIT_TEST_SGX)
                 std::cout << "Received bucketIDEarlyReshuffleComplete: " << this->bucketIDEarlyReshuffleComplete << std::endl;
-                // #endif
+                #endif
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                // this->bucket.LoadDataFromDiskWithOffset(BucketConfig::DATADIR,
-                //                                         BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDEarlyReshuffleComplete),
-                //                                         this->bucketCiphertexts,
-                //                                         this->perm2EarlyReshuffleComplete);
+                this->bucket.LoadDataFromDiskWithOffset(BucketConfig::DATADIR,
+                                                        BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDEarlyReshuffleComplete),
+                                                        this->bucketCiphertexts,
+                                                        this->perm2EarlyReshuffleComplete);
 
                 // Alternative way to load the data from disk
                 // this->bucket.LoadDataFromDisk(BucketConfig::DATADIR,
@@ -543,60 +545,60 @@ void Server::handleClient(int clientSockfd) {
                     }
                     std::cout << "The size of the bucketCiphertexts: " << this->bucketCiphertexts.size() << std::endl;
                 #endif
-                // this->bucketCiphertexts_flat.clear();
-                // for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {
-                //     this->bucketCiphertexts_flat.insert(this->bucketCiphertexts_flat.end(),
-                //                                         this->bucketCiphertexts[i].begin(),
-                //                                         this->bucketCiphertexts[i].end());
+                this->bucketCiphertexts_flat.clear();
+                for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {
+                    this->bucketCiphertexts_flat.insert(this->bucketCiphertexts_flat.end(),
+                                                        this->bucketCiphertexts[i].begin(),
+                                                        this->bucketCiphertexts[i].end());
+                }
+                // Re-randomize the elements in the bucketCiphertexts
+                // for (auto& blockCiphertexts : this->bucketCiphertexts) {
+                //     this->elgamal.ParallelRerandomize(blockCiphertexts);
                 // }
-                // // Re-randomize the elements in the bucketCiphertexts
-                // // for (auto& blockCiphertexts : this->bucketCiphertexts) {
-                // //     this->elgamal.ParallelRerandomize(blockCiphertexts);
-                // // }
-                // #if LOG_BREAKDOWN_COST
-                // this->logger.startTiming(this->LogEarlyReshuffleRerandomizeandSerializeScheme2);
-                // #endif
-                // this->elgamal.ParallelRerandomize(this->bucketCiphertexts_flat);
-                // #if LOG_BREAKDOWN_COST
-                // this->logger.stopTiming(this->LogEarlyReshuffleRerandomizeandSerializeScheme2);
-                // this->logger.writeToFile();
-                // #endif
-                // for (auto& inner_vector : this->bucketCiphertexts) {
-                //     inner_vector.clear();
-                // }
-                // // Move all data back to the original bucketCiphertexts
-                // auto flat_iter = this->bucketCiphertexts_flat.begin();
-                // for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {
-                //     this->bucketCiphertexts[i].insert(
-                //         this->bucketCiphertexts[i].begin(),
-                //         std::move_iterator(flat_iter),
-                //         std::move_iterator(flat_iter + ElGamalNTLConfig::BLOCK_CHUNK_SIZE)
-                //     );
-                //     flat_iter += ElGamalNTLConfig::BLOCK_CHUNK_SIZE;
-                // }
-                // this->offsetEarlyReshuffleComplete = 0;
-                // for (auto &blockCiphertexts : this->bucketCiphertexts) {
-                //     this->elgamal.SerializeCiphertexts(blockCiphertexts, this->blockCiphertextsSerializedData);
-                //     std::memcpy(this->bucketCiphertextsSerializedData.data() + this->offsetEarlyReshuffleComplete,
-                //                 this->blockCiphertextsSerializedData.data(),
-                //                 ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                //     this->offsetEarlyReshuffleComplete += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
-                // }
+                #if LOG_BREAKDOWN_COST
+                this->logger.startTiming(this->LogEarlyReshuffleRerandomizeandSerializeScheme2);
+                #endif
+                this->elgamal.ParallelRerandomize(this->bucketCiphertexts_flat);
+                #if LOG_BREAKDOWN_COST
+                this->logger.stopTiming(this->LogEarlyReshuffleRerandomizeandSerializeScheme2);
+                this->logger.writeToFile();
+                #endif
+                for (auto& inner_vector : this->bucketCiphertexts) {
+                    inner_vector.clear();
+                }
+                // Move all data back to the original bucketCiphertexts
+                auto flat_iter = this->bucketCiphertexts_flat.begin();
+                for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {
+                    this->bucketCiphertexts[i].insert(
+                        this->bucketCiphertexts[i].begin(),
+                        std::move_iterator(flat_iter),
+                        std::move_iterator(flat_iter + ElGamalNTLConfig::BLOCK_CHUNK_SIZE)
+                    );
+                    flat_iter += ElGamalNTLConfig::BLOCK_CHUNK_SIZE;
+                }
+                this->offsetEarlyReshuffleComplete = 0;
+                for (auto &blockCiphertexts : this->bucketCiphertexts) {
+                    this->elgamal.SerializeCiphertexts(blockCiphertexts, this->blockCiphertextsSerializedData);
+                    std::memcpy(this->bucketCiphertextsSerializedData.data() + this->offsetEarlyReshuffleComplete,
+                                this->blockCiphertextsSerializedData.data(),
+                                ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+                    this->offsetEarlyReshuffleComplete += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
+                }
                 // #if USE_COUT
-                //     // // Test above Serialization
-                //     this->offsetEarlyReshuffleComplete = 0;
-                //     for (auto &blockCiphertexts : this->bucketCiphertexts) {
-                //         std::memcpy(this->blockCiphertextsSerializedData.data(),
-                //                     this->bucketCiphertextsSerializedData.data() + this->offsetEarlyReshuffleComplete,
-                //                     ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                //         this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, blockCiphertexts);
-                //         std::vector<char> blockData;
-                //         this->elgamal.ParallelDecrypt(blockCiphertexts, blockData);
-                //         BlockConfig::TYPE_BLOCK_ID blockID;
-                //         std::memcpy(&blockID, blockData.data(), sizeof(BlockConfig::TYPE_BLOCK_ID));
-                //         std::cout << "Block ID: " << blockID << std::endl;
-                //         this->offsetEarlyReshuffleComplete += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
-                //     }
+                    // // Test above Serialization
+                    this->offsetEarlyReshuffleComplete = 0;
+                    for (auto &blockCiphertexts : this->bucketCiphertexts) {
+                        std::memcpy(this->blockCiphertextsSerializedData.data(),
+                                    this->bucketCiphertextsSerializedData.data() + this->offsetEarlyReshuffleComplete,
+                                    ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+                        this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, blockCiphertexts);
+                        std::vector<char> blockData;
+                        this->elgamal.ParallelDecrypt(blockCiphertexts, blockData);
+                        BlockConfig::TYPE_BLOCK_ID blockID;
+                        std::memcpy(&blockID, blockData.data(), sizeof(BlockConfig::TYPE_BLOCK_ID));
+                        std::cout << "Block ID: " << blockID << std::endl;
+                        this->offsetEarlyReshuffleComplete += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
+                    }
                 // #endif
                 // this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(),
                 //                                           ServerConfig::CMD_COMPLETE_EARLY_RESHUFFLE_SERVER_THIRD_PARTY);
