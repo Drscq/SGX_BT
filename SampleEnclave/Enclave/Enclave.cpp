@@ -303,6 +303,25 @@ void ecall_evict_1(char* buffer, uint8_t* flags) {
     }
 }
 
+std::vector<TYPE_SLOT_ID_SGX> perm1EarlyReshuffleComplete_sgx(BUCKET_SIZE_SGX, 1);
+// The enclave functions for the second scheme
+void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
+    while (!flags[0]) {
+        // Wait for the buffer to be ready
+        __asm__ __volatile__("pause");
+    }
+    printf("The values of flags[0] = %d\n", flags[0]);
+    printf("The content of the buffer\n");
+    std::memcpy(perm1EarlyReshuffleComplete_sgx.data(), buffer, perm1EarlyReshuffleComplete_sgx.size() * sizeof(TYPE_SLOT_ID_SGX));
+    // #if defined(UNIT_TEST_SGX)
+    printf("The content of the perm1EarlyReshuffleComplete_sgx vector\n");
+    // Check the values in the perm1EarlyReshuffleComplete_sgx vector
+    for (size_t i = 0; i < perm1EarlyReshuffleComplete_sgx.size(); ++i) {
+        printf("perm1EarlyReshuffleComplete_sgx[%d] = %d\n", i, perm1EarlyReshuffleComplete_sgx[i]);
+    }
+    // #endif
+}
+
 void ecall_sort_array(int* arr, size_t arr_len) {
     std::sort(arr, arr + arr_len);
 }

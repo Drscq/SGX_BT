@@ -12,6 +12,7 @@
 class Server {
 public:
     Server(ServerConfig::TYPE_PORT_NUM port);
+    Server(ServerConfig::TYPE_PORT_NUM port, sgx_enclave_id_t eid);
     ~Server();
     void Start();
     void handleClient(int clientSockfd);
@@ -209,6 +210,9 @@ public:
         // Early Reshuffle Scheme 1
         std::vector<char> sharedBucketBuffer;
         std::vector<char> bufferSgx;
+        ClientConfig::TYPE_CHAR_SIZE permsAddIdSizeEarlyReshuffleSgx;
+        std::vector<char> sharedBufferEarlyReshuffle2Sgx;
+        sgx_enclave_id_t eidSgx;
 };
 
 

@@ -122,6 +122,12 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     }
     // SGX variables
     this->sharedBucketBuffer.resize(BucketConfig::META_DATA_SIZE + BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
+    this->sharedBufferEarlyReshuffle2Sgx.resize(BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
+    this->bufferSgx.resize(BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
+    this->permsAddIdSizeEarlyReshuffleSgx = this->permDataSize * 2 + sizeof(BucketConfig::TYPE_BUCKET_ID);
+}
+Server::Server(ServerConfig::TYPE_PORT_NUM port, sgx_enclave_id_t eid) : Server(port) {
+    this->eidSgx = eid;
 }
 Server::~Server() {
     // std::cout << "Server destructor" << std::endl;
@@ -143,7 +149,17 @@ void Server::Start() {
     }
     this->communicator.~SocketCommunicator();
 }
-
+struct EnclaveThreadParams {
+    sgx_enclave_id_t eid;
+    char* buffer;
+};
+// static uint8_t flag_shared_sgx = 0;
+static std::vector<uint8_t> flag_shared_sgx(4, 0);
+void* SgxEnclaveThreadFuncEarlyReshuffleScheme2(void* arg) {
+    EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
+    ecall_early_reshuffle_2(params->eid, params->buffer, flag_shared_sgx.data());
+    return nullptr;
+}
 void Server::handleClient(int clientSockfd) {
     while (true) {
         if (!this->communicator.receiveCommand(clientSockfd, this->command)) {
@@ -481,25 +497,30 @@ void Server::handleClient(int clientSockfd) {
                 #endif
                 
             } else if (this->command == ServerConfig::CMD_COMPLETE_EARLY_RESHUFFLE) {
-                this->bufferSgx.resize(this->permDataSize * 2 + sizeof(this->bucketIDEarlyReshuffleComplete));
-                this->communicator.receiveData(clientSockfd, this->bufferSgx.data(), this->bufferSgx.size());
+                EnclaveThreadParams* params = new EnclaveThreadParams;
+                params->eid = this->eidSgx;
+                params->buffer = this->bufferSgx.data();
+                pthread_create(&this->enclaveThread, NULL, &SgxEnclaveThreadFuncEarlyReshuffleScheme2, params);
+                // this->bufferSgx.resize(this->permDataSize * 2 + sizeof(this->bucketIDEarlyReshuffleComplete));
+                this->communicator.receiveData(clientSockfd, this->bufferSgx.data(), this->permsAddIdSizeEarlyReshuffleSgx);
+                flag_shared_sgx[0] = 1;
                 std::cout << "Received command: CMD_COMPLETE_EARLY_RESHUFFLE" << std::endl;
                 std::memcpy(this->perm2EarlyReshuffleComplete.data(),
                             this->bufferSgx.data() + this->permDataSize,
                             this->permDataSize);
-                #if USE_COUT
+                // #if USE_COUT
                 // Check the values in the perm2EarlyReshuffleComplete
                 for (auto& p : this->perm2EarlyReshuffleComplete) {
                     std::cout << p << " ";
                 }
                 std::cout << std::endl;
-                #endif
+                // #endif
                 std::memcpy(&this->bucketIDEarlyReshuffleComplete,
                             this->bufferSgx.data() + this->permDataSize * 2,
                             sizeof(this->bucketIDEarlyReshuffleComplete));
-                #if USE_COUT
+                // #if USE_COUT
                 std::cout << "Received bucketIDEarlyReshuffleComplete: " << this->bucketIDEarlyReshuffleComplete << std::endl;
-                #endif
+                // #endif
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
                 // this->bucket.LoadDataFromDiskWithOffset(BucketConfig::DATADIR,
                 //                                         BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDEarlyReshuffleComplete),
@@ -623,6 +644,7 @@ void Server::handleClient(int clientSockfd) {
                 // this->logger.writeToFile();
                 // #endif
                 // this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
+                pthread_join(this->enclaveThread, NULL);
             } else if (this->command == ServerConfig::CMD_COMPLETE_EVICT_CLIENT_TO_SERVER) {
                 #if LOG_EVICT_BREAKDOWN_COST_SERVER
                 this->logger.startTiming(this->LogEvictionGenPathBucketIDsScheme2);
@@ -1443,12 +1465,12 @@ void Server::EnsureConnectThirdParty() {
     }
 }
 
-struct EnclaveThreadParams {
-    sgx_enclave_id_t eid;
-    char* buffer;
-};
-// static uint8_t flag_shared_sgx = 0;
-static std::vector<uint8_t> flag_shared_sgx(4, 0);
+// struct EnclaveThreadParams {
+//     sgx_enclave_id_t eid;
+//     char* buffer;
+// };
+// // static uint8_t flag_shared_sgx = 0;
+// static std::vector<uint8_t> flag_shared_sgx(4, 0);
 void* SgxEnclaveThreadFunc(void* arg) {
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
     ecall_early_reshuffle_1(params->eid, params->buffer, reinterpret_cast<uint8_t*>(&flag_shared_sgx[0]));

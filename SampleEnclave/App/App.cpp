@@ -371,7 +371,7 @@ int SGX_CDECL main(int argc, char *argv[])
         durationLogger.stopTiming(logMessage);
         durationLogger.writeToFile();
     } else if (argv[1] == std::string("server")) {
-        Server server(ServerConfig::PORT);
+        Server server(ServerConfig::PORT, global_eid);
         server.Start();
     }
     // std::cout << "Initializing Tree..." << std::endl;
