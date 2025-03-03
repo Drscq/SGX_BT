@@ -332,6 +332,25 @@ void* server_thread_func() {
     return NULL;
 }
 
+// Function to test BIGNUM operation inside the enclave
+void test_bignum_in_enclave() {
+    char result[256] = { 0 };
+    
+    printf("[App] Calling ecall_test_bignum to perform crypto operations in the enclave...\n");
+    
+    sgx_status_t status = ecall_test_bignum(global_eid, result, sizeof(result));
+    if (status != SGX_SUCCESS) {
+        printf("[App] ecall_test_bignum failed: %d\n", status);
+        return;
+    }
+    
+    printf("[App] Result from enclave: %s\n", result);
+    
+    // Optional: Verify the result
+    // The expected result should be 123456789 + 987654321 = 1111111110
+    printf("[App] Expected result should be: 1111111110\n");
+}
+
 /* Application entry */
 int SGX_CDECL main(int argc, char *argv[])
 {
@@ -343,44 +362,37 @@ int SGX_CDECL main(int argc, char *argv[])
         getchar();
         return -1; 
     }
-    // const char* str = "Hello, Enclave!";
-    // ecall_early_reshuffle_1(global_eid, str);
     LogConfig::CheckLogDir();
     DurationLogger durationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
     InitializeElGamalParams();
-    if (argc < 2) {
-        std::cout << "Usage: " << argv[0] << " <config_file>" << std::endl;
-        return 1;
-    } else if (argv[1] == std::string("earlyReshuffle1")) {
-        Server server(ServerConfig::PORT);
-        server.SgxEarlyReshuffleScheme1Init(0);
-        server.SgxEarlyReshuffleScheme1(global_eid, 0);
-        
-    } else if (argv[1] == std::string("eviction1")) {
-        Server server(ServerConfig::PORT);
-        // Initialize the path
-        PathConfig::TYPE_PATH_ID pathID = 0;
-        server.tree.GenEvictPathWithMDs(pathID);
-        std::string logMessage = "EvictionScheme1";
-        durationLogger.startTiming(logMessage);
-        server.SgxEvictScheme1(global_eid, pathID);
-        durationLogger.stopTiming(logMessage);
-        durationLogger.writeToFile();
-    } else if (argv[1] == std::string("server")) {
-        Server server(ServerConfig::PORT, global_eid);
-        server.Start();
+    // Process command line arguments
+    if (argc >= 2) {
+        if (strcmp(argv[1], "earlyReshuffle1") == 0) {
+            Server server(ServerConfig::PORT);
+            server.SgxEarlyReshuffleScheme1Init(0);
+            server.SgxEarlyReshuffleScheme1(global_eid, 0);
+        } else if (strcmp(argv[1], "eviction1") == 0) {
+            Server server(ServerConfig::PORT);
+            // Initialize the path
+            PathConfig::TYPE_PATH_ID pathID = 0;
+            server.tree.GenEvictPathWithMDs(pathID);
+            std::string logMessage = "EvictionScheme1";
+            durationLogger.startTiming(logMessage);
+            server.SgxEvictScheme1(global_eid, pathID);
+            durationLogger.stopTiming(logMessage);
+            durationLogger.writeToFile();
+        } else if (strcmp(argv[1], "server") == 0) {
+            Server server(ServerConfig::PORT, global_eid);
+            server.Start();
+        } else if (strcmp(argv[1], "test_bignum") == 0) {
+            // Test BIGNUM functionality
+            test_bignum_in_enclave();
+        } else {
+            std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;
+        }
+    } else {
+        std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;
     }
-    // std::cout << "Initializing Tree..." << std::endl;
-    // // Create threads
-    // pthread_t serverThread, enclaveThread;
-    // pthread_create(&serverThread, NULL, server_thread_func, NULL);
-    // pthread_create(&enclaveThread, NULL, enclave_thread_func, NULL);
-
-    // // Wait for threads to finish
-    // pthread_join(serverThread, NULL);
-    // pthread_join(enclaveThread, NULL);
-
-    
 
     /* Destroy the enclave */
     sgx_destroy_enclave(global_eid);

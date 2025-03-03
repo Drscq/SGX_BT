@@ -58,6 +58,7 @@ enclave {
         public void ecall_evict_1([user_check] char* buffer, [user_check]uint8_t* flags);
         /* [user_check] indicates that 'arr' points to untrusted memory. */
         public void ecall_sort_array([user_check] int* arr, size_t arr_len);
+        public void ecall_test_bignum([out] char* result, size_t result_len);
     };
     /* 
      * ocall_print_string - invokes OCALL to display string buffer inside the enclave.

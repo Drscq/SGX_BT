@@ -83,6 +83,9 @@ else
     Urts_Library_Name := sgx_urts
 endif
 
+# Define SGX SSL path
+SGX_SSL_DIR ?= /lhome/oramtee/DownLoad/intel-sgx-ssl/Linux/package
+
 App_Cpp_Files := App/App.cpp $(wildcard App/Edger8rSyntax/*.cpp) $(wildcard App/TrustedLibrary/*.cpp) $(wildcard App/src/*.cpp)
 App_Include_Paths := -IInclude -IApp -IApp/src -I$(SGX_SDK)/include 
 
@@ -119,7 +122,9 @@ endif
 Crypto_Library_Name := sgx_tcrypto
 
 Enclave_Cpp_Files := Enclave/Enclave.cpp $(wildcard Enclave/Edger8rSyntax/*.cpp) $(wildcard Enclave/TrustedLibrary/*.cpp) $(wildcard Enclave/src/*.cpp)
-Enclave_Include_Paths := -IInclude -IEnclave -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -IEnclave/src
+Enclave_Include_Paths := -IInclude -IEnclave -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -IEnclave/src -I$(SGX_SSL_DIR)/include
+Enclave_Library_Paths := -L$(SGX_SSL_DIR)/lib64
+Enclave_Libraries := 
 
 Enclave_C_Flags := $(Enclave_Include_Paths) -nostdinc -fvisibility=hidden -fpie -ffunction-sections -fdata-sections $(MITIGATION_CFLAGS)
 CC_BELOW_4_9 := $(shell expr "`$(CC) -dumpversion`" \< "4.9")
@@ -129,7 +134,7 @@ else
     Enclave_C_Flags += -fstack-protector-strong
 endif
 
-Enclave_Cpp_Flags := $(Enclave_C_Flags) -nostdinc++ -std=c++17
+Enclave_Cpp_Flags := $(Enclave_C_Flags) -nostdinc++ -std=c++17 $(Enclave_Library_Paths)
 
 # Enable the security flags
 Enclave_Security_Link_Flags := -Wl,-z,relro,-z,now,-z,noexecstack
@@ -142,15 +147,15 @@ Enclave_Security_Link_Flags := -Wl,-z,relro,-z,now,-z,noexecstack
 # Do NOT move the libraries linked with `--start-group' and `--end-group' within `--whole-archive' and `--no-whole-archive' options.
 # Otherwise, you may get some undesirable errors.
 Enclave_Link_Flags := $(MITIGATION_LDFLAGS) $(Enclave_Security_Link_Flags) \
-    -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_TRUSTED_LIBRARY_PATH) \
-	-L/usr/local/lib -L/usr/lib/x86_64-linux-gnu \
+    -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_TRUSTED_LIBRARY_PATH) $(Enclave_Library_Paths) \
 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
-	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) -lntl -lgmp -lcrypto \
+	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) \
+	-lsgx_tsgxssl -lsgx_tsgxssl_crypto \
 	-Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \
 	-Wl,--defsym,__ImageBase=0 -Wl,--gc-sections   \
-	-Wl,--version-script=Enclave/Enclave.lds
+	-Wl,--version-script=Enclave/Enclave.lds $(Enclave_Libraries)
 
 Enclave_Cpp_Objects := $(sort $(Enclave_Cpp_Files:.cpp=.o))
 

@@ -90,6 +90,7 @@ sgx_status_t ecall_early_reshuffle_1(sgx_enclave_id_t eid, char* buffer, uint8_t
 sgx_status_t ecall_early_reshuffle_2(sgx_enclave_id_t eid, char* buffer, uint8_t* flags);
 sgx_status_t ecall_evict_1(sgx_enclave_id_t eid, char* buffer, uint8_t* flags);
 sgx_status_t ecall_sort_array(sgx_enclave_id_t eid, int* arr, size_t arr_len);
+sgx_status_t ecall_test_bignum(sgx_enclave_id_t eid, char* result, size_t result_len);
 sgx_status_t ecall_type_char(sgx_enclave_id_t eid, char val);
 sgx_status_t ecall_type_int(sgx_enclave_id_t eid, int val);
 sgx_status_t ecall_type_float(sgx_enclave_id_t eid, float val);
