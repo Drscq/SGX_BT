@@ -1,6 +1,7 @@
 #include "ElGamal_parallel_ntl.h"
-#include "config.h"
+#if defined(UNIT_TEST_SGX)
 #include <iostream>
+#endif
 #include <cassert>
 #include <NTL/BasicThreadPool.h>
 #include <sched.h>    // For sched_getcpu()
@@ -10,6 +11,11 @@
 
 ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size) :
     num_threads(num_threads), data_size(data_size) {
+    m_modulus_sgx = BN_new();
+    BN_dec2bn(&m_modulus_sgx, MODULUS_SGX_STR);
+    #if defined(UNIT_TEST_SGX)
+    std::cout << "The value of m_modulus_sgx in decimal: " << BN_bn2dec(m_modulus_sgx) << std::endl;
+    #endif
     this->chunk_size = ElGamalNTLConfig::CHUNK_SIZE;
     this->per_ciphertext_size = ElGamalNTLConfig::PER_CIPHERTEXT_SIZE;
     this->p = ElGamalNTLConfig::P;
@@ -28,6 +34,11 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     // std::cout << "ElGamal_parallel_ntl constructor" << std::endl;
     this->g_pow_k = ElGamalNTLConfig::GPowK;
     // std::cout << "g_pow_k: " << this->g_pow_k << std::endl;
+    m_g_pow_k_bn_sgx = BN_new();
+    this->ConvertZZPToBIGNUM(this->g_pow_k, m_g_pow_k_bn_sgx);
+    #if defined(UNIT_TEST_SGX)
+    // std::cout << "The value of m_g_pow_k_bn_sgx in decimal: " << BN_bn2dec(m_g_pow_k_bn_sgx) << std::endl;
+    #endif
     this->h_pow_k = ElGamalNTLConfig::YPowK;
     // std::cout << "h_pow_k: " << this->h_pow_k << std::endl;
      ZZ_p::init(ElGamalNTLConfig::P);
@@ -56,6 +67,20 @@ void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) 
     if (rc != 0) {
         std::cerr << "Error calling pthread_setaffinity_np: " << rc << "\n";
     }
+}
+
+void ElGamal_parallel_ntl::ConvertZZPToBIGNUM(const ZZ_p& message, BIGNUM* bn_message) {
+    // Check the bn_message is not NULL
+    assert(bn_message != NULL && "[ElGamal_parallel_ntl]Error: bn_message is NULL");
+    // Convert ZZ_p to ZZ
+    ZZ z = rep(message);
+    std::cout << "The value of z: " << z << std::endl;
+    std::stringstream ss;
+    ss << z;
+    std::string str = ss.str();
+    std::cout << "The value of str: " << str << std::endl;
+    BN_dec2bn(&bn_message, str.c_str());
+    std::cout << "The value of bn_message: " << BN_bn2dec(bn_message) << std::endl;
 }
 
 

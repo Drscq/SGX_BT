@@ -63,6 +63,7 @@
 #include "src/AES_CTR.h"  
 #include "src/ElGamal_parallel_ntl.h"
 #include "src/DurationLogger.h"  
+#include "src/configSgx.h"
 using namespace std::chrono;
 
 void InitializeElGamalParams() {
@@ -74,7 +75,10 @@ void InitializeElGamalParams() {
     // Generate prime P
     GenPrime(ElGamalNTLConfig::P, ElGamalNTLConfig::KEY_SIZE);
     ZZ_p::init(ElGamalNTLConfig::P);
-//     std::cout << "P: " << ElGamalNTLConfig::P << std::endl;
+    #if defined(UNIT_TEST_SGX)
+    std::cout << "P: " << ElGamalNTLConfig::P << std::endl;
+    std::cout << "MODULUS_SGX_STR" << MODULUS_SGX_STR << std::endl;
+    #endif
     
     // Convert G to G_p
     ElGamalNTLConfig::G_p = conv<ZZ_p>(ElGamalNTLConfig::G);
@@ -386,7 +390,11 @@ int SGX_CDECL main(int argc, char *argv[])
             server.Start();
         } else if (strcmp(argv[1], "test_bignum") == 0) {
             // Test BIGNUM functionality
-            test_bignum_in_enclave();
+            // test_bignum_in_enclave();
+            size_t num_threads = 2;
+            size_t data_size = 2;
+            ElGamal_parallel_ntl elgamal(num_threads, data_size);
+
         } else {
             std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;
         }
