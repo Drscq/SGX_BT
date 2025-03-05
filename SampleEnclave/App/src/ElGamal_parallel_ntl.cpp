@@ -71,16 +71,24 @@ void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) 
 
 void ElGamal_parallel_ntl::ConvertZZPToBIGNUM(const ZZ_p& message, BIGNUM* bn_message) {
     // Check the bn_message is not NULL
+    #if defined(UNIT_TEST_SGX)
     assert(bn_message != NULL && "[ElGamal_parallel_ntl]Error: bn_message is NULL");
+    #endif
     // Convert ZZ_p to ZZ
-    ZZ z = rep(message);
-    std::cout << "The value of z: " << z << std::endl;
-    std::stringstream ss;
-    ss << z;
-    std::string str = ss.str();
-    std::cout << "The value of str: " << str << std::endl;
-    BN_dec2bn(&bn_message, str.c_str());
+    m_z_convert_sgx = rep(message);
+    #if defined(UNIT_TEST_SGX)
+    std::cout << "The value of z: " << m_z_convert_sgx << std::endl;
+    #endif
+    // clear the m_ss_sgx
+    m_ss_sgx.clear();
+    m_ss_sgx << m_z_convert_sgx;
+    #if defined(UNIT_TEST_SGX)
+    std::cout << "The value of str: " << m_ss_sgx.str() << std::endl;
+    #endif
+    BN_dec2bn(&bn_message, m_ss_sgx.str().c_str());
+    #if defined(UNIT_TEST_SGX)
     std::cout << "The value of bn_message: " << BN_bn2dec(bn_message) << std::endl;
+    #endif
 }
 
 

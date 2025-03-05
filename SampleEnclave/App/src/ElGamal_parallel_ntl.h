@@ -85,6 +85,10 @@ private:
     size_t chunk_size;
     size_t per_ciphertext_size;
     size_t data_size;
+    // stringstream 
+    std::stringstream m_ss_sgx;
+    // NTL Variables
+    ZZ m_z_convert_sgx;
     ZZ p; // Prime modulus
     ZZ g; // Generator
     ZZ_p g_p; // Generator in ZZ_p

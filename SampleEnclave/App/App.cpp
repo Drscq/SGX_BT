@@ -393,7 +393,9 @@ int SGX_CDECL main(int argc, char *argv[])
             // test_bignum_in_enclave();
             size_t num_threads = 2;
             size_t data_size = 2;
-            ElGamal_parallel_ntl elgamal(num_threads, data_size);
+            for (int i = 0; i < 10; ++i) {
+                ElGamal_parallel_ntl elgamal(num_threads, data_size);
+            }
 
         } else {
             std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;
