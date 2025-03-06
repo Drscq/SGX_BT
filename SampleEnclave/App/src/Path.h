@@ -32,6 +32,11 @@ public:
     PathConfig::TYPE_PATH_ID leafIDEviction;
     std::vector<std::vector<PathConfig::TYPE_PATH_ID>> leafIDsTripletEviction;
     BlockConfig::TYPE_BLOCK_ID blockID = 0;
+
+    Path(const Path&) = delete;
+    Path& operator=(const Path&) = delete;
+    Path(Path&&) = default;
+    Path& operator=(Path&&) = default;
 };
 
 #endif // PATH_H

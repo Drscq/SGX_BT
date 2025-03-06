@@ -22,6 +22,10 @@ public:
     // ElGamal_parallel_ntl();
     ElGamal_parallel_ntl(size_t num_threads = 1, size_t data_size = 1024);
     ~ElGamal_parallel_ntl();
+    ElGamal_parallel_ntl(const ElGamal_parallel_ntl&) = delete;
+    ElGamal_parallel_ntl& operator=(const ElGamal_parallel_ntl&) = delete;
+    ElGamal_parallel_ntl(ElGamal_parallel_ntl&&) = default;
+    ElGamal_parallel_ntl& operator=(ElGamal_parallel_ntl&&) = default;
     // Function to generate ElGamal parameters
     void GenerateParams(long bitLength = 1024, long seed = 32);
 
@@ -30,6 +34,11 @@ public:
     std::pair<ZZ_p, ZZ_p> EncryptBlock(const ZZ_p &message);
     // Use openssl BN for faster encryption
     void EncryptBlock(const BIGNUM* message, BIGNUM* c1, BIGNUM* c2);
+    /*
+    * Function to convert a ZZ_p to a BIGNUM
+    * Input: message (ZZ_p)
+    * Output: bn_message (BIGNUM)
+    */
     void ConvertZZPToBIGNUM(const ZZ_p& message, BIGNUM* bn_message);
     // Function to decrypt a single block
     ZZ DecryptBlock(const std::pair<ZZ, ZZ> &ciphertext);
@@ -80,6 +89,7 @@ private:
     // OpenSSL Related Variables
     BIGNUM* m_modulus_sgx;
     BIGNUM* m_g_pow_k_bn_sgx;
+    BIGNUM* m_h_pow_k_bn_sgx;
     size_t num_threads;
     size_t num_threads_deseralize = 4;
     size_t chunk_size;

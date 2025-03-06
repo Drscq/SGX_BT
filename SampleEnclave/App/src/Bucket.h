@@ -92,6 +92,11 @@ public:
      std::string LogEvictionLoadPathBucketsFromDiskScheme2 = "ServerIOEvictionLoadPathBucketsFromDiskScheme2";
 
      std::string LogEarlyReshuffleLoadBucketFromDiskScheme2 = "ServerIOEarlyReshuffleLoadBucketFromDiskScheme2";
+
+    Bucket(const Bucket&) = delete;
+    Bucket& operator=(const Bucket&) = delete;
+    Bucket(Bucket&&) = default;
+    Bucket& operator=(Bucket&&) = default;
 };
 
 
