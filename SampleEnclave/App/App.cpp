@@ -393,8 +393,18 @@ int SGX_CDECL main(int argc, char *argv[])
             // test_bignum_in_enclave();
             size_t num_threads = 2;
             size_t data_size = 2;
+            BIGNUM* bn_message = BN_new();
+            // Set 100 to bn_message
+            BN_set_word(bn_message, 100);
+            BIGNUM* c1 = BN_new();
+            BIGNUM* c2 = BN_new();
+            BIGNUM* message_decrypted = BN_new();
+            ElGamal_parallel_ntl elgamal(num_threads, data_size);
             for (int i = 0; i < 10; ++i) {
-                ElGamal_parallel_ntl elgamal(num_threads, data_size);
+                std::cout << "The index is: " << i << std::endl;
+                elgamal.EncryptBlock(bn_message, c1, c2);
+                elgamal.DecryptBlock(c1, c2, message_decrypted);
+                std::cout << "The decrypted message is: " << BN_bn2dec(message_decrypted) << std::endl;
             }
 
         } else {

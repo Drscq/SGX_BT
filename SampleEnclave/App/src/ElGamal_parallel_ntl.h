@@ -43,6 +43,8 @@ public:
     // Function to decrypt a single block
     ZZ DecryptBlock(const std::pair<ZZ, ZZ> &ciphertext);
     ZZ_p DecryptBlock(const std::pair<ZZ_p, ZZ_p> &ciphertext);
+    // Reload the DecryptBlock function to use BN
+    void DecryptBlock(BIGNUM* c1, BIGNUM* c2, BIGNUM* message);
     // Function to re-randomize a single block
     std::pair<ZZ, ZZ> ReRandomizeBlock(const std::pair<ZZ, ZZ> &ciphertext);
     // std::pair<ZZ_p, ZZ_p> ReRandomizeBlock(const std::pair<ZZ_p, ZZ_p> &ciphertext);
@@ -90,8 +92,12 @@ private:
     BIGNUM* m_modulus_sgx;
     BIGNUM* m_g_pow_k_bn_sgx;
     BIGNUM* m_h_pow_k_bn_sgx;
+    BIGNUM* m_g_pow_k_x_inv_bn_sgx;
+    BIGNUM* m_x_bn_sgx;
+    BN_CTX* m_ctx_sgx;
+
     size_t num_threads;
-    size_t num_threads_deseralize = 4;
+    size_t num_threads_deserialize = 4;
     size_t chunk_size;
     size_t per_ciphertext_size;
     size_t data_size;

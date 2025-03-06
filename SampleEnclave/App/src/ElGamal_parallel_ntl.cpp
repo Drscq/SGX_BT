@@ -14,7 +14,7 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     m_modulus_sgx = BN_new();
     BN_dec2bn(&m_modulus_sgx, MODULUS_SGX_STR);
     #if defined(UNIT_TEST_SGX)
-    std::cout << "The value of m_modulus_sgx in decimal: " << BN_bn2dec(m_modulus_sgx) << std::endl;
+    std::cout << "[Construction]The value of m_modulus_sgx in decimal: " << BN_bn2dec(m_modulus_sgx) << std::endl;
     #endif
     this->chunk_size = ElGamalNTLConfig::CHUNK_SIZE;
     this->per_ciphertext_size = ElGamalNTLConfig::PER_CIPHERTEXT_SIZE;
@@ -24,6 +24,8 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     // std::cout << "g_p: " << this->g_p << std::endl;
     this->x = ElGamalNTLConfig::X;
     this->x_p = ElGamalNTLConfig::X_p;
+    m_x_bn_sgx = BN_new();
+    this->ConvertZZPToBIGNUM(this->x_p, m_x_bn_sgx);
     // std::cout << "x_p: " << this->x_p << std::endl;
     this->h = ElGamalNTLConfig::Y;
     this->h_p = ElGamalNTLConfig::Y_p;
@@ -57,12 +59,18 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     this->threads.resize(this->num_threads);
     this->thread_args.resize(this->num_threads);
     this->thread_args_deserialize.resize(this->num_threads);
+    m_ctx_sgx = BN_CTX_new();
 }
 
 ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {
     // std::cout << "ElGamal_parallel_ntl destructor" << std::endl;
     // delete[] this->buffer;
     // delete[] this->thread_compute;
+    BN_CTX_free(m_ctx_sgx);
+    BN_free(m_modulus_sgx);
+    BN_free(m_g_pow_k_bn_sgx);
+    BN_free(m_h_pow_k_bn_sgx);
+    BN_free(m_x_bn_sgx);
 }
 void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) {
     cpu_set_t cpuset;
@@ -74,6 +82,32 @@ void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) 
     }
 }
 
+void ElGamal_parallel_ntl::EncryptBlock(const BIGNUM* message, BIGNUM* c1, BIGNUM* c2) {
+    #if defined(UNIT_TEST_SGX)
+    assert(message != NULL && "[ElGamal_parallel_ntl]Error: message is NULL");
+    assert(c1 != NULL && "[ElGamal_parallel_ntl]Error: c1 is NULL");
+    assert(c2 != NULL && "[ElGamal_parallel_ntl]Error: c2 is NULL");
+    #endif
+    // Copy the m_g_pow_k_bn_sgx to c1
+    BN_copy(c1, m_g_pow_k_bn_sgx);
+    // c2 = message * m_h_pow_k_bn_sgx mod m_modulus_sgx
+    BN_mod_mul(c2, message, m_h_pow_k_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+}
+
+void ElGamal_parallel_ntl::DecryptBlock(BIGNUM* c1, BIGNUM* c2, BIGNUM* message) {
+    #if defined(UNIT_TEST_SGX)
+    assert(c1 != NULL && "[ElGamal_parallel_ntl]Error: c1 is NULL");
+    assert(c2 != NULL && "[ElGamal_parallel_ntl]Error: c2 is NULL");
+    assert(message != NULL && "[ElGamal_parallel_ntl]Error: message is NULL");
+    std::cout << "In the DecryptBlock function" << std::endl;
+    #endif
+    // c1 = c1^x mod m_modulus_sgx
+    BN_mod_exp(c1, c1, m_x_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+    // c1 = c1^-1 mod m_modulus_sgx
+    BN_mod_inverse(c1, c1, m_modulus_sgx, m_ctx_sgx);
+    // message = c2 * c1 mod m_modulus_sgx
+    BN_mod_mul(message, c2, c1, m_modulus_sgx, m_ctx_sgx);
+}
 void ElGamal_parallel_ntl::ConvertZZPToBIGNUM(const ZZ_p& message, BIGNUM* bn_message) {
     // Check the bn_message is not NULL
     #if defined(UNIT_TEST_SGX)
