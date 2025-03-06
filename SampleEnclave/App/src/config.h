@@ -894,8 +894,6 @@ namespace ElGamalNTLConfig {
 
     inline ZZ_p GPowK;
     inline ZZ_p YPowK;
-    
-
 }
 
 // Directly define and initialize the shared pointers for BIGNUMs

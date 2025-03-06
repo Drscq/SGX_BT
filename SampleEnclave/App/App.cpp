@@ -97,7 +97,7 @@ void InitializeElGamalParams() {
     // Generate random K and convert to K_p
     ElGamalNTLConfig::K = RandomLen_ZZ(ElGamalNTLConfig::RANDOM_SIZE);
     ElGamalNTLConfig::K_p = conv<ZZ_p>(ElGamalNTLConfig::K);
-//     std::cout << "K_p: " << ElGamalNTLConfig::K_p << std::endl;
+    std::cout << "K_p: " << ElGamalNTLConfig::K_p << std::endl; 
      ElGamalNTLConfig::GPowK = power(ElGamalNTLConfig::G_p, ElGamalNTLConfig::K);
      ElGamalNTLConfig::YPowK = power(ElGamalNTLConfig::Y_p, ElGamalNTLConfig::K);
 }
@@ -391,21 +391,59 @@ int SGX_CDECL main(int argc, char *argv[])
         } else if (strcmp(argv[1], "test_bignum") == 0) {
             // Test BIGNUM functionality
             // test_bignum_in_enclave();
-            size_t num_threads = 2;
+            size_t num_threads = 2; 
             size_t data_size = 2;
+            ElGamal_parallel_ntl elgamal(num_threads, data_size);
+            #if FLAG_ENCRYPT_BLOCK_SGX
             BIGNUM* bn_message = BN_new();
             // Set 100 to bn_message
             BN_set_word(bn_message, 100);
             BIGNUM* c1 = BN_new();
             BIGNUM* c2 = BN_new();
             BIGNUM* message_decrypted = BN_new();
-            ElGamal_parallel_ntl elgamal(num_threads, data_size);
             for (int i = 0; i < 10; ++i) {
                 std::cout << "The index is: " << i << std::endl;
                 elgamal.EncryptBlock(bn_message, c1, c2);
+                std::cout << "The c1 is: " << BN_bn2dec(c1) << std::endl;
                 elgamal.DecryptBlock(c1, c2, message_decrypted);
                 std::cout << "The decrypted message is: " << BN_bn2dec(message_decrypted) << std::endl;
             }
+            BN_free(bn_message);
+            BN_free(c1);
+            BN_free(c2);
+            BN_free(message_decrypted);
+            #endif
+            /*Parallel Encrypt and Derypt Test*/
+            #if FLAG_PARALLEL_ENCRYPT_SGX
+            int block_size = 256;
+            int num_of_chunks = (int)ceil((double)block_size / ElGamalNTLConfig::CHUNK_SIZE);
+            /*Test the identity in the BN*/
+            std::vector<BIGNUM*> data(num_of_chunks);
+            std::vector<BIGNUM*> c1(num_of_chunks);
+            std::vector<BIGNUM*> c2(num_of_chunks);
+            for (int i = 0; i < num_of_chunks; ++i) {
+                data[i] = BN_new();
+                c1[i] = BN_new();
+                c2[i] = BN_new();
+                BN_set_word(data[i], i);
+                std::cout << "The data is: " << BN_bn2dec(data[i]) << std::endl;
+            }
+            elgamal.ParallelEncrypt(data, c1, c2);
+            std::vector<BIGNUM*> decrypted_data(num_of_chunks);
+            for (int i = 0; i < num_of_chunks; ++i) {
+                decrypted_data[i] = BN_new();
+            }
+            elgamal.ParallelDecrypt(c1, c2, decrypted_data);
+            for (int i = 0; i < num_of_chunks; ++i) {
+                std::cout << "The decrypted data is: " << BN_bn2dec(decrypted_data[i]) << std::endl;
+            }
+            for (int i = 0; i < num_of_chunks; ++i) {
+                BN_free(data[i]);
+                BN_free(c1[i]);
+                BN_free(c2[i]);
+                BN_free(decrypted_data[i]);
+            }
+            #endif 
 
         } else {
             std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;
