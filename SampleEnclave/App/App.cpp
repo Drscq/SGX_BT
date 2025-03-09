@@ -460,11 +460,21 @@ int SGX_CDECL main(int argc, char *argv[])
             elgamal.ParallelEncrypt(identity_data, ciphertexts);
             elgamal.ParallelDecrypt(ciphertexts, identity_data);
             ElGamalConfig::test_generate_identity_data(identity_data);
-
+            // Test the ElGamal_parallel_ntl::ConvertVecChar2VecBN
+            std::vector<BIGNUM*> bn_data_vec(num_of_chunks);
+            for (int i = 0; i < num_of_chunks; ++i) {
+                bn_data_vec[i] = BN_new();
+            }
+            elgamal.ConvertVecChar2VecBN(identity_data, bn_data_vec);
+            elgamal.ParallelEncrypt(bn_data_vec, ciphertexts[0], ciphertexts[1]);
+            std::vector<char> decrypted_data_identity;
+            elgamal.ParallelDecrypt(ciphertexts, decrypted_data_identity);
+            ElGamalConfig::test_generate_identity_data(decrypted_data_identity);
             // ElGamalConfig::test_generate_identity_data(identity_data);
             for (int i = 0; i < num_of_chunks; ++i) {
                 BN_free(ciphertexts[0][i]);
                 BN_free(ciphertexts[1][i]);
+                BN_free(bn_data_vec[i]);
             }
 
         } else {

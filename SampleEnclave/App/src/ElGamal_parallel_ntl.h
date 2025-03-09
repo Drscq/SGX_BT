@@ -57,6 +57,7 @@ public:
     void ParallelEncrypt(const std::vector<char>& data, std::vector<std::pair<ZZ, ZZ>>& ciphertexts);
     void ParallelEncrypt(const std::vector<char>& data, std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts);
     // Reload the ParallelEncrypt function to use BN in openssl
+    void ConvertVecChar2VecBN(const std::vector<char>& data, std::vector<BIGNUM*>& bn_data);
     void ParallelEncrypt(const std::vector<BIGNUM*>& data, std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2);
     void ParallelEncrypt(const std::vector<char>& data, std::vector<std::vector<BIGNUM*>>& ciphertexts);
     // Function to decrypt data in parallel

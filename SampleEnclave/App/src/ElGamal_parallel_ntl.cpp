@@ -420,6 +420,16 @@ void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<BIGNUM*>& data, std
         this->EncryptBlock(data[i], c1[i], c2[i]);
     }
 }
+void ElGamal_parallel_ntl::ConvertVecChar2VecBN(const std::vector<char>& data, std::vector<BIGNUM*>& bn_data) {
+    int i = 0;
+    for (; i + this->chunk_size <= data.size(); i += this->chunk_size) {
+        BN_bin2bn(reinterpret_cast<const unsigned char*>(data.data() + i), this->chunk_size, bn_data[i / this->chunk_size]);
+    }
+    // for the remaining data
+    if (i < data.size()) {
+        BN_bin2bn(reinterpret_cast<const unsigned char*>(data.data() + i), data.size() - i, bn_data[bn_data.size() - 1]);
+    }
+}
 
 void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<char>& data, std::vector<std::vector<BIGNUM*>>& ciphertexts) {
     int i = 0, num_of_chunks = (data.size() + this->chunk_size - 1) / this->chunk_size;
