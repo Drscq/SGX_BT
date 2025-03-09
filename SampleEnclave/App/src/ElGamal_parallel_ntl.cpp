@@ -421,6 +421,53 @@ void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<BIGNUM*>& data, std
     }
 }
 
+void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<char>& data, std::vector<std::vector<BIGNUM*>>& ciphertexts) {
+    int i = 0, num_of_chunks = (data.size() + this->chunk_size - 1) / this->chunk_size;
+    std::vector<BIGNUM*> chunk_ciphertexts(num_of_chunks);
+    for (int ii = 0; ii < num_of_chunks; ++ii) {
+        chunk_ciphertexts[ii] = BN_new();
+    }
+    for (; i + this->chunk_size <= data.size(); i += this->chunk_size) {
+        std::vector<char> chunk_data(data.begin() + i, data.begin() + i + this->chunk_size);
+        BN_bin2bn(reinterpret_cast<const unsigned char*>(chunk_data.data()), chunk_data.size(), chunk_ciphertexts[i / this->chunk_size]);
+    }
+    // for the remaining data
+    if (i < data.size()) {
+        std::vector<char> chunk_data(data.begin() + i, data.end());
+        BN_bin2bn(reinterpret_cast<const unsigned char*>(chunk_data.data()), chunk_data.size(), chunk_ciphertexts[num_of_chunks - 1]);
+    }
+
+    // Encrypt each chunk in parallel
+    ParallelEncrypt(chunk_ciphertexts, ciphertexts[0], ciphertexts[1]);
+
+    // free the memory
+    for (int ii = 0; ii < num_of_chunks; ++ii) {
+        BN_free(chunk_ciphertexts[ii]);
+    }   
+}
+
+void ElGamal_parallel_ntl::ParallelDecrypt(const std::vector<std::vector<BIGNUM*>>& ciphertexts, std::vector<char>& data) {
+    std::vector<BIGNUM*> decrypted_data(ciphertexts[0].size());
+    for (int i = 0; i < decrypted_data.size(); ++i) {
+        decrypted_data[i] = BN_new();
+    }
+    this->ParallelDecrypt(ciphertexts[0], ciphertexts[1], decrypted_data);
+    int ii = 0;
+    for (; ii + this->chunk_size <= data.size(); ii += this->chunk_size) {
+        BN_bn2binpad(decrypted_data[ii / this->chunk_size], reinterpret_cast<unsigned char*>(data.data() + ii), this->chunk_size);
+    }
+    // for the remaining data
+    if (ii < data.size()) {
+        BN_bn2binpad(decrypted_data[decrypted_data.size() - 1], reinterpret_cast<unsigned char*>(data.data() + ii), data.size() - ii);
+    }
+
+    // free the memory
+    for (size_t i = 0; i < decrypted_data.size(); ++i) {
+        BN_free(decrypted_data[i]);
+    }
+}
+    
+
 void ElGamal_parallel_ntl::ParallelDecrypt(const std::vector<BIGNUM*>& c1, const std::vector<BIGNUM*>& c2, std::vector<BIGNUM*>& data) {
     #if defined(UNIT_TEST_SGX)
     assert((data.size() == c1.size()) && (c1.size()== c2.size()) && "Error: c1 and c2 size mismatch");

@@ -451,6 +451,21 @@ int SGX_CDECL main(int argc, char *argv[])
             std::vector<char> identity_data;
             ElGamalConfig::generate_identity_data(BlockConfig::BLOCK_SIZE, identity_data);
             ElGamalConfig::test_generate_identity_data(identity_data);
+            num_of_chunks = (int)ceil((double)identity_data.size() / ElGamalNTLConfig::CHUNK_SIZE);
+            std::vector<std::vector<BIGNUM*>> ciphertexts(2, std::vector<BIGNUM*>(num_of_chunks));
+            for (int i = 0; i < num_of_chunks; ++i) {
+                ciphertexts[0][i] = BN_new();
+                ciphertexts[1][i] = BN_new();
+            }
+            elgamal.ParallelEncrypt(identity_data, ciphertexts);
+            elgamal.ParallelDecrypt(ciphertexts, identity_data);
+            ElGamalConfig::test_generate_identity_data(identity_data);
+
+            // ElGamalConfig::test_generate_identity_data(identity_data);
+            for (int i = 0; i < num_of_chunks; ++i) {
+                BN_free(ciphertexts[0][i]);
+                BN_free(ciphertexts[1][i]);
+            }
 
         } else {
             std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;

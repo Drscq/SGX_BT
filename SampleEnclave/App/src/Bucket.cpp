@@ -101,9 +101,13 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
         // std::memcpy(&blockID, this->blockData.data(), sizeof(blockID));
         // std::cout << "blockID: " << blockID << std::endl;
         // elgamal.ParallelEncrypt(this->blockData, ciphertexts);
+        #if USE_OPENSSL
+
+        #else
         elgamal.ParallelEncrypt(this->blockData, this->ciphertexts_ZZ_p);
         // elgamal.SerializeCiphertexts(ciphertexts, this->ciphertextsData);
         elgamal.SerializeCiphertexts(this->ciphertexts_ZZ_p, this->ciphertextsData);
+        #endif
         // this->ciphertextsDataSize = this->ciphertextsData.size();
         // bucketFile.write(reinterpret_cast<const char*>(&this->ciphertextsDataSize), sizeof(this->ciphertextsDataSize));
         bucketFile.write(this->ciphertextsData.data(), this->ciphertextsData.size());
