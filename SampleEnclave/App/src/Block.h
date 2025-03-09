@@ -2,6 +2,7 @@
 #define BLOCK_H
 // This version does not support parallel operations
 #include "config.h"
+#include "configSgx.h"  
 class Block {
 public:
     Block();

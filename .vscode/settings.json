@@ -70,6 +70,7 @@
         "__tuple": "cpp",
         "bitset": "cpp",
         "ios": "cpp",
-        "locale": "cpp"
+        "locale": "cpp",
+        "cassert": "cpp"
     }
 }

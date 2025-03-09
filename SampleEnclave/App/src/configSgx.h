@@ -1,9 +1,11 @@
 #ifndef CONFIGSGX_H
 #define CONFIGSGX_H
 // #define UNIT_TEST_SGX
+#define USE_OPENSSL 1
 #define FLAG_ENCRYPT_BLOCK_SGX 0
 #define FLAG_PARALLEL_ENCRYPT_SGX 1
 #define MODULUS_SGX_STR "127584585272019464248550689001494335089005706365070593228774866021859296684878671063534087601345701705074143342155398610282864933991154081845709883272032834902599526248307926892808776816768645411849000298403789217318224840138553553706229104932113309533452119580791708821809060741851733422802747352257459692961"
+
 typedef long long TYPE_BLOCK_ID_SGX;
 typedef unsigned long TYPE_UNSIGNED_SIZE_SGX;
 typedef long long TYPE_PATH_ID_SGX;
@@ -32,6 +34,7 @@ typedef size_t TYPE_PATH_SIZE_SGX;
 #include <cstring>
 #include <numeric>
 #include <random>
+#include <bitset>
 struct META_DATA_SGX {
     size_t count; // Used to log the access time for the bucket
     bool valids[BUCKET_SIZE_SGX]; // Indicates whether each of the slots in the bucket is valid or not
@@ -443,9 +446,6 @@ namespace TreeConfigSgx {
     inline void GenPathBucketIDsInReverseOrder(TYPE_PATH_ID_SGX pathID,
                                                const TYPE_PATH_SIZE_SGX height,
                                                std::vector<TYPE_BUCKET_ID_SGX>& bucketIDs) {
-        #if USE_ASSERT
-        assert(bucketIDs.size() == height - 1 && "The size of the bucketIDs should be equal to height - 1");
-        #endif
         std::bitset<HEIGHT - 1> pathBinary(pathID);
         for (TYPE_PATH_SIZE_SGX i = 0; i < height - 1; i++) {
             if (i == 0) {

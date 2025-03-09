@@ -444,6 +444,13 @@ int SGX_CDECL main(int argc, char *argv[])
                 BN_free(decrypted_data[i]);
             }
             #endif 
+            std::vector<char> data_endian= {0x00, 0x00, 0x00, 0x01};
+            BIGNUM* bn_data = BN_bin2bn((const unsigned char*)data_endian.data(), data_endian.size(), NULL);
+            std::cout << "The data is: " << BN_bn2dec(bn_data) << std::endl;
+            // Test the ElGamalConfigSGX::generate_identity_data
+            std::vector<char> identity_data;
+            ElGamalConfig::generate_identity_data(BlockConfig::BLOCK_SIZE, identity_data);
+            ElGamalConfig::test_generate_identity_data(identity_data);
 
         } else {
             std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;
