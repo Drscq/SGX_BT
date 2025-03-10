@@ -47,9 +47,17 @@ public:
     // Function to encrypt data in parallel
     void ParallelEncrypt(const std::vector<char>& data, std::vector<std::pair<ZZ, ZZ>>& ciphertexts);
     void ParallelEncrypt(const std::vector<char>& data, std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts);
+    // Reload the ParallelEncrypt function to use BN in openssl
+    void ConvertVecChar2VecBN(const std::vector<char>& data, std::vector<BIGNUM*>& bn_data);
+    void ParallelEncrypt(const std::vector<BIGNUM*>& data, std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2);
+    void ParallelEncrypt(const std::vector<char>& data, std::vector<std::vector<BIGNUM*>>& ciphertexts);
+    void ConvertVecBNCipher2VecChar(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2, std::vector<char>& data);
     // Function to decrypt data in parallel
     void ParallelDecrypt(const std::vector<std::pair<ZZ, ZZ>>& ciphertexts, std::vector<char>& data);
     void ParallelDecrypt(const std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts, std::vector<char>& data);
+    // Reload the ParallelDecrypt function to use BN in openssl
+    void ParallelDecrypt(const std::vector<BIGNUM*>& c1, const std::vector<BIGNUM*>& c2, std::vector<BIGNUM*>& data);
+    void ParallelDecrypt(const std::vector<std::vector<BIGNUM*>>& ciphertexts, std::vector<char>& data);
     // Function to re-randomize data in parallel
     void ParallelRerandomize(std::vector<std::pair<ZZ, ZZ>>& ciphertexts);
     void ParallelRerandomize(std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts);

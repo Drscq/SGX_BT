@@ -323,6 +323,39 @@ int SGX_CDECL main(int argc, char *argv[])
         std::vector<char> identity_data;
         ElGamalConfig::generate_identity_data(BlockConfig::BLOCK_SIZE, identity_data);
         ElGamalConfig::test_generate_identity_data(identity_data);
+        // Test the ElGamal parallel encryption and decryption
+        std::cout << "Testing ElGamal parallel encryption and decryption..." << std::endl;
+        int num_of_chunks = ElGamalNTLConfig::BLOCK_CHUNK_SIZE;
+        std::vector<std::vector<BIGNUM*>> ciphertexts(2, std::vector<BIGNUM*>(num_of_chunks));
+        for (int i = 0; i < num_of_chunks; ++i) {
+            ciphertexts[0][i] = BN_new();
+            ciphertexts[1][i] = BN_new();
+        }
+        elgamal.ParallelEncrypt(identity_data, ciphertexts);
+        elgamal.ParallelDecrypt(ciphertexts, identity_data);
+        ElGamalConfig::test_generate_identity_data(identity_data);
+
+        // Test the ElGamal_parallel_ntl::ConvertVecChar2VecBN
+        std::cout << "Testing ElGamal_parallel_ntl::ConvertVecChar2VecBN..." << std::endl;
+        std::vector<BIGNUM*> bn_data_vec(num_of_chunks);
+        for (int i = 0; i < num_of_chunks; ++i) {
+            bn_data_vec[i] = BN_new();
+        }
+        elgamal.ConvertVecChar2VecBN(identity_data, bn_data_vec);
+        elgamal.ParallelEncrypt(bn_data_vec, ciphertexts[0], ciphertexts[1]);
+        std::vector<char> decrypted_data_identity;
+        elgamal.ParallelDecrypt(ciphertexts, decrypted_data_identity);
+        ElGamalConfig::test_generate_identity_data(decrypted_data_identity);
+        std::cout << "Testing ElGamal_parallel_ntl::ConvertVecBNCipher2VecChar..." << std::endl;
+        std::vector<char> ciphertext_data(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+        elgamal.ConvertVecBNCipher2VecChar(ciphertexts[0], ciphertexts[1], ciphertext_data);
+
+        // ElGamalConfig::test_generate_identity_data(identity_data);
+        for (int i = 0; i < num_of_chunks; ++i) {
+            BN_free(ciphertexts[0][i]);
+            BN_free(ciphertexts[1][i]);
+            BN_free(bn_data_vec[i]);
+        }
     } else {
         std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;
     }
