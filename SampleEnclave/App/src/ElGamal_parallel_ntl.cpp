@@ -64,7 +64,9 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     m_g_pow_k_x_inv_bn_sgx = BN_new();
     BN_mod_exp(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_bn_sgx, m_x_bn_sgx, m_modulus_sgx, m_ctx_sgx);
     BN_mod_inverse(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+    #if defined(UNIT_TEST_SGX)
     std::cout << "[ElGamal_parallel_ntl]The value of m_g_pow_k_x_inv_bn_sgx: " << BN_bn2dec(m_g_pow_k_x_inv_bn_sgx) << std::endl;
+    #endif
 }
 
 ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {

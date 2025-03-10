@@ -111,6 +111,13 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
     }
     // Save the this->data to the file namely fileName
     std::ofstream bucketFile(dirPath + "/" + fileName, std::ios::binary);
+    std::vector<BIGNUM*> block_data_bn_sgx(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    std::vector<BIGNUM*> ciphertexts_data_bn_sgx[2];
+    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        block_data_bn_sgx[i] = BN_new();
+        ciphertexts_data_bn_sgx[0][i] = BN_new();
+        ciphertexts_data_bn_sgx[1][i] = BN_new();
+    }
     for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < this->bucketSize; i++) {
         // Encrypt the block data before saving to disk via ElGamal_parallel_ntl
         std::copy(data.begin() + i * this->blockSize, data.begin() + (i + 1) * this->blockSize, this->blockData.begin());
@@ -119,9 +126,9 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
         // std::cout << "blockID: " << blockID << std::endl;
         // elgamal.ParallelEncrypt(this->blockData, ciphertexts);
         #if USE_OPENSSL
-        // elgamal.ConvertVecChar2VecBN(this->blockData, this->block_data_bn_sgx);
-        // elgamal.ParallelEncrypt(this->block_data_bn_sgx, this->ciphertexts_data_bn_sgx[0], this->ciphertexts_data_bn_sgx[1]);
-        // elgamal.ConvertVecBNCipher2VecChar(this->ciphertexts_data_bn_sgx[0], this->ciphertexts_data_bn_sgx[1], this->ciphertextsData);
+        elgamal.ConvertVecChar2VecBN(this->blockData, block_data_bn_sgx);
+        elgamal.ParallelEncrypt(block_data_bn_sgx, ciphertexts_data_bn_sgx[0], ciphertexts_data_bn_sgx[1]);
+        elgamal.ConvertVecBNCipher2VecChar(ciphertexts_data_bn_sgx[0], ciphertexts_data_bn_sgx[1], ciphertextsData);
         #else
         elgamal.ParallelEncrypt(this->blockData, this->ciphertexts_ZZ_p);
         // elgamal.SerializeCiphertexts(ciphertexts, this->ciphertextsData);
@@ -130,13 +137,12 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
         // this->ciphertextsDataSize = this->ciphertextsData.size();
         // bucketFile.write(reinterpret_cast<const char*>(&this->ciphertextsDataSize), sizeof(this->ciphertextsDataSize));
         bucketFile.write(this->ciphertextsData.data(), this->ciphertextsData.size());
-        // std::vector<std::pair<ZZ_p, ZZ_p>> ciphertexts_test;
-        // elgamal.DeserializeCiphertexts(this->ciphertextsData, ciphertexts_test);
-        // std::vector<char> decrypted_data;
-        // elgamal.ParallelDecrypt(ciphertexts_test, decrypted_data);
-        // BlockConfig::TYPE_BLOCK_ID blockID_test;
-        // std::memcpy(&blockID_test, decrypted_data.data(), sizeof(blockID_test));
-        // std::cout << "blockID_test: " << blockID_test << std::endl;
+    }
+    // free the memory
+    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        BN_free(block_data_bn_sgx[i]);
+        BN_free(ciphertexts_data_bn_sgx[0][i]);
+        BN_free(ciphertexts_data_bn_sgx[1][i]);
     }
     bucketFile.close();
 }
