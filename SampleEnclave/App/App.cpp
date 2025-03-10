@@ -388,9 +388,9 @@ int SGX_CDECL main(int argc, char *argv[])
         } else if (strcmp(argv[1], "server") == 0) {
             std::cout << "Starting server..." << std::endl;
             // Server server();
-            Server server(ServerConfig::PORT);
-            // Server server(ServerConfig::PORT, global_eid);
-            // server.Start();
+            // Server server(ServerConfig::PORT);
+            Server server(ServerConfig::PORT, global_eid);
+            server.Start();
         } else if (strcmp(argv[1], "test_bignum") == 0) {
             // Test BIGNUM functionality
             // test_bignum_in_enclave();

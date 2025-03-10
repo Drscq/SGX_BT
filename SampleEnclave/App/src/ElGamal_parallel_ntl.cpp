@@ -5,9 +5,7 @@
 #include <cassert>
 #include <NTL/BasicThreadPool.h>
 #include <sched.h>    // For sched_getcpu()
-// ElGamal_parallel_ntl::ElGamal_parallel_ntl() {
-//     // std::cout << "ElGamal_parallel_ntl constructor" << std::endl;
-// }
+#include <sstream>
 
 ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size) :
     num_threads(num_threads), data_size(data_size) {
@@ -66,6 +64,7 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     m_g_pow_k_x_inv_bn_sgx = BN_new();
     BN_mod_exp(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_bn_sgx, m_x_bn_sgx, m_modulus_sgx, m_ctx_sgx);
     BN_mod_inverse(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+    std::cout << "[ElGamal_parallel_ntl]The value of m_g_pow_k_x_inv_bn_sgx: " << BN_bn2dec(m_g_pow_k_x_inv_bn_sgx) << std::endl;
 }
 
 ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {

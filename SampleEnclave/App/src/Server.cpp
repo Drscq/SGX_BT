@@ -169,7 +169,7 @@ void Server::handleClient(int clientSockfd) {
                 this->communicator.receiveData(clientSockfd, this->pathIDChars, sizeof(PathConfig::TYPE_PATH_ID));
                 std::memcpy(&this->pathID, this->pathIDChars.data(), sizeof(PathConfig::TYPE_PATH_ID));
                 std::vector<BucketConfig::META_DATA> metaDatas;
-                this->path = Path(this->pathID, PathConfig::HEIGHT);
+                Path path(this->pathID, PathConfig::HEIGHT);
                 path.GenPath(PathConfig::REAL_BLOCK_NUM, metaDatas, false);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
             } else if (this->command == ServerConfig::CMD_READ_PATH) {
@@ -293,7 +293,7 @@ void Server::handleClient(int clientSockfd) {
                 #if USE_COUT
                 std::cout << "Received command: CMD_EVICT_SERVER" << std::endl;
                 #endif
-                this->path = Path(0, PathConfig::HEIGHT);
+                // this->path = Path(0, PathConfig::HEIGHT);
                 #if EVICT_SIMULATION
                 this->path.GenTripletBuckets(this->tripletBucketIDs, this->tripletBucketMDs, this->realBlockNumForEviction, false);
                 // open the file of BukcetConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0)
