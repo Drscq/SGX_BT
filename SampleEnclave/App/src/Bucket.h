@@ -102,8 +102,8 @@ public:
     /*
     * @brief store the BIGNUM data converted from the char data
     */
-   std::vector<BIGNUM*> block_data_bn_sgx;
-   std::vector<std::vector<BIGNUM*>> ciphertexts_data_bn_sgx;
+//    std::vector<BIGNUM*> block_data_bn_sgx;
+//    std::vector<std::vector<BIGNUM*>> ciphertexts_data_bn_sgx;
 };
 
 
