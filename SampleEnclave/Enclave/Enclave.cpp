@@ -41,6 +41,7 @@
 // #define AES_BLOCK_SIZE 16
 // static const uint32_t CTR_INC_BITS = 128;  // Full 128-bit counter increments
 #include "src/AES_CTR_SGX.h"
+#include "openssl/bn.h"
 unsigned char key[AES_BLOCK_SIZE] = {
     0x2b, 0x7e, 0x15, 0x16,
     0x28, 0xae, 0xd2, 0xa6,
@@ -305,4 +306,38 @@ void ecall_evict_1(char* buffer, uint8_t* flags) {
 
 void ecall_sort_array(int* arr, size_t arr_len) {
     std::sort(arr, arr + arr_len);
+}
+
+void ecall_test_bignum(char* result, size_t result_len) {
+    // Create two BIGNUM instances
+    BIGNUM *a = BN_new();
+    BIGNUM *b = BN_new();
+    BIGNUM *res = BN_new();
+    BN_CTX *ctx = BN_CTX_new();
+    
+    if (!a || !b || !res || !ctx) {
+        // snprintf(result, result_len, "Failed to allocate BIGNUM objects");
+        printf("Failed to allocate BIGNUM objects\n");
+        return;
+    }
+    
+    // Initialize the BIGNUMs
+    BN_set_word(a, 123456789);
+    BN_set_word(b, 987654321);
+    
+    // Perform an addition operation
+    BN_add(res, a, b);
+    printf("BIGNUM operation started inside the enclave\n");
+    // Convert result to a string
+    char *bn_str = BN_bn2dec(res);
+    printf("Result: %s\n", bn_str);
+    
+    // Clean up
+    OPENSSL_free(bn_str);
+    BN_free(a);
+    BN_free(b);
+    BN_free(res);
+    BN_CTX_free(ctx);
+    
+    printf("BIGNUM operation completed inside the enclave\n");
 }

@@ -331,7 +331,24 @@ void* server_thread_func() {
     g_array = NULL;
     return NULL;
 }
-
+// Function to test BIGNUM operation inside the enclave
+void test_bignum_in_enclave() {
+    char result[256] = { 0 };
+    
+    printf("[App] Calling ecall_test_bignum to perform crypto operations in the enclave...\n");
+    
+    sgx_status_t status = ecall_test_bignum(global_eid, result, sizeof(result));
+    if (status != SGX_SUCCESS) {
+        printf("[App] ecall_test_bignum failed: %d\n", status);
+        return;
+    }
+    
+    printf("[App] Result from enclave: %s\n", result);
+    
+    // Optional: Verify the result
+    // The expected result should be 123456789 + 987654321 = 1111111110
+    printf("[App] Expected result should be: 1111111110\n");
+}
 /* Application entry */
 int SGX_CDECL main(int argc, char *argv[])
 {
@@ -373,17 +390,12 @@ int SGX_CDECL main(int argc, char *argv[])
     } else if (argv[1] == std::string("server")) {
         Server server(ServerConfig::PORT);
         server.Start();
+    } else if (strcmp(argv[1], "test_bignum") == 0) {
+        // Test BIGNUM functionality
+        test_bignum_in_enclave();
+    } else {
+        std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;
     }
-    // std::cout << "Initializing Tree..." << std::endl;
-    // // Create threads
-    // pthread_t serverThread, enclaveThread;
-    // pthread_create(&serverThread, NULL, server_thread_func, NULL);
-    // pthread_create(&enclaveThread, NULL, enclave_thread_func, NULL);
-
-    // // Wait for threads to finish
-    // pthread_join(serverThread, NULL);
-    // pthread_join(enclaveThread, NULL);
-
     
 
     /* Destroy the enclave */
