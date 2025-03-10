@@ -236,101 +236,7 @@ void ocall_print_string(const char *str)
      */
     printf("%s", str);
 }
-// Configuration: how many integers in the array?
-static const size_t ARRAY_LEN = 10;
-// Shared data between threads
-static int* g_array = NULL;
 
-// Thread synchronization
-static pthread_mutex_t g_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t g_cond_array = PTHREAD_COND_INITIALIZER;
-static pthread_cond_t g_cond_sorted = PTHREAD_COND_INITIALIZER;
-
-// Flags
-static bool g_array_ready = false;
-static bool g_array_sorted = false;
-/*
-* Thread B (Enclave Worker)
-* Waits until the array is ready, calls ecall_sort_array, then signals Thread A
-*/
-
-void* enclave_thread_func() {
-    // Lock the mutex to wait for the array to be ready
-    pthread_mutex_lock(&g_mutex);
-
-    while (!g_array_ready) {
-        pthread_cond_wait(&g_cond_array, &g_mutex);
-    }
-    // Now, the server thread has created & filled g_array
-    // Let's call ecall_sort_array inside the enclave.
-    if (g_array != NULL) {
-        sgx_status_t status = ecall_sort_array(global_eid, g_array, ARRAY_LEN);
-        if (status != SGX_SUCCESS) {
-            printf("[Enclave Thread] ecall_sort_array failed: %d\n", status);
-        } else {
-            printf("[Enclave Thread] ecall_sort_array succeeded\n");
-        }
-    }
-    // Signal that we are done sorting
-    g_array_sorted = true;
-    pthread_cond_signal(&g_cond_sorted);
-    pthread_mutex_unlock(&g_mutex);
-
-    return NULL;
-}
-/*
-* Thread A (Server Thread)
-* Generates random array, signals enclave thread,
-* waits for sort completion, sum even indices.
-*/
-// void* server_thread_func(void* arg) {
-void* server_thread_func() {
-    pthread_mutex_lock(&g_mutex);
-    // Allocate the array
-    g_array = new int[ARRAY_LEN];
-    if (!g_array) {
-        printf("[Server Thread] Failed to allocate array\n");
-        return NULL;
-    }
-    // Fill the array with random integers
-    srand((unsigned int)time(NULL));
-    for (size_t i = 0; i < ARRAY_LEN; ++i) {
-        g_array[i] = rand() % 100;
-    }
-    // Display the unsorted array
-    printf("[Server Thread] Unsorted array: \n");
-    for (size_t i = 0; i < ARRAY_LEN; ++i) {
-        printf("%d ", g_array[i]);
-    }
-    printf("\n");
-    // Signal the enclave thread that the array is ready
-    g_array_ready = true;
-    pthread_cond_signal(&g_cond_array);
-    pthread_mutex_unlock(&g_mutex);
-    // Wait for the enclave thread to finish sorting
-    pthread_mutex_lock(&g_mutex);
-    while (!g_array_sorted) {
-        pthread_cond_wait(&g_cond_sorted, &g_mutex);
-    }
-    pthread_mutex_unlock(&g_mutex);
-    // At this point, the array is sorted
-    printf("[Server Thread] Sorted array: \n");
-    for (size_t i = 0; i < ARRAY_LEN; ++i) {
-        printf("%d ", g_array[i]);
-    }
-    printf("\n");
-    // Now sum the elements at even indices
-    size_t sum_even_indices = 0;
-    for (size_t i = 0; i < ARRAY_LEN; i += 2) {
-        sum_even_indices += g_array[i];
-    }
-    printf("[Server Thread] Sum of elements at even indices: %zu\n", sum_even_indices);
-
-    // Clean up
-    free(g_array);
-    g_array = NULL;
-    return NULL;
-}
 // Function to test BIGNUM operation inside the enclave
 void test_bignum_in_enclave() {
     char result[256] = { 0 };
@@ -396,6 +302,27 @@ int SGX_CDECL main(int argc, char *argv[])
         size_t num_threads = 2;
         size_t data_size = 2;
         ElGamal_parallel_ntl elgamal(num_threads, data_size);
+        // Test ElGamal encryption and decryption for the chunk level
+        BIGNUM* bn_message = BN_new();
+            BIGNUM* c1 = BN_new();
+            BIGNUM* c2 = BN_new();
+            BIGNUM* message_decrypted = BN_new();
+            std::cout << "Testing ElGamal encryption and decryption for the chunk level..." << std::endl;
+            for (int i = 0; i < 10; ++i) {
+                BN_set_word(bn_message, 100 + i);
+                elgamal.EncryptBlock(bn_message, c1, c2);
+                elgamal.DecryptBlock(c1, c2, message_decrypted);
+                std::cout << "The decrypted message is: " << BN_bn2dec(message_decrypted) << std::endl;
+            }
+            BN_free(bn_message);
+            BN_free(c1);
+            BN_free(c2);
+            BN_free(message_decrypted);
+        // Test the ElGamalConfigSGX::generate_identity_data
+        std::cout << "Testing ElGamalConfigSGX::generate_identity_data..." << std::endl;
+        std::vector<char> identity_data;
+        ElGamalConfig::generate_identity_data(BlockConfig::BLOCK_SIZE, identity_data);
+        ElGamalConfig::test_generate_identity_data(identity_data);
     } else {
         std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;
     }

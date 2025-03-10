@@ -974,15 +974,34 @@ namespace ElGamalConfig {
         }
         return data;
     }
+    // Openssl version 
+    inline void generate_identity_data(int data_len, std::vector<char>& data) {
+        BIGNUM* bn_one = BN_new();
+        BN_set_word(bn_one, 1);
+        data.resize(data_len, 0);
+        int i;
+        for (i = 0; i + ElGamalNTLConfig::CHUNK_SIZE <= data_len; i += ElGamalNTLConfig::CHUNK_SIZE) {
+            BN_bn2binpad(bn_one, (unsigned char*)data.data() + i, ElGamalNTLConfig::CHUNK_SIZE);
+        }
+        
+        if (i < data_len) {
+            BN_bn2binpad(bn_one, (unsigned char*)data.data() + i, data_len - i);
+        }
+        BN_free(bn_one);
+    }
+    inline void test_generate_identity_data(std::vector<char>& data) {
+        BIGNUM* bn_one = BN_new();
+        int i;
+        for (i = 0; i + ElGamalNTLConfig::CHUNK_SIZE <= data.size(); i += ElGamalNTLConfig::CHUNK_SIZE) {
+            BN_bin2bn((unsigned char*)data.data() + i, ElGamalNTLConfig::CHUNK_SIZE, bn_one);
+            assert(BN_is_one(bn_one) && "The data should be one");
+        }
+        if (i < data.size()) {
+            BN_bin2bn((unsigned char*)data.data() + i, data.size() - i, bn_one);
+            assert(BN_is_one(bn_one) && "The data should be one");
+        }
+        BN_free(bn_one);
+    }
 }
-
-
-// extern "C" {
-//     #include "crtecelgamal.h"
-// }
-
-// namespace ECElGamalConfig {
-
-// }
 
 #endif // CONFIG_H

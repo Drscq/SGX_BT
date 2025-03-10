@@ -34,6 +34,8 @@ public:
     // Function to decrypt a single block
     ZZ DecryptBlock(const std::pair<ZZ, ZZ> &ciphertext);
     ZZ_p DecryptBlock(const std::pair<ZZ_p, ZZ_p> &ciphertext);
+    // Use openssl BN for decryption
+    void DecryptBlock(const BIGNUM* c1, const BIGNUM* c2, BIGNUM* message);
     // Function to re-randomize a single block
     std::pair<ZZ, ZZ> ReRandomizeBlock(const std::pair<ZZ, ZZ> &ciphertext);
     // std::pair<ZZ_p, ZZ_p> ReRandomizeBlock(const std::pair<ZZ_p, ZZ_p> &ciphertext);

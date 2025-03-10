@@ -65,7 +65,9 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     m_g_pow_k_x_inv_bn_sgx = BN_new();
     BN_mod_exp(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_bn_sgx, m_x_bn_sgx, m_modulus_sgx, m_ctx_sgx);
     BN_mod_inverse(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+    #if defined(UNIT_TEST_SGX)
     std::cout << "[ElGamal_parallel_ntl]The value of m_g_pow_k_x_inv_bn_sgx: " << BN_bn2dec(m_g_pow_k_x_inv_bn_sgx) << std::endl;
+    #endif
 }
 
 ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {
@@ -79,6 +81,34 @@ ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {
     BN_free(m_g_pow_k_x_inv_bn_sgx);
     BN_free(m_x_bn_sgx);
 }
+void ElGamal_parallel_ntl::EncryptBlock(const BIGNUM* message, BIGNUM* c1, BIGNUM* c2) {
+    #if defined(UNIT_TEST_SGX)
+    assert(message != NULL && "[ElGamal_parallel_ntl]Error: message is NULL");
+    assert(c1 != NULL && "[ElGamal_parallel_ntl]Error: c1 is NULL");
+    assert(c2 != NULL && "[ElGamal_parallel_ntl]Error: c2 is NULL");
+    #endif
+    // Copy the m_g_pow_k_bn_sgx to c1
+    BN_copy(c1, m_g_pow_k_bn_sgx);
+    // c2 = message * m_h_pow_k_bn_sgx mod m_modulus_sgx
+    BN_mod_mul(c2, message, m_h_pow_k_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+}
+void ElGamal_parallel_ntl::DecryptBlock(const BIGNUM* c1, const BIGNUM* c2, BIGNUM* message) {
+    #if defined(UNIT_TEST_SGX)
+    assert(c1 != NULL && "[ElGamal_parallel_ntl]Error: c1 is NULL");
+    assert(c2 != NULL && "[ElGamal_parallel_ntl]Error: c2 is NULL");
+    assert(message != NULL && "[ElGamal_parallel_ntl]Error: message is NULL");
+    std::cout << "In the DecryptBlock function" << std::endl;
+    #endif
+    // Normal Version   
+    // // c1 = c1^x mod m_modulus_sgx
+    // BN_mod_exp(c1, c1, m_x_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+    // // c1 = c1^-1 mod m_modulus_sgx
+    // BN_mod_inverse(c1, c1, m_modulus_sgx, m_ctx_sgx);
+    // // message = c2 * c1 mod m_modulus_sgx
+    // BN_mod_mul(message, c2, c1, m_modulus_sgx, m_ctx_sgx);
+    // Preprocessing Version
+    BN_mod_mul(message, c2, m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+}
 void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) {
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
@@ -90,16 +120,24 @@ void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) 
 }
 void ElGamal_parallel_ntl::ConvertZZPToBIGNUM(const ZZ_p& message, BIGNUM* bn_message) {
     // Check the bn_message is not NULL
+    #if defined(UNIT_TEST_SGX)
     assert(bn_message != NULL && "[ElGamal_parallel_ntl]Error: bn_message is NULL");
+    #endif
     // Convert ZZ_p to ZZ
     ZZ z = rep(message);
+    #if defined(UNIT_TEST_SGX)
     std::cout << "The value of z: " << z << std::endl;
+    #endif
     std::stringstream ss;
     ss << z;
     std::string str = ss.str();
+    #if defined(UNIT_TEST_SGX)
     std::cout << "The value of str: " << str << std::endl;
+    #endif
     BN_dec2bn(&bn_message, str.c_str());
+    #if defined(UNIT_TEST_SGX)
     std::cout << "The value of bn_message: " << BN_bn2dec(bn_message) << std::endl;
+    #endif
 }
 
 
