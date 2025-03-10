@@ -470,6 +470,20 @@ void ElGamal_parallel_ntl::ConvertVecBNCipher2VecChar(std::vector<BIGNUM*>& c1, 
         }
     }
 }
+
+void ElGamal_parallel_ntl::ConvertVecCharCipher2VecBN(const std::vector<char>& data, std::vector<std::vector<BIGNUM*>>& ciphertexts) {
+    auto it = data.begin();
+    for (int ii = 0; ii < ciphertexts[0].size(); ++ii) {
+        BN_bin2bn(reinterpret_cast<const unsigned char*>(&(*it)), this->per_ciphertext_size, ciphertexts[0][ii]);
+        if (ii != ciphertexts[0].size() - 1) {
+            it += this->per_ciphertext_size;
+        }
+        BN_bin2bn(reinterpret_cast<const unsigned char*>(&(*it)), this->per_ciphertext_size, ciphertexts[1][ii]);
+        if (ii != ciphertexts[0].size() - 1) {
+            it += this->per_ciphertext_size;
+        }
+    }
+}
     
 
 void ElGamal_parallel_ntl::ParallelDecrypt(const std::vector<std::vector<BIGNUM*>>& ciphertexts, std::vector<char>& data) {

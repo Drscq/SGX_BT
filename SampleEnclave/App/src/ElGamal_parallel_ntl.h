@@ -67,6 +67,7 @@ public:
     // Reload the ParallelDecrypt function to use BN in openssl
     void ParallelDecrypt(const std::vector<BIGNUM*>& c1, const std::vector<BIGNUM*>& c2, std::vector<BIGNUM*>& data);
     void ParallelDecrypt(const std::vector<std::vector<BIGNUM*>>& ciphertexts, std::vector<char>& data);
+    void ConvertVecCharCipher2VecBN(const std::vector<char>& data, std::vector<std::vector<BIGNUM*>>& ciphertexts);
     // Function to re-randomize data in parallel
     void ParallelRerandomize(std::vector<std::pair<ZZ, ZZ>>& ciphertexts);
     void ParallelRerandomize(std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts);

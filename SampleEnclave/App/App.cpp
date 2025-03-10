@@ -470,15 +470,28 @@ int SGX_CDECL main(int argc, char *argv[])
             }
             elgamal.ConvertVecChar2VecBN(identity_data, bn_data_vec);
             elgamal.ParallelEncrypt(bn_data_vec, ciphertexts[0], ciphertexts[1]);
+            // Test the ElGamal_parallel_ntl::ConvertVecBNCipher2VecChar
+            std::vector<char> ciphertexts_char_bn(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+            elgamal.ConvertVecBNCipher2VecChar(ciphertexts[0], ciphertexts[1], ciphertexts_char_bn);
+            // Test the ElGamal_parallel_ntl::ConvertVecCharCipher2VecBN
+            std::vector<std::vector<BIGNUM*>> ciphertexts_bn(2, std::vector<BIGNUM*>(num_of_chunks));
+            for (int i = 0; i < num_of_chunks; ++i) {
+                ciphertexts_bn[0][i] = BN_new();
+                ciphertexts_bn[1][i] = BN_new();
+            }
+            elgamal.ConvertVecCharCipher2VecBN(ciphertexts_char_bn, ciphertexts_bn);
             std::vector<char> decrypted_data_identity;
-            elgamal.ParallelDecrypt(ciphertexts, decrypted_data_identity);
+            elgamal.ParallelDecrypt(ciphertexts_bn, decrypted_data_identity);
             ElGamalConfig::test_generate_identity_data(decrypted_data_identity);
-            // ElGamalConfig::test_generate_identity_data(identity_data);
+            
             for (int i = 0; i < num_of_chunks; ++i) {
                 BN_free(ciphertexts[0][i]);
                 BN_free(ciphertexts[1][i]);
                 BN_free(bn_data_vec[i]);
+                BN_free(ciphertexts_bn[0][i]);
+                BN_free(ciphertexts_bn[1][i]);
             }
+            std::cout << "The test_bignum_in_enclave is done" << std::endl;
 
         } else {
             std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;
