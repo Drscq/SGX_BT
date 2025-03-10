@@ -19,6 +19,13 @@ Bucket::Bucket() {
     this->ciphertextsData.reserve(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
     this->ciphertextsData.resize(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
     this->logger = DurationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
+    // this->block_data_bn_sgx.resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    // this->ciphertexts_data_bn_sgx.resize(2);
+    // for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+    //     this->block_data_bn_sgx[i] = BN_new();
+    //     this->ciphertexts_data_bn_sgx[0][i] = BN_new();
+    //     this->ciphertexts_data_bn_sgx[1][i] = BN_new();
+    // }
 }
 
 Bucket::Bucket(BucketConfig::TYPE_BUCKET_ID id, 
@@ -101,9 +108,13 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
         // std::memcpy(&blockID, this->blockData.data(), sizeof(blockID));
         // std::cout << "blockID: " << blockID << std::endl;
         // elgamal.ParallelEncrypt(this->blockData, ciphertexts);
+        #if USE_OPENSSL
+
+        #else
         elgamal.ParallelEncrypt(this->blockData, this->ciphertexts_ZZ_p);
         // elgamal.SerializeCiphertexts(ciphertexts, this->ciphertextsData);
         elgamal.SerializeCiphertexts(this->ciphertexts_ZZ_p, this->ciphertextsData);
+        #endif
         // this->ciphertextsDataSize = this->ciphertextsData.size();
         // bucketFile.write(reinterpret_cast<const char*>(&this->ciphertextsDataSize), sizeof(this->ciphertextsDataSize));
         bucketFile.write(this->ciphertextsData.data(), this->ciphertextsData.size());

@@ -6,6 +6,7 @@
 #include "Block.h"
 #include <fstream>
 #include "DurationLogger.h"
+#include "configSgx.h"  
 class Bucket {
 public:
     Bucket(); // Default constructor
@@ -92,6 +93,9 @@ public:
      std::string LogEvictionLoadPathBucketsFromDiskScheme2 = "ServerIOEvictionLoadPathBucketsFromDiskScheme2";
 
      std::string LogEarlyReshuffleLoadBucketFromDiskScheme2 = "ServerIOEarlyReshuffleLoadBucketFromDiskScheme2";
+
+//      std::vector<BIGNUM*> block_data_bn_sgx;
+//      std::vector<std::vector<BIGNUM*>> ciphertexts_data_bn_sgx;
 };
 
 
