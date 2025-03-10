@@ -4,6 +4,7 @@
 #include <cassert>
 #include <NTL/BasicThreadPool.h>
 #include <sched.h>    // For sched_getcpu()
+#include <sstream>    // For std::stringstream
 // ElGamal_parallel_ntl::ElGamal_parallel_ntl() {
 //     // std::cout << "ElGamal_parallel_ntl constructor" << std::endl;
 // }
@@ -20,6 +21,11 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     // std::cout << "g_p: " << this->g_p << std::endl;
     this->x = ElGamalNTLConfig::X;
     this->x_p = ElGamalNTLConfig::X_p;
+    m_x_bn_sgx = BN_new();
+    this->ConvertZZPToBIGNUM(this->x_p, m_x_bn_sgx);
+    #if defined(UNIT_TEST_SGX)
+        std::cout << "m_x_bn_sgx: " << BN_bn2dec(m_x_bn_sgx) << std::endl;
+    #endif
     // std::cout << "x_p: " << this->x_p << std::endl;
     this->h = ElGamalNTLConfig::Y;
     this->h_p = ElGamalNTLConfig::Y_p;
@@ -32,8 +38,18 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     // std::cout << "g_pow_k: " << this->g_pow_k << std::endl;
     m_g_pow_k_bn_sgx = BN_new();
     this->ConvertZZPToBIGNUM(this->g_pow_k, m_g_pow_k_bn_sgx);
+    #if defined(UNIT_TEST_SGX)
+        std::cout << "[Construction]g_pow_k: " << this->g_pow_k << std::endl;
+        std::cout << "[Construction]The value of m_g_pow_k_bn_sgx in decimal: " << BN_bn2dec(m_g_pow_k_bn_sgx) << std::endl;
+    #endif
     this->h_pow_k = ElGamalNTLConfig::YPowK;
     // std::cout << "h_pow_k: " << this->h_pow_k << std::endl;
+    m_h_pow_k_bn_sgx = BN_new();
+    this->ConvertZZPToBIGNUM(this->h_pow_k, m_h_pow_k_bn_sgx);
+    #if defined(UNIT_TEST_SGX)
+        std::cout << "[Construction]h_pow_k: " << this->h_pow_k << std::endl;
+        std::cout << "[Construction]The value of m_h_pow_k_bn_sgx in decimal: " << BN_bn2dec(m_h_pow_k_bn_sgx) << std::endl;
+    #endif
      ZZ_p::init(ElGamalNTLConfig::P);
      this->total_chunks = (this->data_size + this->chunk_size - 1) / this->chunk_size;
      this->batch_size_encrypt = (this->total_chunks + this->num_threads - 1) / this->num_threads;
@@ -45,14 +61,23 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     this->threads.resize(this->num_threads);
     this->thread_args.resize(this->num_threads);
     this->thread_args_deserialize.resize(this->num_threads);
+    m_ctx_sgx = BN_CTX_new();
+    m_g_pow_k_x_inv_bn_sgx = BN_new();
+    BN_mod_exp(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_bn_sgx, m_x_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+    BN_mod_inverse(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+    std::cout << "[ElGamal_parallel_ntl]The value of m_g_pow_k_x_inv_bn_sgx: " << BN_bn2dec(m_g_pow_k_x_inv_bn_sgx) << std::endl;
 }
 
 ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {
     // std::cout << "ElGamal_parallel_ntl destructor" << std::endl;
     // delete[] this->buffer;
     // delete[] this->thread_compute;
+    BN_CTX_free(m_ctx_sgx);
     BN_free(m_modulus_sgx);
     BN_free(m_g_pow_k_bn_sgx);
+    BN_free(m_h_pow_k_bn_sgx);
+    BN_free(m_g_pow_k_x_inv_bn_sgx);
+    BN_free(m_x_bn_sgx);
 }
 void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) {
     cpu_set_t cpuset;

@@ -80,6 +80,10 @@ private:
     // OpenSSL Related Variables
     BIGNUM* m_modulus_sgx;
     BIGNUM* m_g_pow_k_bn_sgx;
+    BIGNUM* m_h_pow_k_bn_sgx;
+    BIGNUM* m_g_pow_k_x_inv_bn_sgx;
+    BIGNUM* m_x_bn_sgx;
+    BN_CTX* m_ctx_sgx;
     size_t num_threads;
     size_t num_threads_deseralize = 4;
     size_t chunk_size;
