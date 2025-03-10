@@ -6,9 +6,10 @@
 #include <vector> 
 #include <future>
 #include "config.h"
-// #include "ThreadPool.h"
+#include "configSgx.h"
 #include "DurationLogger.h"
 #include <pthread.h> // For setting CPU affinity
+#include <openssl/bn.h>
 
 using namespace NTL;
 
@@ -27,6 +28,9 @@ public:
     // Function to encrypt a single block
     std::pair<ZZ, ZZ> EncryptBlock(const ZZ &message);
     std::pair<ZZ_p, ZZ_p> EncryptBlock(const ZZ_p &message);
+    // Use openssl BN for faster encryption
+    void EncryptBlock(const BIGNUM* message, BIGNUM* c1, BIGNUM* c2);
+    void ConvertZZPToBIGNUM(const ZZ_p& message, BIGNUM* bn_message);
     // Function to decrypt a single block
     ZZ DecryptBlock(const std::pair<ZZ, ZZ> &ciphertext);
     ZZ_p DecryptBlock(const std::pair<ZZ_p, ZZ_p> &ciphertext);
@@ -73,6 +77,9 @@ public:
     std::vector<char> ZZ_p_to_vector(const ZZ_p &zz_data, size_t original_size);
     void ZZ_p_to_bytes(unsigned char* buffer, size_t buffer_size, const ZZ_p& value);
 private:
+    // OpenSSL Related Variables
+    BIGNUM* m_modulus_sgx;
+    BIGNUM* m_g_pow_k_bn_sgx;
     size_t num_threads;
     size_t num_threads_deseralize = 4;
     size_t chunk_size;

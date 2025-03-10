@@ -10,6 +10,8 @@
 
 ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size) :
     num_threads(num_threads), data_size(data_size) {
+    m_modulus_sgx = BN_new();
+    BN_dec2bn(&m_modulus_sgx, MODULUS_SGX_STR);
     this->chunk_size = ElGamalNTLConfig::CHUNK_SIZE;
     this->per_ciphertext_size = ElGamalNTLConfig::PER_CIPHERTEXT_SIZE;
     this->p = ElGamalNTLConfig::P;
@@ -28,6 +30,8 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     // std::cout << "ElGamal_parallel_ntl constructor" << std::endl;
     this->g_pow_k = ElGamalNTLConfig::GPowK;
     // std::cout << "g_pow_k: " << this->g_pow_k << std::endl;
+    m_g_pow_k_bn_sgx = BN_new();
+    this->ConvertZZPToBIGNUM(this->g_pow_k, m_g_pow_k_bn_sgx);
     this->h_pow_k = ElGamalNTLConfig::YPowK;
     // std::cout << "h_pow_k: " << this->h_pow_k << std::endl;
      ZZ_p::init(ElGamalNTLConfig::P);
@@ -47,6 +51,8 @@ ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {
     // std::cout << "ElGamal_parallel_ntl destructor" << std::endl;
     // delete[] this->buffer;
     // delete[] this->thread_compute;
+    BN_free(m_modulus_sgx);
+    BN_free(m_g_pow_k_bn_sgx);
 }
 void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) {
     cpu_set_t cpuset;
@@ -56,6 +62,19 @@ void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) 
     if (rc != 0) {
         std::cerr << "Error calling pthread_setaffinity_np: " << rc << "\n";
     }
+}
+void ElGamal_parallel_ntl::ConvertZZPToBIGNUM(const ZZ_p& message, BIGNUM* bn_message) {
+    // Check the bn_message is not NULL
+    assert(bn_message != NULL && "[ElGamal_parallel_ntl]Error: bn_message is NULL");
+    // Convert ZZ_p to ZZ
+    ZZ z = rep(message);
+    std::cout << "The value of z: " << z << std::endl;
+    std::stringstream ss;
+    ss << z;
+    std::string str = ss.str();
+    std::cout << "The value of str: " << str << std::endl;
+    BN_dec2bn(&bn_message, str.c_str());
+    std::cout << "The value of bn_message: " << BN_bn2dec(bn_message) << std::endl;
 }
 
 
@@ -97,81 +116,6 @@ void ElGamal_parallel_ntl::ZZ_p_to_bytes(unsigned char* buffer, size_t buffer_si
 }
 
 
-
-
-// std::pair<ZZ, size_t> ElGamal_parallel_ntl::vector_to_ZZ(const std::vector<char> &data) {
-//     size_t leading_zeros = 0;
-//     // Skip leading zeros
-//     while (leading_zeros < data.size() && data[leading_zeros] == 0) {
-//         leading_zeros++;
-//     }
-//     size_t num_bytes = data.size() - leading_zeros;
-//     ZZ z;
-//     if (num_bytes > 0) {
-//          NTL::ZZFromBytes(z, reinterpret_cast<const unsigned char*>(&data[leading_zeros]), num_bytes);
-//     } else {
-//         z = ZZ(0);
-//     }
-//     return std::make_pair(z, leading_zeros);
-// }
-
-// std::pair<ZZ_p, size_t> ElGamal_parallel_ntl::vector_to_ZZ_p(const std::vector<char> &data) {
-//     auto [z, leading_zeros] = vector_to_ZZ(data);
-//     // ZZ_p z_p = conv<ZZ_p>(z);
-//     return std::make_pair(conv<ZZ_p>(z), leading_zeros);
-// }
-
-// std::vector<char> ElGamal_parallel_ntl::ZZ_to_vector(const ZZ &zz_data, size_t original_size, size_t leading_zeros) {
-//     std::vector<char> data(original_size, 0);
-//     long num_bytes = NumBytes(zz_data);
-//     if (num_bytes > original_size - leading_zeros) num_bytes = original_size - leading_zeros;
-//     BytesFromZZ(reinterpret_cast<unsigned char*>(&data[leading_zeros]), zz_data, num_bytes);
-//     return data;
-// }
-
-// std::vector<char> ElGamal_parallel_ntl::ZZ_p_to_vector(const ZZ_p &zz_data, size_t original_size, size_t leading_zeros) {
-//     return ZZ_to_vector(rep(zz_data), original_size, leading_zeros);
-// }
-
-// std::pair<ZZ, size_t> ElGamal_parallel_ntl::vector_to_ZZ(const std::vector<char> &data) {
-//     ZZ z;
-//     size_t leading_zeros = 0;
-//     // skip leading zeros
-//     size_t i = 0;
-//     while (i < data.size() && data[i] == 0) {
-//         leading_zeros++;
-//         i++;
-//     }
-//     // convert the reamining data to ZZ
-//     for (; i < data.size(); ++i) {
-//         z <<= 8;
-//         z += static_cast<unsigned char>(data[i]);
-//     }
-//     return std::make_pair(z, leading_zeros);
-// }
-
-// std::pair<ZZ_p, size_t> ElGamal_parallel_ntl::vector_to_ZZ_p(const std::vector<char> &data) {
-//     auto [z, leading_zeros] = vector_to_ZZ(data);
-//     return std::make_pair(conv<ZZ_p>(z), leading_zeros);
-// }
-
-// std::vector<char> ElGamal_parallel_ntl::ZZ_to_vector(const ZZ &zz_data, size_t original_size) {
-//     std::vector<char> data(original_size, 0);
-//     ZZ z = zz_data;
-//     // size_t i = original_size;
-//     // Fill in the data from least significant byte
-//     while (z != 0 && original_size > 0) {
-//         data[--original_size] = static_cast<char>(to_ulong(z & 0xFF)); // Extract the least significant byte
-//         z >>= 8;  // Shift right by 8 bits
-//     }
-//     return data;
-// }
-
-// std::vector<char> ElGamal_parallel_ntl::ZZ_p_to_vector(const ZZ_p &zz_data, size_t original_size) {
-//     // ZZ z = rep(zz_data);
-//     // return ZZ_to_vector(z, original_size);
-//     return ZZ_to_vector(rep(zz_data), original_size);
-// }
 // /*
 // Function to encrypt a single block
 // Name: EncryptBlock
