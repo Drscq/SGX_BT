@@ -117,25 +117,27 @@ void Tree::GenTree(std::unordered_map<BucketConfig::TYPE_BUCKET_ID, BucketConfig
 
 void Tree::GenPathMDs(std::unordered_map<BucketConfig::TYPE_BUCKET_ID, BucketConfig::META_DATA>& metaDatas,
                   PathConfig::TYPE_PATH_ID pathID) {
-    this->path = Path(pathID, this->height);
+    // this->path = Path(pathID, this->height);
+    Path path(pathID, this->height);
     for (PathConfig::TYPE_PATH_SIZE i = 0; i < this->height - 1; ++i) {
         BucketConfig::META_DATA md;
         md.shiftNextDummyIndex2End();
-        metaDatas[this->path.bIDs[i]] = md;
+        metaDatas[path.bIDs[i]] = md;
     }
     BucketConfig::META_DATA md;
     this->blockID = 0;
     md.AddRealBlock(this->blockID, 0);
     md.shiftNextDummyIndex2End();
-    metaDatas[this->path.bIDs[this->height - 1]] = md;
+    metaDatas[path.bIDs[this->height - 1]] = md;
 }
 
 void Tree::GenEvictPathMDs(std::unordered_map<BucketConfig::TYPE_BUCKET_ID, BucketConfig::META_DATA>& metaDatas,
                        PathConfig::TYPE_PATH_ID pathID) {
-    this->path = Path(pathID, this->height);
+    // this->path = Path(pathID, this->height);
+    Path path(pathID, this->height);
     BucketConfig::META_DATA rootMD;
     metaDatas[0] = rootMD;
-    for (const auto& bID : this->path.bIDs) {
+    for (const auto& bID : path.bIDs) {
         for (BucketConfig::TYPE_SMALL_INDEX_U i = 0; i < 2; ++i) {
             BucketConfig::META_DATA md;
             md.shiftNextDummyIndex2End();
@@ -145,15 +147,16 @@ void Tree::GenEvictPathMDs(std::unordered_map<BucketConfig::TYPE_BUCKET_ID, Buck
 }
 
 void Tree::GenPathwithMDs(PathConfig::TYPE_PATH_ID pathID) {
-    this->path = Path(pathID, this->height);
+    // this->path = Path(pathID, this->height);
+    Path path(pathID, this->height);
     for (PathConfig::TYPE_PATH_SIZE i = 0; i < this->height - 1; ++i) {
         this->md.shiftNextDummyIndex2End();
         this->md.Serialize(this->SerializedDataMD);
-        this->EncryptMD(this->SerializedDataMD, this->path.bIDs[i]);
-        this->ofs.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->path.bIDs[i]), std::ios::binary);
+        this->EncryptMD(this->SerializedDataMD, path.bIDs[i]);
+        this->ofs.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(path.bIDs[i]), std::ios::binary);
         this->ofs.write(this->SerializedDataMD.data(), BucketConfig::META_DATA_SIZE);
         for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-            std::memset(iv, this->path.bIDs[i] + j, AES_BLOCK_SIZE);
+            std::memset(iv, path.bIDs[i] + j, AES_BLOCK_SIZE);
             this->aes.encrypt(reinterpret_cast<const unsigned char*>(this->blockDummyData.data()),
                                 BlockConfig::BLOCK_SIZE,
                                 reinterpret_cast<unsigned char*>(this->blockEncryptedData.data()),
@@ -167,11 +170,11 @@ void Tree::GenPathwithMDs(PathConfig::TYPE_PATH_ID pathID) {
     this->md.AddRealBlock(this->blockID, 0);
     this->md.shiftNextDummyIndex2End();
     this->md.Serialize(this->SerializedDataMD);
-    this->EncryptMD(this->SerializedDataMD, this->path.bIDs[this->height - 1]);
-    this->ofs.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->path.bIDs[this->height - 1]), std::ios::binary);
+    this->EncryptMD(this->SerializedDataMD, path.bIDs[this->height - 1]);
+    this->ofs.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(path.bIDs[this->height - 1]), std::ios::binary);
     this->ofs.write(this->SerializedDataMD.data(), BucketConfig::META_DATA_SIZE);
     for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < this->md.nextRealIndex; ++j) {
-        std::memset(iv, this->path.bIDs[this->height - 1] + this->md.offsets[j], AES_BLOCK_SIZE);
+        std::memset(iv, path.bIDs[this->height - 1] + this->md.offsets[j], AES_BLOCK_SIZE);
         this->block.GenData(BlockConfig::BLOCK_SIZE, true, this->md.addrs[j], this->blockRealData);
         this->aes.encrypt(reinterpret_cast<const unsigned char*>(this->blockRealData.data()),
                             BlockConfig::BLOCK_SIZE,
@@ -181,7 +184,7 @@ void Tree::GenPathwithMDs(PathConfig::TYPE_PATH_ID pathID) {
         this->ofs.write(this->blockEncryptedData.data(), BlockConfig::BLOCK_SIZE);
     }
     for (BucketConfig::TYPE_BUCKET_SIZE j = this->md.nextRealIndex; j < BucketConfig::BUCKET_SIZE; ++j) {
-        std::memset(iv, this->path.bIDs[this->height - 1] + this->md.offsets[j], AES_BLOCK_SIZE);
+        std::memset(iv, path.bIDs[this->height - 1] + this->md.offsets[j], AES_BLOCK_SIZE);
         this->aes.encrypt(reinterpret_cast<const unsigned char*>(this->blockDummyData.data()),
                             BlockConfig::BLOCK_SIZE,
                             reinterpret_cast<unsigned char*>(this->blockEncryptedData.data()),
@@ -208,15 +211,16 @@ void Tree::GenEvictPathWithMDs(PathConfig::TYPE_PATH_ID pathID) {
         FileConfig::fileWriteScheme1.write(this->blockEncryptedData.data(), BlockConfig::BLOCK_SIZE);
     }
     FileConfig::fileWriteScheme1.close();
-    this->path = Path(pathID, this->height);
+    // this->path = Path(pathID, this->height);
+    Path path(pathID, this->height);
     for (PathConfig::TYPE_PATH_SIZE i = 0; i < this->height - 1; ++i) {
-        FileConfig::fileWriteScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->path.bIDs[i] * 2 + 1), std::ios::binary);
+        FileConfig::fileWriteScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(path.bIDs[i] * 2 + 1), std::ios::binary);
         this->md.shiftNextDummyIndex2End();
         this->md.Serialize(this->SerializedDataMD);
-        this->EncryptMD(this->SerializedDataMD, this->path.bIDs[i] * 2 + 1);
+        this->EncryptMD(this->SerializedDataMD, path.bIDs[i] * 2 + 1);
         FileConfig::fileWriteScheme1.write(this->SerializedDataMD.data(), BucketConfig::META_DATA_SIZE);
         for (BucketConfig::TYPE_SLOT_ID j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-            std::memset(iv, this->path.bIDs[i] * 2 + 1 + j, AES_BLOCK_SIZE);
+            std::memset(iv, path.bIDs[i] * 2 + 1 + j, AES_BLOCK_SIZE);
             this->aes.encrypt(reinterpret_cast<const unsigned char*>(this->blockDummyData.data()),
                                 BlockConfig::BLOCK_SIZE,
                                 reinterpret_cast<unsigned char*>(this->blockEncryptedData.data()),
@@ -224,13 +228,13 @@ void Tree::GenEvictPathWithMDs(PathConfig::TYPE_PATH_ID pathID) {
             FileConfig::fileWriteScheme1.write(this->blockEncryptedData.data(), BlockConfig::BLOCK_SIZE);
         }
         FileConfig::fileWriteScheme1.close();
-        FileConfig::fileWriteScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->path.bIDs[i] * 2 + 2), std::ios::binary);
+        FileConfig::fileWriteScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(path.bIDs[i] * 2 + 2), std::ios::binary);
         this->md.shiftNextDummyIndex2End();
         this->md.Serialize(this->SerializedDataMD);
-        this->EncryptMD(this->SerializedDataMD, this->path.bIDs[i] * 2 + 2);
+        this->EncryptMD(this->SerializedDataMD, path.bIDs[i] * 2 + 2);
         FileConfig::fileWriteScheme1.write(this->SerializedDataMD.data(), BucketConfig::META_DATA_SIZE);
         for (BucketConfig::TYPE_SLOT_ID j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-            std::memset(iv, this->path.bIDs[i] * 2 + 2 + j, AES_BLOCK_SIZE);
+            std::memset(iv, path.bIDs[i] * 2 + 2 + j, AES_BLOCK_SIZE);
             this->aes.encrypt(reinterpret_cast<const unsigned char*>(this->blockDummyData.data()),
                                 BlockConfig::BLOCK_SIZE,
                                 reinterpret_cast<unsigned char*>(this->blockEncryptedData.data()),

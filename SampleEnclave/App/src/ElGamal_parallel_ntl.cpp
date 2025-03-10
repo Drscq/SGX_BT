@@ -456,6 +456,21 @@ void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<char>& data, std::v
     }   
 }
 
+void ElGamal_parallel_ntl::ConvertVecBNCipher2VecChar(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2, std::vector<char>& data) {
+    auto it = data.begin();
+    for (int i = 0; i < c1.size(); ++i) {
+        BN_bn2binpad(c1[i], reinterpret_cast<unsigned char*>(&(*it)), this->per_ciphertext_size);
+        if (i != c1.size() - 1) {
+            it += this->per_ciphertext_size;
+        }
+        BN_bn2binpad(c2[i], reinterpret_cast<unsigned char*>(&(*it)), this->per_ciphertext_size);
+        if (i == c1.size() - 1) {
+            it += this->per_ciphertext_size;
+        }
+    }
+}
+    
+
 void ElGamal_parallel_ntl::ParallelDecrypt(const std::vector<std::vector<BIGNUM*>>& ciphertexts, std::vector<char>& data) {
     std::vector<BIGNUM*> decrypted_data(ciphertexts[0].size());
     for (int i = 0; i < decrypted_data.size(); ++i) {

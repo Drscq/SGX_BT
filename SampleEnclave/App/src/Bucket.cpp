@@ -18,7 +18,14 @@ Bucket::Bucket() {
     this->elgamal.ParallelEncrypt(this->dummyBlock, this->dummyBlockCiphertexts);
     this->ciphertextsData.reserve(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
     this->ciphertextsData.resize(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-    this->logger = DurationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
+    // this->logger = DurationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
+    this->block_data_bn_sgx.resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    this->ciphertexts_data_bn_sgx.resize(2);
+    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        this->block_data_bn_sgx[i] = BN_new();
+        this->ciphertexts_data_bn_sgx[0][i] = BN_new();
+        this->ciphertexts_data_bn_sgx[1][i] = BN_new();
+    }
 }
 
 Bucket::Bucket(BucketConfig::TYPE_BUCKET_ID id, 
@@ -40,12 +47,16 @@ Bucket::Bucket(BucketConfig::TYPE_BUCKET_ID id,
     this->block.GenData(this->blockSize, false, -1, this->dummyBlock);
     this->elgamal.ParallelEncrypt(this->dummyBlock, this->dummyBlockCiphertexts);
     this->logger = DurationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
-    
-   
+    this->block_data_bn_sgx.resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
 }
 
 Bucket::~Bucket() {
     // data.clear();
+    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        BN_free(this->block_data_bn_sgx[i]);
+        BN_free(this->ciphertexts_data_bn_sgx[0][i]);
+        BN_free(this->ciphertexts_data_bn_sgx[1][i]);
+    }
 }
 
 void Bucket::SetBucketID(BucketConfig::TYPE_BUCKET_ID id) {
@@ -102,7 +113,9 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
         // std::cout << "blockID: " << blockID << std::endl;
         // elgamal.ParallelEncrypt(this->blockData, ciphertexts);
         #if USE_OPENSSL
-
+        elgamal.ConvertVecChar2VecBN(this->blockData, this->block_data_bn_sgx);
+        elgamal.ParallelEncrypt(this->block_data_bn_sgx, this->ciphertexts_data_bn_sgx[0], this->ciphertexts_data_bn_sgx[1]);
+        elgamal.ConvertVecBNCipher2VecChar(this->ciphertexts_data_bn_sgx[0], this->ciphertexts_data_bn_sgx[1], this->ciphertextsData);
         #else
         elgamal.ParallelEncrypt(this->blockData, this->ciphertexts_ZZ_p);
         // elgamal.SerializeCiphertexts(ciphertexts, this->ciphertextsData);

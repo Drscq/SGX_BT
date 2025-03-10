@@ -97,7 +97,7 @@ void InitializeElGamalParams() {
     // Generate random K and convert to K_p
     ElGamalNTLConfig::K = RandomLen_ZZ(ElGamalNTLConfig::RANDOM_SIZE);
     ElGamalNTLConfig::K_p = conv<ZZ_p>(ElGamalNTLConfig::K);
-    std::cout << "K_p: " << ElGamalNTLConfig::K_p << std::endl; 
+    // std::cout << "K_p: " << ElGamalNTLConfig::K_p << std::endl; 
      ElGamalNTLConfig::GPowK = power(ElGamalNTLConfig::G_p, ElGamalNTLConfig::K);
      ElGamalNTLConfig::YPowK = power(ElGamalNTLConfig::Y_p, ElGamalNTLConfig::K);
 }
@@ -386,8 +386,11 @@ int SGX_CDECL main(int argc, char *argv[])
             durationLogger.stopTiming(logMessage);
             durationLogger.writeToFile();
         } else if (strcmp(argv[1], "server") == 0) {
-            Server server(ServerConfig::PORT, global_eid);
-            server.Start();
+            std::cout << "Starting server..." << std::endl;
+            // Server server();
+            Server server(ServerConfig::PORT);
+            // Server server(ServerConfig::PORT, global_eid);
+            // server.Start();
         } else if (strcmp(argv[1], "test_bignum") == 0) {
             // Test BIGNUM functionality
             // test_bignum_in_enclave();

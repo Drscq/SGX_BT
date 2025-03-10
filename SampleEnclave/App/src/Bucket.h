@@ -2,6 +2,7 @@
 #ifndef BUCKET_H
 #define BUCKET_H
 #include "config.h"
+#include "configSgx.h"
 #include "ElGamal_parallel_ntl.h"
 #include "Block.h"
 #include <fstream>
@@ -97,6 +98,12 @@ public:
     Bucket& operator=(const Bucket&) = delete;
     Bucket(Bucket&&) = default;
     Bucket& operator=(Bucket&&) = default;
+    // OpenSSL Related
+    /*
+    * @brief store the BIGNUM data converted from the char data
+    */
+   std::vector<BIGNUM*> block_data_bn_sgx;
+   std::vector<std::vector<BIGNUM*>> ciphertexts_data_bn_sgx;
 };
 
 
