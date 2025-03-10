@@ -19,13 +19,15 @@ Bucket::Bucket() {
     this->ciphertextsData.reserve(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
     this->ciphertextsData.resize(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
     this->logger = DurationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
-    // this->block_data_bn_sgx.resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
-    // this->ciphertexts_data_bn_sgx.resize(2);
-    // for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
-    //     this->block_data_bn_sgx[i] = BN_new();
-    //     this->ciphertexts_data_bn_sgx[0][i] = BN_new();
-    //     this->ciphertexts_data_bn_sgx[1][i] = BN_new();
-    // }
+    this->block_data_bn_sgx.resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    this->ciphertexts_data_bn_sgx.resize(2);
+    this->ciphertexts_data_bn_sgx[0].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    this->ciphertexts_data_bn_sgx[1].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        this->block_data_bn_sgx[i] = BN_new();
+        this->ciphertexts_data_bn_sgx[0][i] = BN_new();
+        this->ciphertexts_data_bn_sgx[1][i] = BN_new();
+    }
 }
 
 Bucket::Bucket(BucketConfig::TYPE_BUCKET_ID id, 
@@ -47,22 +49,24 @@ Bucket::Bucket(BucketConfig::TYPE_BUCKET_ID id,
     this->block.GenData(this->blockSize, false, -1, this->dummyBlock);
     this->elgamal.ParallelEncrypt(this->dummyBlock, this->dummyBlockCiphertexts);
     this->logger = DurationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
-    // this->block_data_bn_sgx.resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
-    // this->ciphertexts_data_bn_sgx.resize(2);
-    // for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
-    //     this->block_data_bn_sgx[i] = BN_new();
-    //     this->ciphertexts_data_bn_sgx[0][i] = BN_new();
-    //     this->ciphertexts_data_bn_sgx[1][i] = BN_new();
-    // }
+    this->block_data_bn_sgx.resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    this->ciphertexts_data_bn_sgx.resize(2);
+    this->ciphertexts_data_bn_sgx[0].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    this->ciphertexts_data_bn_sgx[1].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        this->block_data_bn_sgx[i] = BN_new();
+        this->ciphertexts_data_bn_sgx[0][i] = BN_new();
+        this->ciphertexts_data_bn_sgx[1][i] = BN_new();
+    }
 }
 
 Bucket::~Bucket() {
     // data.clear();
-    // for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
-    //     BN_free(this->block_data_bn_sgx[i]);
-    //     BN_free(this->ciphertexts_data_bn_sgx[0][i]);
-    //     BN_free(this->ciphertexts_data_bn_sgx[1][i]);
-    // }
+    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        BN_free(this->block_data_bn_sgx[i]);
+        BN_free(this->ciphertexts_data_bn_sgx[0][i]);
+        BN_free(this->ciphertexts_data_bn_sgx[1][i]);
+    }
 }
 
 void Bucket::SetBucketID(BucketConfig::TYPE_BUCKET_ID id) {
@@ -111,22 +115,18 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
     }
     // Save the this->data to the file namely fileName
     std::ofstream bucketFile(dirPath + "/" + fileName, std::ios::binary);
-    std::vector<BIGNUM*> block_data_bn_sgx(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
-    std::vector<BIGNUM*> ciphertexts_data_bn_sgx[2];
-    ciphertexts_data_bn_sgx[0].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
-    ciphertexts_data_bn_sgx[1].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
-    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
-        block_data_bn_sgx[i] = BN_new();
-        ciphertexts_data_bn_sgx[0][i] = BN_new();
-        ciphertexts_data_bn_sgx[1][i] = BN_new();
-    }
+    // std::vector<BIGNUM*> block_data_bn_sgx(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    // std::vector<BIGNUM*> ciphertexts_data_bn_sgx[2];
+    // ciphertexts_data_bn_sgx[0].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    // ciphertexts_data_bn_sgx[1].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    // for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+    //     block_data_bn_sgx[i] = BN_new();
+    //     ciphertexts_data_bn_sgx[0][i] = BN_new();
+    //     ciphertexts_data_bn_sgx[1][i] = BN_new();
+    // }
     for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < this->bucketSize; i++) {
         // Encrypt the block data before saving to disk via ElGamal_parallel_ntl
         std::copy(data.begin() + i * this->blockSize, data.begin() + (i + 1) * this->blockSize, this->blockData.begin());
-        // BlockConfig::TYPE_BLOCK_ID blockID;
-        // std::memcpy(&blockID, this->blockData.data(), sizeof(blockID));
-        // std::cout << "blockID: " << blockID << std::endl;
-        // elgamal.ParallelEncrypt(this->blockData, ciphertexts);
         #if USE_OPENSSL
         elgamal.ConvertVecChar2VecBN(this->blockData, block_data_bn_sgx);
         elgamal.ParallelEncrypt(block_data_bn_sgx, ciphertexts_data_bn_sgx[0], ciphertexts_data_bn_sgx[1]);
@@ -142,11 +142,11 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
         bucketFile.write(this->ciphertextsData.data(), this->ciphertextsData.size());
     }
     // free the memory
-    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
-        BN_free(block_data_bn_sgx[i]);
-        BN_free(ciphertexts_data_bn_sgx[0][i]);
-        BN_free(ciphertexts_data_bn_sgx[1][i]);
-    }
+    // for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+    //     BN_free(block_data_bn_sgx[i]);
+    //     BN_free(ciphertexts_data_bn_sgx[0][i]);
+    //     BN_free(ciphertexts_data_bn_sgx[1][i]);
+    // }
     bucketFile.close();
 }
 /**
