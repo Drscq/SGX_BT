@@ -113,6 +113,8 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
     std::ofstream bucketFile(dirPath + "/" + fileName, std::ios::binary);
     std::vector<BIGNUM*> block_data_bn_sgx(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
     std::vector<BIGNUM*> ciphertexts_data_bn_sgx[2];
+    ciphertexts_data_bn_sgx[0].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    ciphertexts_data_bn_sgx[1].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
     for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
         block_data_bn_sgx[i] = BN_new();
         ciphertexts_data_bn_sgx[0][i] = BN_new();
@@ -128,6 +130,7 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
         #if USE_OPENSSL
         elgamal.ConvertVecChar2VecBN(this->blockData, block_data_bn_sgx);
         elgamal.ParallelEncrypt(block_data_bn_sgx, ciphertexts_data_bn_sgx[0], ciphertexts_data_bn_sgx[1]);
+        std::vector<char> ciphertextsData(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
         elgamal.ConvertVecBNCipher2VecChar(ciphertexts_data_bn_sgx[0], ciphertexts_data_bn_sgx[1], ciphertextsData);
         #else
         elgamal.ParallelEncrypt(this->blockData, this->ciphertexts_ZZ_p);

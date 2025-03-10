@@ -252,7 +252,7 @@ void Server::handleClient(int clientSockfd) {
                 this->communicator.sendData(clientSockfd, this->targetBlockCiphertextsSerializedData.data(), this->targetBlockCiphertextsSerializedData.size());
 
             } else if (this->command == ServerConfig::CMD_EARLY_RESHUFFLE_INIT) {
-                // std::cout << "Received command: CMD_EARLY_RESHUFFLE_INIT" << std::endl;
+                std::cout << "Received command: CMD_EARLY_RESHUFFLE_INIT" << std::endl;
                 this->path.GenRootBucket(0, this->rootBucketMD, BucketConfig::BUCKET_REAL_BLOCK_CAPACITY - 1, false);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
             } else if (this->command == ServerConfig::CMD_EARLY_RESHUFFLE) {

@@ -131,6 +131,7 @@ void Path::GenRootBucket(BucketConfig::TYPE_BUCKET_ID rootBucketID,
             bucket.AddDummyBlock(blockData);
         }
         rootBucketMD = std::move(bucket.md);
+        std::cout << "[Path::GenRootBucket] rootBucketID: " << rootBucketID << std::endl;
         bucket.SaveData2Disk(BucketConfig::DATADIR, BucketConfig::BUCKETPREFIX + std::to_string(rootBucketID));
     }
 
