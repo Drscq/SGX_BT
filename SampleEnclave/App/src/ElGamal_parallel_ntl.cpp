@@ -463,7 +463,7 @@ void ElGamal_parallel_ntl::ConvertVecBNCipher2VecChar(std::vector<BIGNUM*>& c1, 
             it += this->per_ciphertext_size;
         }
         BN_bn2binpad(c2[i], reinterpret_cast<unsigned char*>(&(*it)), this->per_ciphertext_size);
-        if (i == c1.size() - 1) {
+        if (i != c1.size() - 1) {
             it += this->per_ciphertext_size;
         }
     }
