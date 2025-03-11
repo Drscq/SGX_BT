@@ -82,7 +82,7 @@ namespace SizeConfig {
 
 // Macros for the ElGamal_parallel_ntl
 #define MULTI_THREAD_SWITCH 0
-#define MULTI_THREAD_RERANDOMIZE_SWITCH 0
+#define MULTI_THREAD_RERANDOMIZE_SWITCH 1
 #define MULTI_THREAD_DESERIALIZE_SWITCH 0
 #define MULTI_THREAD_BASIC_THREAD_POOL 0
 #define MULTI_THREAD_FUTURE_VERSION 0
@@ -113,7 +113,7 @@ namespace FileConfig
 namespace ServerConfig {
     #if  MULTI_THREAD_RERANDOMIZE_SWITCH
         // #if BLOCK_SIZE_IS_64KB
-        inline size_t num_threads = 32;
+        inline size_t num_threads = 20;
         // #endif
     #else
         inline size_t num_threads = 1;
@@ -183,7 +183,7 @@ namespace PathConfig {
 namespace BlockConfig {
     typedef long long TYPE_BLOCK_ID;
     typedef unsigned long long TYPE_BLOCK_SIZE;
-    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 1024 * 64 * 73 * 3;
+    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 1024;
 }
 
 namespace AESConfig {

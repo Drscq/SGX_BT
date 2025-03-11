@@ -397,9 +397,9 @@ int SGX_CDECL main(int argc, char *argv[])
                 auto stop = high_resolution_clock::now();
                 auto duration = duration_cast<microseconds>(stop - start);
                 std::cout << "ParallelRerandomize took " << duration.count() << " microseconds" << " with " << num_threads << " threads" << std::endl;
-                // std::vector<char> decrypted_data_identity;
-                // elgamal.ParallelDecrypt(ciphertexts_bn, decrypted_data_identity);
-                // ElGamalConfig::test_generate_identity_data(decrypted_data_identity);
+                std::vector<char> decrypted_data_identity;
+                elgamal.ParallelDecrypt(ciphertexts_bn, decrypted_data_identity);
+                ElGamalConfig::test_generate_identity_data(decrypted_data_identity);
                 
                 for (int j = 0; j < num_of_chunks; ++j) {
                     BN_free(ciphertexts[0][j]);

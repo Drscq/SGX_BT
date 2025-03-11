@@ -62,16 +62,16 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     this->thread_args_deserialize.resize(this->num_threads);
     this->thread_bn_data.resize(this->num_threads);
     m_ctx_sgx = BN_CTX_new();
-    m_ctx_vec_sgx.resize(this->num_threads);
-    for (size_t i = 0; i < this->num_threads; ++i) {
-        m_ctx_vec_sgx[i] = BN_CTX_new();
-    }
     m_g_pow_k_x_inv_bn_sgx = BN_new();
     BN_mod_exp(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_bn_sgx, m_x_bn_sgx, m_modulus_sgx, m_ctx_sgx);
     BN_mod_inverse(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
     #if defined(UNIT_TEST_SGX)
     std::cout << "[ElGamal_parallel_ntl]The value of m_g_pow_k_x_inv_bn_sgx: " << BN_bn2dec(m_g_pow_k_x_inv_bn_sgx) << std::endl;
     #endif
+    m_ctx_vec_sgx.resize(this->num_threads);
+    for (int i = 0; i < this->num_threads; ++i) {
+        m_ctx_vec_sgx[i] = BN_CTX_new();
+    }
 }
 
 ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {
@@ -84,9 +84,9 @@ ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {
     BN_free(m_h_pow_k_bn_sgx);
     BN_free(m_g_pow_k_x_inv_bn_sgx);
     BN_free(m_x_bn_sgx);
-    for (size_t i = 0; i < this->num_threads; ++i) {
-        BN_CTX_free(m_ctx_vec_sgx[i]);
-    }
+    // for (int i = 0; i < this->num_threads; ++i) {
+    //     BN_CTX_free(m_ctx_vec_sgx[i]);
+    // }
 }
 void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) {
     cpu_set_t cpuset;

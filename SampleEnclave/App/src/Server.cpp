@@ -552,6 +552,8 @@ void Server::handleClient(int clientSockfd) {
                     this->bucketCiphertextsBNSgxSize,
                     this->perm2EarlyReshuffleComplete);
                 std::cout << "Finish the permutation" << std::endl;
+                this->elgamal.ParallelRerandomize(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1]);
+                std::cout << "Finish the rerandomize" << std::endl;
                 // this->bucketCiphertexts_flat.clear();
                 // for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {
                 //     this->bucketCiphertexts_flat.insert(this->bucketCiphertexts_flat.end(),
