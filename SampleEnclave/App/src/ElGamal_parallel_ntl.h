@@ -107,6 +107,7 @@ private:
     BIGNUM* m_g_pow_k_x_inv_bn_sgx;
     BIGNUM* m_x_bn_sgx;
     BN_CTX* m_ctx_sgx;
+    std::vector<BN_CTX*> m_ctx_vec_sgx;
 
     size_t num_threads;
     size_t num_threads_deserialize = 4;
@@ -206,7 +207,9 @@ private:
     }
     std::vector<pthread_t> threads;
     std::vector<ThreadArgs> thread_args;
+    std::vector<BNConfig::ThreadBNData> thread_bn_data;
     ElGamalNTLConfig::TYPE_BATCH_SIZE startIdx, endIdx;
+    int startIdxBN, endIdxBN, currentIdxBN, threadChunkSizeBN;
 
     struct ThreadArgsDeserialize {
         const unsigned char* data_ptr;

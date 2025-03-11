@@ -38,17 +38,17 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     // std::cout << "g_pow_k: " << this->g_pow_k << std::endl;
     m_g_pow_k_bn_sgx = BN_new();
     this->ConvertZZPToBIGNUM(this->g_pow_k, m_g_pow_k_bn_sgx);
-    // #if defined(UNIT_TEST_SGX)
+    #if defined(UNIT_TEST_SGX)
     std::cout << "[Construction]g_pow_k: " << this->g_pow_k << std::endl;
     std::cout << "[Construction]The value of m_g_pow_k_bn_sgx in decimal: " << BN_bn2dec(m_g_pow_k_bn_sgx) << std::endl;
-    // #endif
+    #endif
     this->h_pow_k = ElGamalNTLConfig::YPowK;
     m_h_pow_k_bn_sgx = BN_new();
     this->ConvertZZPToBIGNUM(this->h_pow_k, m_h_pow_k_bn_sgx);
-    // #if defined(UNIT_TEST_SGX)
+    #if defined(UNIT_TEST_SGX)
     std::cout << "[Construction]h_pow_k: " << this->h_pow_k << std::endl;
     std::cout << "[Construction]The value of m_h_pow_k_bn_sgx in decimal: " << BN_bn2dec(m_h_pow_k_bn_sgx) << std::endl;
-    // #endif
+    #endif
      ZZ_p::init(ElGamalNTLConfig::P);
      this->total_chunks = (this->data_size + this->chunk_size - 1) / this->chunk_size;
      this->batch_size_encrypt = (this->total_chunks + this->num_threads - 1) / this->num_threads;
@@ -60,7 +60,12 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     this->threads.resize(this->num_threads);
     this->thread_args.resize(this->num_threads);
     this->thread_args_deserialize.resize(this->num_threads);
+    this->thread_bn_data.resize(this->num_threads);
     m_ctx_sgx = BN_CTX_new();
+    m_ctx_vec_sgx.resize(this->num_threads);
+    for (size_t i = 0; i < this->num_threads; ++i) {
+        m_ctx_vec_sgx[i] = BN_CTX_new();
+    }
     m_g_pow_k_x_inv_bn_sgx = BN_new();
     BN_mod_exp(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_bn_sgx, m_x_bn_sgx, m_modulus_sgx, m_ctx_sgx);
     BN_mod_inverse(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
@@ -79,6 +84,9 @@ ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {
     BN_free(m_h_pow_k_bn_sgx);
     BN_free(m_g_pow_k_x_inv_bn_sgx);
     BN_free(m_x_bn_sgx);
+    for (size_t i = 0; i < this->num_threads; ++i) {
+        BN_CTX_free(m_ctx_vec_sgx[i]);
+    }
 }
 void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) {
     cpu_set_t cpuset;
@@ -336,43 +344,6 @@ void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<char>& data, std::v
     // std::cout << "Parallel encryption completed" << std::endl;
     
 }
-
-// void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<char>& data, std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts) {
-//     // std::cout << "Starting parallel encryption..." << std::endl;
-//     ciphertexts.clear();
-//     size_t i = 0; 
-//     std::vector<std::future<std::pair<ZZ_p, ZZ_p>>> futures;
-
-//     // Encrypt the data in chunks using multiple threads
-//     while (i < data.size()) {
-//         size_t end_index = std::min(i + this->chunk_size, data.size());
-//         std::vector<char> chunk_data(data.begin() + i, data.begin() + end_index);
-//         i += this->chunk_size;
-//         // Launch asynchronous task to encrypt the chunk
-//         futures.push_back(
-//             std::async(
-//                 std::launch::async, [this, chunk_data]() {
-//                     ZZ_p::init(ElGamalNTLConfig::P);  // Initialize ZZ_p
-//                     auto [message, _] = this->vector_to_ZZ_p(chunk_data);
-//                     return EncryptBlock(message);
-//                 }
-//             )
-//         );
-        
-//         // Manage thread pool size
-//         if (futures.size() >= this->num_threads) {
-//             ciphertexts.push_back(futures.front().get());
-//             futures.erase(futures.begin());
-//         }
-
-//     }
-
-//     // Retrieve the remaining futures
-//     for (auto& future : futures) {
-//         ciphertexts.push_back(future.get());
-//     }
-    
-// }
 
 void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<char>& data, std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts) {
     ciphertexts.clear();
@@ -786,14 +757,65 @@ void ElGamal_parallel_ntl::ReRandomizeChunk(BIGNUM* c1, BIGNUM* c2) {
     BN_mod_mul(c1, c1, m_g_pow_k_bn_sgx, m_modulus_sgx, m_ctx_sgx);
     BN_mod_mul(c2, c2, m_h_pow_k_bn_sgx, m_modulus_sgx, m_ctx_sgx);
 }
-
+/*
+* Worker function (the thread entry point) for parallel re-randomization
+*/
+static void* WorkerFunction(void* arg) {
+    BNConfig::ThreadBNData* thread_data = reinterpret_cast<BNConfig::ThreadBNData*>(arg);
+    for (int i = thread_data->startIdx; i < thread_data->endIdx; ++i) {
+        BN_mod_mul((*thread_data->c1)[i], (*thread_data->c1)[i], thread_data->g_pow_k_sgx, thread_data->modulus_sgx, thread_data->ctx_sgx);
+        BN_mod_mul((*thread_data->c2)[i], (*thread_data->c2)[i], thread_data->h_pow_k_sgx, thread_data->modulus_sgx, thread_data->ctx_sgx);
+    }
+    return nullptr;
+}
 void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2) {
     #if defined(UNIT_TEST_SGX)
     assert((c1.size() == c2.size()) && "Error: c1 and c2 size mismatch");
     #endif
-    for (ElGamalNTLConfig::TYPE_BATCH_SIZE i = 0; i < c1.size(); ++i) {
-        this->ReRandomizeChunk(c1[i], c2[i]);
+    if (this->num_threads <= 1) {
+        for (ElGamalNTLConfig::TYPE_BATCH_SIZE i = 0; i < c1.size(); ++i) {
+            this->ReRandomizeChunk(c1[i], c2[i]);
+        }
+    } else {
+        this->threadChunkSizeBN = (c1.size() + this->num_threads - 1) / this->num_threads;
+        this->currentIdxBN = 0;
+        int actualThreads = 0; // track how many threads we actually start
+        for (int t = 0; t < this->num_threads; ++t) {
+            this->startIdxBN = this->currentIdxBN;
+            this->endIdxBN = std::min(this->startIdxBN + this->threadChunkSizeBN, static_cast<int>(c1.size()));
+            if (this->startIdxBN >= this->endIdxBN) {
+                throw std::runtime_error("Error: Invalid thread chunk size");
+            }
+            this->thread_bn_data[t].c1 = &c1;
+            this->thread_bn_data[t].c2 = &c2;
+            this->thread_bn_data[t].g_pow_k_sgx = this->m_g_pow_k_bn_sgx;
+            this->thread_bn_data[t].h_pow_k_sgx = this->m_h_pow_k_bn_sgx;
+            this->thread_bn_data[t].modulus_sgx = this->m_modulus_sgx;
+            this->thread_bn_data[t].ctx_sgx = this->m_ctx_vec_sgx[t];
+            this->thread_bn_data[t].startIdx = this->startIdxBN;
+            this->thread_bn_data[t].endIdx = this->endIdxBN;
+
+            pthread_create(&this->threads[t], nullptr, WorkerFunction, &this->thread_bn_data[t]);
+            // Then set CPU affinity:
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            // Suppose you pin to core t if it exists, or you pick some mapping
+            CPU_SET(56 - t, &cpuset);
+            pthread_setaffinity_np(this->threads[t], sizeof(cpu_set_t), &cpuset);
+            this->currentIdxBN = this->endIdxBN;
+            actualThreads++;
+            if (this->currentIdxBN >= (int)c1.size()) {
+                // No more data to process
+                break;
+            }
+        }
+
+        for (int t = 0; t < actualThreads; ++t) {
+            pthread_join(this->threads[t], nullptr);
+        }
+        
     }
+    
 }
 
 

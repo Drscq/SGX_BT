@@ -299,103 +299,115 @@ int SGX_CDECL main(int argc, char *argv[])
         } else if (strcmp(argv[1], "test_bignum") == 0) {
             // Test BIGNUM functionality
             // test_bignum_in_enclave();
-            size_t num_threads = 2; 
-            size_t data_size = 2;
-            ElGamal_parallel_ntl elgamal(num_threads, data_size);
-            #if FLAG_ENCRYPT_BLOCK_SGX
-            BIGNUM* bn_message = BN_new();
-            // Set 100 to bn_message
-            BN_set_word(bn_message, 100);
-            BIGNUM* c1 = BN_new();
-            BIGNUM* c2 = BN_new();
-            BIGNUM* message_decrypted = BN_new();
-            for (int i = 0; i < 10; ++i) {
-                std::cout << "The index is: " << i << std::endl;
-                elgamal.EncryptBlock(bn_message, c1, c2);
-                std::cout << "The c1 is: " << BN_bn2dec(c1) << std::endl;
-                elgamal.DecryptBlock(c1, c2, message_decrypted);
-                std::cout << "The decrypted message is: " << BN_bn2dec(message_decrypted) << std::endl;
-            }
-            BN_free(bn_message);
-            BN_free(c1);
-            BN_free(c2);
-            BN_free(message_decrypted);
-            #endif
-            /*Parallel Encrypt and Derypt Test*/
-            #if FLAG_PARALLEL_ENCRYPT_SGX
-            int block_size = 256;
-            int num_of_chunks = (int)ceil((double)block_size / ElGamalNTLConfig::CHUNK_SIZE);
-            /*Test the identity in the BN*/
-            std::vector<BIGNUM*> data(num_of_chunks);
-            std::vector<BIGNUM*> c1(num_of_chunks);
-            std::vector<BIGNUM*> c2(num_of_chunks);
-            for (int i = 0; i < num_of_chunks; ++i) {
-                data[i] = BN_new();
-                c1[i] = BN_new();
-                c2[i] = BN_new();
-                BN_set_word(data[i], i);
-                std::cout << "The data is: " << BN_bn2dec(data[i]) << std::endl;
-            }
-            elgamal.ParallelEncrypt(data, c1, c2);
-            std::vector<BIGNUM*> decrypted_data(num_of_chunks);
-            for (int i = 0; i < num_of_chunks; ++i) {
-                decrypted_data[i] = BN_new();
-            }
-            elgamal.ParallelDecrypt(c1, c2, decrypted_data);
-            for (int i = 0; i < num_of_chunks; ++i) {
-                std::cout << "The decrypted data is: " << BN_bn2dec(decrypted_data[i]) << std::endl;
-            }
-            for (int i = 0; i < num_of_chunks; ++i) {
-                BN_free(data[i]);
-                BN_free(c1[i]);
-                BN_free(c2[i]);
-                BN_free(decrypted_data[i]);
-            }
-            #endif 
-            std::vector<char> data_endian= {0x00, 0x00, 0x00, 0x01};
-            BIGNUM* bn_data = BN_bin2bn((const unsigned char*)data_endian.data(), data_endian.size(), NULL);
-            std::cout << "The data is: " << BN_bn2dec(bn_data) << std::endl;
-            // Test the ElGamalConfigSGX::generate_identity_data
-            std::vector<char> identity_data;
-            ElGamalConfig::generate_identity_data(BlockConfig::BLOCK_SIZE, identity_data);
-            ElGamalConfig::test_generate_identity_data(identity_data);
-            num_of_chunks = (int)ceil((double)identity_data.size() / ElGamalNTLConfig::CHUNK_SIZE);
-            std::vector<std::vector<BIGNUM*>> ciphertexts(2, std::vector<BIGNUM*>(num_of_chunks));
-            for (int i = 0; i < num_of_chunks; ++i) {
-                ciphertexts[0][i] = BN_new();
-                ciphertexts[1][i] = BN_new();
-            }
-            elgamal.ParallelEncrypt(identity_data, ciphertexts);
-            elgamal.ParallelDecrypt(ciphertexts, identity_data);
-            ElGamalConfig::test_generate_identity_data(identity_data);
-            // Test the ElGamal_parallel_ntl::ConvertVecChar2VecBN
-            std::vector<BIGNUM*> bn_data_vec(num_of_chunks);
-            for (int i = 0; i < num_of_chunks; ++i) {
-                bn_data_vec[i] = BN_new();
-            }
-            elgamal.ConvertVecChar2VecBN(identity_data, bn_data_vec);
-            elgamal.ParallelEncrypt(bn_data_vec, ciphertexts[0], ciphertexts[1]);
-            // Test the ElGamal_parallel_ntl::ConvertVecBNCipher2VecChar
-            std::vector<char> ciphertexts_char_bn(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-            elgamal.ConvertVecBNCipher2VecChar(ciphertexts[0], ciphertexts[1], ciphertexts_char_bn);
-            // Test the ElGamal_parallel_ntl::ConvertVecCharCipher2VecBN
-            std::vector<std::vector<BIGNUM*>> ciphertexts_bn(2, std::vector<BIGNUM*>(num_of_chunks));
-            for (int i = 0; i < num_of_chunks; ++i) {
-                ciphertexts_bn[0][i] = BN_new();
-                ciphertexts_bn[1][i] = BN_new();
-            }
-            elgamal.ConvertVecCharCipher2VecBN(ciphertexts_char_bn, ciphertexts_bn);
-            elgamal.ParallelRerandomize(ciphertexts_bn[0], ciphertexts_bn[1]);
-            std::vector<char> decrypted_data_identity;
-            elgamal.ParallelDecrypt(ciphertexts_bn, decrypted_data_identity);
-            ElGamalConfig::test_generate_identity_data(decrypted_data_identity);
-            
-            for (int i = 0; i < num_of_chunks; ++i) {
-                BN_free(ciphertexts[0][i]);
-                BN_free(ciphertexts[1][i]);
-                BN_free(bn_data_vec[i]);
-                BN_free(ciphertexts_bn[0][i]);
-                BN_free(ciphertexts_bn[1][i]);
+            for (int i = 0; i < 35; ++i) {
+                size_t num_threads = i + 1;
+                size_t data_size = BlockConfig::BLOCK_SIZE;
+                ElGamal_parallel_ntl elgamal(num_threads, data_size);
+                // #if FLAG_ENCRYPT_BLOCK_SGX
+                // BIGNUM* bn_message = BN_new();
+                // // Set 100 to bn_message
+                // BN_set_word(bn_message, 100);
+                // BIGNUM* c1 = BN_new();
+                // BIGNUM* c2 = BN_new();
+                // BIGNUM* message_decrypted = BN_new();
+                // for (int j = 0; j < 10; ++j) {
+                //     std::cout << "The index is: " << j << std::endl;
+                //     elgamal.EncryptBlock(bn_message, c1, c2);
+                //     std::cout << "The c1 is: " << BN_bn2dec(c1) << std::endl;
+                //     elgamal.DecryptBlock(c1, c2, message_decrypted);
+                //     std::cout << "The decrypted message is: " << BN_bn2dec(message_decrypted) << std::endl;
+                // }
+                // BN_free(bn_message);
+                // BN_free(c1);
+                // BN_free(c2);
+                // BN_free(message_decrypted);
+                // #endif
+                /*Parallel Encrypt and Derypt Test*/
+                #if FLAG_PARALLEL_ENCRYPT_SGX
+                int block_size = BlockConfig::BLOCK_SIZE;
+                int num_of_chunks_ = (int)ceil((double)block_size / ElGamalNTLConfig::CHUNK_SIZE);
+                /*Test the identity in the BN*/
+                std::vector<BIGNUM*> data(num_of_chunks_);
+                std::vector<BIGNUM*> c1(num_of_chunks_);
+                std::vector<BIGNUM*> c2(num_of_chunks_);
+                for (int j = 0; j < num_of_chunks_; ++j) {
+                    data[j] = BN_new();
+                    c1[j] = BN_new();
+                    c2[j] = BN_new();
+                    BN_set_word(data[j], j);
+                    #if defined(UNIT_TEST_SGX)
+                    std::cout << "The data is: " << BN_bn2dec(data[j]) << std::endl;
+                    #endif
+                }
+                elgamal.ParallelEncrypt(data, c1, c2);
+                std::vector<BIGNUM*> decrypted_data(num_of_chunks_);
+                for (int j = 0; j < num_of_chunks_; ++j) {
+                    decrypted_data[j] = BN_new();
+                }
+                elgamal.ParallelDecrypt(c1, c2, decrypted_data);
+                #if defined(UNIT_TEST_SGX)
+                for (int j = 0; j < num_of_chunks_; ++j) {
+                    std::cout << "The decrypted data is: " << BN_bn2dec(decrypted_data[j]) << std::endl;
+                }
+                #endif
+                for (int j = 0; j < num_of_chunks_; ++j) {
+                    BN_free(data[j]);
+                    BN_free(c1[j]);
+                    BN_free(c2[j]);
+                    BN_free(decrypted_data[j]);
+                }
+                #endif 
+                std::vector<char> data_endian= {0x00, 0x00, 0x00, 0x01};
+                BIGNUM* bn_data = BN_bin2bn((const unsigned char*)data_endian.data(), data_endian.size(), NULL);
+                #if defined(UNIT_TEST_SGX)
+                std::cout << "The data is: " << BN_bn2dec(bn_data) << std::endl;
+                #endif
+                // Test the ElGamalConfigSGX::generate_identity_data
+                std::vector<char> identity_data;
+                ElGamalConfig::generate_identity_data(BlockConfig::BLOCK_SIZE, identity_data);
+                ElGamalConfig::test_generate_identity_data(identity_data);
+                int num_of_chunks = (int)ceil((double)identity_data.size() / ElGamalNTLConfig::CHUNK_SIZE);
+                std::vector<std::vector<BIGNUM*>> ciphertexts(2, std::vector<BIGNUM*>(num_of_chunks));
+                for (int j = 0; j < num_of_chunks; ++j) {
+                    ciphertexts[0][j] = BN_new();
+                    ciphertexts[1][j] = BN_new();
+                }
+                elgamal.ParallelEncrypt(identity_data, ciphertexts);
+                elgamal.ParallelDecrypt(ciphertexts, identity_data);
+                ElGamalConfig::test_generate_identity_data(identity_data);
+                // Test the ElGamal_parallel_ntl::ConvertVecChar2VecBN
+                std::vector<BIGNUM*> bn_data_vec(num_of_chunks);
+                for (int j = 0; j < num_of_chunks; ++j) {
+                    bn_data_vec[j] = BN_new();
+                }
+                elgamal.ConvertVecChar2VecBN(identity_data, bn_data_vec);
+                elgamal.ParallelEncrypt(bn_data_vec, ciphertexts[0], ciphertexts[1]);
+                // Test the ElGamal_parallel_ntl::ConvertVecBNCipher2VecChar
+                std::vector<char> ciphertexts_char_bn(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+                elgamal.ConvertVecBNCipher2VecChar(ciphertexts[0], ciphertexts[1], ciphertexts_char_bn);
+                // Test the ElGamal_parallel_ntl::ConvertVecCharCipher2VecBN
+                std::vector<std::vector<BIGNUM*>> ciphertexts_bn(2, std::vector<BIGNUM*>(num_of_chunks));
+                for (int j = 0; j < num_of_chunks; ++j) {
+                    ciphertexts_bn[0][j] = BN_new();
+                    ciphertexts_bn[1][j] = BN_new();
+                }
+                elgamal.ConvertVecCharCipher2VecBN(ciphertexts_char_bn, ciphertexts_bn);
+                auto start = high_resolution_clock::now();
+                elgamal.ParallelRerandomize(ciphertexts_bn[0], ciphertexts_bn[1]);
+                auto stop = high_resolution_clock::now();
+                auto duration = duration_cast<microseconds>(stop - start);
+                std::cout << "ParallelRerandomize took " << duration.count() << " microseconds" << " with " << num_threads << " threads" << std::endl;
+                // std::vector<char> decrypted_data_identity;
+                // elgamal.ParallelDecrypt(ciphertexts_bn, decrypted_data_identity);
+                // ElGamalConfig::test_generate_identity_data(decrypted_data_identity);
+                
+                for (int j = 0; j < num_of_chunks; ++j) {
+                    BN_free(ciphertexts[0][j]);
+                    BN_free(ciphertexts[1][j]);
+                    BN_free(bn_data_vec[j]);
+                    BN_free(ciphertexts_bn[0][j]);
+                    BN_free(ciphertexts_bn[1][j]);
+                }
             }
             std::cout << "The test_bignum_in_enclave is done" << std::endl;
 
