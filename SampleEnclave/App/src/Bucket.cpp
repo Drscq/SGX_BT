@@ -48,6 +48,8 @@ Bucket::Bucket(BucketConfig::TYPE_BUCKET_ID id,
     this->dummyBlock.reserve(this->blockSize);
     this->block.GenData(this->blockSize, false, -1, this->dummyBlock);
     this->elgamal.ParallelEncrypt(this->dummyBlock, this->dummyBlockCiphertexts);
+    this->ciphertextsData.reserve(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+    this->ciphertextsData.resize(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
     this->logger = DurationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
     this->block_data_bn_sgx.resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
     this->ciphertexts_data_bn_sgx.resize(2);
@@ -115,38 +117,20 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
     }
     // Save the this->data to the file namely fileName
     std::ofstream bucketFile(dirPath + "/" + fileName, std::ios::binary);
-    // std::vector<BIGNUM*> block_data_bn_sgx(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
-    // std::vector<BIGNUM*> ciphertexts_data_bn_sgx[2];
-    // ciphertexts_data_bn_sgx[0].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
-    // ciphertexts_data_bn_sgx[1].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
-    // for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
-    //     block_data_bn_sgx[i] = BN_new();
-    //     ciphertexts_data_bn_sgx[0][i] = BN_new();
-    //     ciphertexts_data_bn_sgx[1][i] = BN_new();
-    // }
     for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < this->bucketSize; i++) {
         // Encrypt the block data before saving to disk via ElGamal_parallel_ntl
         std::copy(data.begin() + i * this->blockSize, data.begin() + (i + 1) * this->blockSize, this->blockData.begin());
         #if USE_OPENSSL
-        elgamal.ConvertVecChar2VecBN(this->blockData, block_data_bn_sgx);
-        elgamal.ParallelEncrypt(block_data_bn_sgx, ciphertexts_data_bn_sgx[0], ciphertexts_data_bn_sgx[1]);
-        std::vector<char> ciphertextsData(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-        elgamal.ConvertVecBNCipher2VecChar(ciphertexts_data_bn_sgx[0], ciphertexts_data_bn_sgx[1], ciphertextsData);
+            elgamal.ConvertVecChar2VecBN(this->blockData, block_data_bn_sgx);
+            elgamal.ParallelEncrypt(block_data_bn_sgx, ciphertexts_data_bn_sgx[0], ciphertexts_data_bn_sgx[1]);
+            elgamal.ConvertVecBNCipher2VecChar(ciphertexts_data_bn_sgx[0], ciphertexts_data_bn_sgx[1], this->ciphertextsData);
         #else
-        elgamal.ParallelEncrypt(this->blockData, this->ciphertexts_ZZ_p);
-        // elgamal.SerializeCiphertexts(ciphertexts, this->ciphertextsData);
-        elgamal.SerializeCiphertexts(this->ciphertexts_ZZ_p, this->ciphertextsData);
+            elgamal.ParallelEncrypt(this->blockData, this->ciphertexts_ZZ_p);
+            // elgamal.SerializeCiphertexts(ciphertexts, this->ciphertextsData);
+            elgamal.SerializeCiphertexts(this->ciphertexts_ZZ_p, this->ciphertextsData);
         #endif
-        // this->ciphertextsDataSize = this->ciphertextsData.size();
-        // bucketFile.write(reinterpret_cast<const char*>(&this->ciphertextsDataSize), sizeof(this->ciphertextsDataSize));
         bucketFile.write(this->ciphertextsData.data(), this->ciphertextsData.size());
     }
-    // free the memory
-    // for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
-    //     BN_free(block_data_bn_sgx[i]);
-    //     BN_free(ciphertexts_data_bn_sgx[0][i]);
-    //     BN_free(ciphertexts_data_bn_sgx[1][i]);
-    // }
     bucketFile.close();
 }
 /**
@@ -201,6 +185,16 @@ void Bucket::LoadDataFromDisk(const std::string& dirPath,
         // use std::move to avoid copy
         bucketCiphertexts[i] = std::move(this->ciphertexts_ZZ_p);
     }
+    FileConfig::bucketFileLoad.close();
+}
+/**
+ * @brief Load the encrypted bucket data from disk with BIGNUM ciphertexts
+ */
+
+void Bucket::LoadBucketCiphertextsFromDiskBN(const std::string& filePath,
+                                            std::vector<char>& bucketCiphertextsSerializedData) {
+    FileConfig::bucketFileLoad.open(filePath, std::ios::binary);
+    FileConfig::bucketFileLoad.read(bucketCiphertextsSerializedData.data(), bucketCiphertextsSerializedData.size());
     FileConfig::bucketFileLoad.close();
 }
 

@@ -5,7 +5,7 @@
 #define FLAG_ENCRYPT_BLOCK_SGX 0
 #define FLAG_PARALLEL_ENCRYPT_SGX 1
 #define MODULUS_SGX_STR "127584585272019464248550689001494335089005706365070593228774866021859296684878671063534087601345701705074143342155398610282864933991154081845709883272032834902599526248307926892808776816768645411849000298403789217318224840138553553706229104932113309533452119580791708821809060741851733422802747352257459692961"
-
+#include <openssl/bn.h>
 typedef long long TYPE_BLOCK_ID_SGX;
 typedef unsigned long TYPE_UNSIGNED_SIZE_SGX;
 typedef long long TYPE_PATH_ID_SGX;
@@ -27,6 +27,28 @@ typedef uint_fast16_t TYPE_SMALL_INDEX_U_SGX;
 typedef size_t TYPE_PATH_SIZE_SGX;
 inline TYPE_BLOCK_SIZE_SGX BLOCK_SIZE_SGX = 1024;
 typedef size_t TYPE_PATH_SIZE_SGX;
+namespace BNConfig {
+    inline int CHUNK_SIZE_SGX = 127;
+    inline int PER_CIPHERTEXT_SIZE_SGX = CHUNK_SIZE_SGX + 1;
+    inline int BLOCK_CHUNK_SIZE_SGX = (1024 + CHUNK_SIZE_SGX - 1) / CHUNK_SIZE_SGX;
+    inline int BLOCK_CIPHERTEXT_NUM_CHARS_SGX = BLOCK_CHUNK_SIZE_SGX * PER_CIPHERTEXT_SIZE_SGX * 2;
+    inline int BUCKET_CIPHERTEXT_NUM_CHARS_SGX = BUCKET_SIZE_SGX * BLOCK_CIPHERTEXT_NUM_CHARS_SGX;
+    inline void ApplyPermutation(std::vector<std::vector<BIGNUM*>>& bucketCiphertextsBN, int numChunks, std::vector<TYPE_SLOT_ID_SGX>& perm) {
+        std::vector<BIGNUM*> newCiphertexts0(numChunks);
+        std::vector<BIGNUM*> newCiphertexts1(numChunks);
+        for (int i = 0; i < BUCKET_SIZE_SGX; ++i) {
+            int oldStart = i * BLOCK_CHUNK_SIZE_SGX;
+            int newStart = perm[i] * BLOCK_CHUNK_SIZE_SGX;
+            for (int j = 0; j < BLOCK_CHUNK_SIZE_SGX; ++j) {
+                newCiphertexts0[newStart + j] = bucketCiphertextsBN[0][oldStart + j];
+                newCiphertexts1[newStart + j] = bucketCiphertextsBN[1][oldStart + j];
+            }
+        }
+
+        bucketCiphertextsBN[0] = std::move(newCiphertexts0);
+        bucketCiphertextsBN[1] = std::move(newCiphertexts1);
+    }
+}
 // const uint8_t iv[AES_BLOCK_SIZE] = {0};
 #include <unordered_set>
 #include <algorithm>

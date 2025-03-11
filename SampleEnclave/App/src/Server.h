@@ -213,6 +213,9 @@ public:
         std::vector<char> bufferSgx;
         ClientConfig::TYPE_CHAR_SIZE permsAddIdSizeEarlyReshuffleSgx;
         sgx_enclave_id_t eidSgx;
+        // Openssl variables
+        std::vector<std::vector<BIGNUM*>> bucketCiphertextsBNSgx;
+        int bucketCiphertextsBNSgxSize;
 };
 
 
