@@ -385,6 +385,7 @@ int SGX_CDECL main(int argc, char *argv[])
                 ciphertexts_bn[1][i] = BN_new();
             }
             elgamal.ConvertVecCharCipher2VecBN(ciphertexts_char_bn, ciphertexts_bn);
+            elgamal.ParallelRerandomize(ciphertexts_bn[0], ciphertexts_bn[1]);
             std::vector<char> decrypted_data_identity;
             elgamal.ParallelDecrypt(ciphertexts_bn, decrypted_data_identity);
             ElGamalConfig::test_generate_identity_data(decrypted_data_identity);

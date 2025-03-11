@@ -50,6 +50,8 @@ public:
     // std::pair<ZZ_p, ZZ_p> ReRandomizeBlock(const std::pair<ZZ_p, ZZ_p> &ciphertext);
     void ReRandomizeBlock(std::pair<ZZ_p, ZZ_p>& ciphertext) noexcept;
     std::pair<ZZ_p, ZZ_p> ReRandomizeBlock(const std::pair<ZZ_p, ZZ_p> &ciphertext) noexcept;
+    // Load the ReRandomizeBlock function to use BN
+    void ReRandomizeChunk(BIGNUM* c1, BIGNUM* c2);
     // Function to multiply two ciphertexts
     std::pair<ZZ, ZZ> MultiplyCiphertexts(const std::pair<ZZ, ZZ> &ciphertext1, const std::pair<ZZ, ZZ> &ciphertext2);
     std::pair<ZZ_p, ZZ_p> MultiplyCiphertexts(const std::pair<ZZ_p, ZZ_p> &ciphertext1, const std::pair<ZZ_p, ZZ_p> &ciphertext2);
@@ -71,6 +73,7 @@ public:
     // Function to re-randomize data in parallel
     void ParallelRerandomize(std::vector<std::pair<ZZ, ZZ>>& ciphertexts);
     void ParallelRerandomize(std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts);
+    void ParallelRerandomize(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2);
     // Function to multiply two sets of ciphertexts in parallel
     void ParallelMultiplyCiphertexts(const std::vector<std::pair<ZZ, ZZ>>& ciphertexts1, const std::vector<std::pair<ZZ, ZZ>>& ciphertexts2, std::vector<std::pair<ZZ, ZZ>>& result);
     void ParallelMultiplyCiphertexts(const std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts1, const std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts2, std::vector<std::pair<ZZ_p, ZZ_p>>& result);

@@ -782,8 +782,19 @@ void ElGamal_parallel_ntl::ReRandomizeBlock(std::pair<ZZ_p, ZZ_p>& ciphertext) n
     ciphertext.second *= this->h_pow_k;  // Efficient in-place multiplication
 }
 
+void ElGamal_parallel_ntl::ReRandomizeChunk(BIGNUM* c1, BIGNUM* c2) {
+    BN_mod_mul(c1, c1, m_g_pow_k_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+    BN_mod_mul(c2, c2, m_h_pow_k_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+}
 
-
+void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2) {
+    #if defined(UNIT_TEST_SGX)
+    assert((c1.size() == c2.size()) && "Error: c1 and c2 size mismatch");
+    #endif
+    for (ElGamalNTLConfig::TYPE_BATCH_SIZE i = 0; i < c1.size(); ++i) {
+        this->ReRandomizeChunk(c1[i], c2[i]);
+    }
+}
 
 
 void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<std::pair<ZZ, ZZ>>& ciphertexts) {
