@@ -38,17 +38,17 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     // std::cout << "g_pow_k: " << this->g_pow_k << std::endl;
     m_g_pow_k_bn_sgx = BN_new();
     this->ConvertZZPToBIGNUM(this->g_pow_k, m_g_pow_k_bn_sgx);
-    #if defined(UNIT_TEST_SGX)
+    // #if defined(UNIT_TEST_SGX)
     std::cout << "[Construction]g_pow_k: " << this->g_pow_k << std::endl;
     std::cout << "[Construction]The value of m_g_pow_k_bn_sgx in decimal: " << BN_bn2dec(m_g_pow_k_bn_sgx) << std::endl;
-    #endif
+    // #endif
     this->h_pow_k = ElGamalNTLConfig::YPowK;
     m_h_pow_k_bn_sgx = BN_new();
     this->ConvertZZPToBIGNUM(this->h_pow_k, m_h_pow_k_bn_sgx);
-    #if defined(UNIT_TEST_SGX)
+    // #if defined(UNIT_TEST_SGX)
     std::cout << "[Construction]h_pow_k: " << this->h_pow_k << std::endl;
     std::cout << "[Construction]The value of m_h_pow_k_bn_sgx in decimal: " << BN_bn2dec(m_h_pow_k_bn_sgx) << std::endl;
-    #endif
+    // #endif
      ZZ_p::init(ElGamalNTLConfig::P);
      this->total_chunks = (this->data_size + this->chunk_size - 1) / this->chunk_size;
      this->batch_size_encrypt = (this->total_chunks + this->num_threads - 1) / this->num_threads;
