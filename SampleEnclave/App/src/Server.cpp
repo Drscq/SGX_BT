@@ -122,7 +122,7 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     }
     // SGX variables
     this->sharedBucketBuffer.resize(BucketConfig::META_DATA_SIZE + BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
-    this->bufferSgx.resize(BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE * 3);
+    this->bufferSgx.resize(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
     this->permsAddIdSizeEarlyReshuffleSgx = this->permDataSize * 2 + sizeof(BucketConfig::TYPE_BUCKET_ID);
     // Openssl variables
     this->bucketCiphertextsBNSgxSize = BucketConfig::BUCKET_SIZE * ElGamalNTLConfig::BLOCK_CHUNK_SIZE;
@@ -551,9 +551,9 @@ void Server::handleClient(int clientSockfd) {
                 BNConfig::ApplyPermutation(this->bucketCiphertextsBNSgx, 
                     this->bucketCiphertextsBNSgxSize,
                     this->perm2EarlyReshuffleComplete);
-                std::cout << "Finish the permutation" << std::endl;
                 this->elgamal.ParallelRerandomize(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1]);
-                std::cout << "Finish the rerandomize" << std::endl;
+                this->elgamal.ConvertVecBNCipher2VecChar(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], this->bufferSgx);
+                std::cout << "Done with the early reshuffle" << std::endl;
                 // this->bucketCiphertexts_flat.clear();
                 // for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {
                 //     this->bucketCiphertexts_flat.insert(this->bucketCiphertexts_flat.end(),

@@ -84,9 +84,6 @@ ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {
     BN_free(m_h_pow_k_bn_sgx);
     BN_free(m_g_pow_k_x_inv_bn_sgx);
     BN_free(m_x_bn_sgx);
-    // for (int i = 0; i < this->num_threads; ++i) {
-    //     BN_CTX_free(m_ctx_vec_sgx[i]);
-    // }
 }
 void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) {
     cpu_set_t cpuset;
