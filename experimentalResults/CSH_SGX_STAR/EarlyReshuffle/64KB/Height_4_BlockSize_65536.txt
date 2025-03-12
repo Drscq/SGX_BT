@@ -1,0 +1,23 @@
+DiskIOLoadBucketCiphertextsFromDiskBN: 3198256 ns
+ServerComputationApplyPermutation: 18951356 ns
+ServerComputationParallelRerandomize: 3567964 ns
+HelperComputationAll: 40566530 ns
+DiskIOWriteBucketCiphertextsToDisk: 4237022 ns
+
+DiskIOLoadBucketCiphertextsFromDiskBN: 1729926 ns
+ServerComputationApplyPermutation: 12752262 ns
+ServerComputationParallelRerandomize: 4399817 ns
+HelperComputationAll: 39607973 ns
+DiskIOWriteBucketCiphertextsToDisk: 4258051 ns
+
+DiskIOLoadBucketCiphertextsFromDiskBN: 1765757 ns
+ServerComputationApplyPermutation: 13072062 ns
+ServerComputationParallelRerandomize: 3197419 ns
+HelperComputationAll: 39990478 ns
+DiskIOWriteBucketCiphertextsToDisk: 4217271 ns
+
+DiskIOLoadBucketCiphertextsFromDiskBN: 3228478 ns
+ServerComputationApplyPermutation: 18935298 ns
+ServerComputationParallelRerandomize: 3172688 ns
+HelperComputationAll: 39607922 ns
+DiskIOWriteBucketCiphertextsToDisk: 4315419 ns
