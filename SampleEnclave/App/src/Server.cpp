@@ -557,6 +557,12 @@ void Server::handleClient(int clientSockfd) {
                 }
                 this->elgamal.ConvertVecBNCipher2VecChar(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], this->bufferSgx);
                 flag_shared_sgx[2] = 1;
+                while (flag_shared_sgx[3] == 0) {
+                    // Wait for the enclave to finish the early reshuffle
+                }
+                ofs_early_reshuffle.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDEarlyReshuffleComplete), std::ios::binary);
+                ofs_early_reshuffle.write(this->bufferSgx.data(), ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                ofs_early_reshuffle.close();
                 std::cout << "Done with the early reshuffle" << std::endl;
                 // this->bucketCiphertexts_flat.clear();
                 // for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {

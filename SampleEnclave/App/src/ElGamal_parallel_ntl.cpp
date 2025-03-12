@@ -78,12 +78,36 @@ ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {
     // std::cout << "ElGamal_parallel_ntl destructor" << std::endl;
     // delete[] this->buffer;
     // delete[] this->thread_compute;
-    BN_CTX_free(m_ctx_sgx);
-    BN_free(m_modulus_sgx);
-    BN_free(m_g_pow_k_bn_sgx);
-    BN_free(m_h_pow_k_bn_sgx);
-    BN_free(m_g_pow_k_x_inv_bn_sgx);
-    BN_free(m_x_bn_sgx);
+    for (auto &ctx : m_ctx_vec_sgx) {
+        if (ctx != nullptr) {
+            BN_CTX_free(ctx);
+            ctx = nullptr; // Mark as freed
+        }
+    }
+    if (m_ctx_sgx) {
+        BN_CTX_free(m_ctx_sgx);
+        m_ctx_sgx = nullptr;
+    }
+    if (m_modulus_sgx) {
+        BN_free(m_modulus_sgx);
+        m_modulus_sgx = nullptr;
+    }
+    if (m_g_pow_k_bn_sgx) {
+        BN_free(m_g_pow_k_bn_sgx);
+        m_g_pow_k_bn_sgx = nullptr;
+    }
+    if (m_h_pow_k_bn_sgx) {
+        BN_free(m_h_pow_k_bn_sgx);
+        m_h_pow_k_bn_sgx = nullptr;
+    }
+    if (m_g_pow_k_x_inv_bn_sgx) {
+        BN_free(m_g_pow_k_x_inv_bn_sgx);
+        m_g_pow_k_x_inv_bn_sgx = nullptr;
+    }
+    if (m_x_bn_sgx) {
+        BN_free(m_x_bn_sgx);
+        m_x_bn_sgx = nullptr;
+    }
 }
 void ElGamal_parallel_ntl::set_thread_affinity(std::thread& thread, int cpu_id) {
     cpu_set_t cpuset;

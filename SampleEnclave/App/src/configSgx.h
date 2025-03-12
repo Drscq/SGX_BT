@@ -74,6 +74,48 @@ namespace BNConfig {
             }
         }
     }
+    inline void ConvertVecBNCipher2VecChar(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2, char* data){
+        auto it = data;
+        for (int i = 0; i < c1.size(); ++i) {
+            BN_bn2binpad(c1[i], reinterpret_cast<unsigned char*>(&(*it)), PER_CIPHERTEXT_SIZE_SGX);
+            if (i != c1.size() - 1) {
+                it += PER_CIPHERTEXT_SIZE_SGX;
+            }
+            BN_bn2binpad(c2[i], reinterpret_cast<unsigned char*>(&(*it)), PER_CIPHERTEXT_SIZE_SGX);
+            if (i != c1.size() - 1) {
+                it += PER_CIPHERTEXT_SIZE_SGX;
+            }
+        }
+    }
+    inline BIGNUM* MODULUS_SGX_BN = nullptr;
+    inline BIGNUM* G_POW_K_SGX_BN = nullptr;
+    inline BIGNUM* H_POW_K_SGX_BN = nullptr;
+    inline BN_CTX* CTX_SGX = nullptr;
+    inline void InitMGHC() {
+        MODULUS_SGX_BN = BN_new();
+        BN_dec2bn(&MODULUS_SGX_BN, MODULUS_SGX_STR);
+        G_POW_K_SGX_BN = BN_new();
+        BN_dec2bn(&G_POW_K_SGX_BN, G_POW_K_SGX_STR);
+        H_POW_K_SGX_BN = BN_new();
+        BN_dec2bn(&H_POW_K_SGX_BN, H_POW_K_SGX_STR);
+        CTX_SGX = BN_CTX_new();
+    }
+    inline void FreeMGHC() {
+        BN_free(MODULUS_SGX_BN);
+        BN_free(G_POW_K_SGX_BN);
+        BN_free(H_POW_K_SGX_BN);
+        BN_CTX_free(CTX_SGX);
+    }
+    inline void ReRandomizeChunk(BIGNUM* c1, BIGNUM* c2) {
+        BN_mod_mul(c1, c1, G_POW_K_SGX_BN, MODULUS_SGX_BN, CTX_SGX);
+        BN_mod_mul(c2, c2, H_POW_K_SGX_BN, MODULUS_SGX_BN, CTX_SGX);
+    }
+    inline void ParallelReRandomize(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2) {
+        for (int i = 0; i < c1.size(); ++i) {
+            BN_mod_mul(c1[i], c1[i], G_POW_K_SGX_BN, MODULUS_SGX_BN, CTX_SGX);
+            BN_mod_mul(c2[i], c2[i], H_POW_K_SGX_BN, MODULUS_SGX_BN, CTX_SGX);
+        }
+    }
 }
 // const uint8_t iv[AES_BLOCK_SIZE] = {0};
 #include <unordered_set>

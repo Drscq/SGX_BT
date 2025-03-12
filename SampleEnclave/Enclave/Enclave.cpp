@@ -303,10 +303,11 @@ void ecall_evict_1(char* buffer, uint8_t* flags) {
     }
 }
 
-std::vector<TYPE_SLOT_ID_SGX> perm1EarlyReshuffleComplete_sgx(BUCKET_SIZE_SGX, 1);
-std::vector<std::vector<BIGNUM*>> BucketCiphertexts(2, std::vector<BIGNUM*>(BNConfig::BUCKET_CHUNK_SIZE_SGX, BN_new()));
 // The enclave functions for the second scheme
 void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
+    std::vector<TYPE_SLOT_ID_SGX> perm1EarlyReshuffleComplete_sgx(BUCKET_SIZE_SGX, 1);
+    std::vector<std::vector<BIGNUM*>> BucketCiphertexts(2, std::vector<BIGNUM*>(BNConfig::BUCKET_CHUNK_SIZE_SGX, BN_new()));
+    BNConfig::InitMGHC();
     while (!flags[0]) {
         // Wait for the buffer to be ready
         __asm__ __volatile__("pause");
@@ -328,8 +329,17 @@ void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
     }
     BNConfig::ConvertVecCharCipher2VecBN(buffer, BucketCiphertexts);
     BNConfig::ApplyPermutation(BucketCiphertexts, BNConfig::BUCKET_CHUNK_SIZE_SGX, perm1EarlyReshuffleComplete_sgx);
-    printf("The values of the BucketCiphertexts after applying the permutation\n");
-    // #endif
+    BNConfig::ParallelReRandomize(BucketCiphertexts[0], BucketCiphertexts[1]);
+    printf("The re-randomization process is completed\n");
+    BNConfig::ConvertVecBNCipher2VecChar(BucketCiphertexts[0], BucketCiphertexts[1], buffer);
+    flags[3] = 1;
+    // free the BIGNUM objects
+    for (size_t i = 0; i < 2; ++i) {
+        for (size_t j = 0; j < BNConfig::BUCKET_CHUNK_SIZE_SGX; ++j) {
+            BN_free(BucketCiphertexts[i][j]);
+        }
+    }
+    BNConfig::FreeMGHC();
 }
 
 void ecall_sort_array(int* arr, size_t arr_len) {
