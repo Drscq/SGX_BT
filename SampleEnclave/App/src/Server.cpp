@@ -552,7 +552,11 @@ void Server::handleClient(int clientSockfd) {
                     this->bucketCiphertextsBNSgxSize,
                     this->perm2EarlyReshuffleComplete);
                 this->elgamal.ParallelRerandomize(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1]);
+                while (flag_shared_sgx[1] == 0) {
+                    // Wait for the enclave to finish the early reshuffle
+                }
                 this->elgamal.ConvertVecBNCipher2VecChar(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], this->bufferSgx);
+                flag_shared_sgx[2] = 1;
                 std::cout << "Done with the early reshuffle" << std::endl;
                 // this->bucketCiphertexts_flat.clear();
                 // for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {

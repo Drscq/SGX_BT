@@ -33,6 +33,7 @@ namespace BNConfig {
     inline int CHUNK_SIZE_SGX = 127;
     inline int PER_CIPHERTEXT_SIZE_SGX = CHUNK_SIZE_SGX + 1;
     inline int BLOCK_CHUNK_SIZE_SGX = (1024 + CHUNK_SIZE_SGX - 1) / CHUNK_SIZE_SGX;
+    inline int BUCKET_CHUNK_SIZE_SGX = BUCKET_SIZE_SGX * BLOCK_CHUNK_SIZE_SGX;
     inline int BLOCK_CIPHERTEXT_NUM_CHARS_SGX = BLOCK_CHUNK_SIZE_SGX * PER_CIPHERTEXT_SIZE_SGX * 2;
     inline int BUCKET_CIPHERTEXT_NUM_CHARS_SGX = BUCKET_SIZE_SGX * BLOCK_CIPHERTEXT_NUM_CHARS_SGX;
     inline void ApplyPermutation(std::vector<std::vector<BIGNUM*>>& bucketCiphertextsBN, int numChunks, std::vector<TYPE_SLOT_ID_SGX>& perm) {
@@ -60,6 +61,19 @@ namespace BNConfig {
         BIGNUM* modulus_sgx; // pointer to modulus_sgx
         BN_CTX* ctx_sgx; // pointer to ctx_sgx
     };
+    inline void ConvertVecCharCipher2VecBN(const char* data, std::vector<std::vector<BIGNUM*>>& ciphertexts) {
+        auto it = data;
+        for (int ii = 0; ii < ciphertexts[0].size(); ++ii) {
+            BN_bin2bn(reinterpret_cast<const unsigned char*>(&(*it)), PER_CIPHERTEXT_SIZE_SGX, ciphertexts[0][ii]);
+            if (ii != ciphertexts[0].size() - 1) {
+                it += PER_CIPHERTEXT_SIZE_SGX;
+            }
+            BN_bin2bn(reinterpret_cast<const unsigned char*>(&(*it)), PER_CIPHERTEXT_SIZE_SGX, ciphertexts[1][ii]);
+            if (ii != ciphertexts[0].size() - 1) {
+                it += PER_CIPHERTEXT_SIZE_SGX;
+            }
+        }
+    }
 }
 // const uint8_t iv[AES_BLOCK_SIZE] = {0};
 #include <unordered_set>
