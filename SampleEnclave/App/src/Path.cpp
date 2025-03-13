@@ -183,15 +183,47 @@ void Path::GenTripletBuckets(std::vector<BucketConfig::TYPE_BUCKET_ID>& tripletB
 }
 
 void Path::GenEvictPath(PathConfig::TYPE_PATH_ID path_id, PathConfig::TYPE_PATH_SIZE height) {
-    for (const auto& bID : this->bIDs) {
-        Bucket bucket(bID, BucketConfig::BUCKET_SIZE,
-                      BucketConfig::BUCKET_REAL_BLOCK_CAPACITY,
-                      BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY,
-                      BlockConfig::BLOCK_SIZE, ServerConfig::num_threads);
-        while (bucket.md.nextDummyIndex < BucketConfig::BUCKET_SIZE) {
+    // for (const auto& bID : this->bIDs) {
+    //     Bucket bucket(bID, BucketConfig::BUCKET_SIZE,
+    //                   BucketConfig::BUCKET_REAL_BLOCK_CAPACITY,
+    //                   BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY,
+    //                   BlockConfig::BLOCK_SIZE, ServerConfig::num_threads);
+    //     while (bucket.md.nextDummyIndex < BucketConfig::BUCKET_SIZE) {
+    //         this->block.GenData(BlockConfig::BLOCK_SIZE, false, -1, this->blockDataEviction);
+    //         bucket.AddDummyBlock(this->blockDataEviction);
+    //     }
+    //     bucket.SaveData2Disk(BucketConfig::DATADIR, BucketConfig::BUCKETPREFIX + std::to_string(bID));
+    // }
+    BucketConfig::TYPE_BUCKET_ID bID = 0;
+    Bucket bucket_0(bID, BucketConfig::BUCKET_SIZE,
+    BucketConfig::BUCKET_REAL_BLOCK_CAPACITY,
+    BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY,
+    BlockConfig::BLOCK_SIZE, ServerConfig::num_threads);
+    while (bucket_0.md.nextDummyIndex < BucketConfig::BUCKET_SIZE) {
+        this->block.GenData(BlockConfig::BLOCK_SIZE, false, -1, this->blockDataEviction);
+        bucket_0.AddDummyBlock(this->blockDataEviction);
+    }
+    bucket_0.SaveData2Disk(BucketConfig::DATADIR, BucketConfig::BUCKETPREFIX + std::to_string(bID));
+    for (int i = 0; i < height - 1; ++i) {
+        bID = 2 * this->bIDs[i] + 1;
+        Bucket bucket_1(bID, BucketConfig::BUCKET_SIZE,
+                              BucketConfig::BUCKET_REAL_BLOCK_CAPACITY,
+                              BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY,
+                              BlockConfig::BLOCK_SIZE, ServerConfig::num_threads);
+        while (bucket_1.md.nextDummyIndex < BucketConfig::BUCKET_SIZE) {
             this->block.GenData(BlockConfig::BLOCK_SIZE, false, -1, this->blockDataEviction);
-            bucket.AddDummyBlock(this->blockDataEviction);
+            bucket_1.AddDummyBlock(this->blockDataEviction);
         }
-        bucket.SaveData2Disk(BucketConfig::DATADIR, BucketConfig::BUCKETPREFIX + std::to_string(bID));
+        bucket_1.SaveData2Disk(BucketConfig::DATADIR, BucketConfig::BUCKETPREFIX + std::to_string(bID));
+        bID = 2 * this->bIDs[i] + 2;
+        Bucket bucket_2 = Bucket(bID, BucketConfig::BUCKET_SIZE,
+                              BucketConfig::BUCKET_REAL_BLOCK_CAPACITY,
+                              BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY,
+                              BlockConfig::BLOCK_SIZE, ServerConfig::num_threads);
+        while (bucket_2.md.nextDummyIndex < BucketConfig::BUCKET_SIZE) {
+            this->block.GenData(BlockConfig::BLOCK_SIZE, false, -1, this->blockDataEviction);
+            bucket_2.AddDummyBlock(this->blockDataEviction);
+        }
+        bucket_2.SaveData2Disk(BucketConfig::DATADIR, BucketConfig::BUCKETPREFIX + std::to_string(bID));
     }
 }

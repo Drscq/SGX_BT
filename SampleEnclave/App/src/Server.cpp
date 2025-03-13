@@ -618,465 +618,380 @@ void Server::handleClient(int clientSockfd) {
                         this->path_evict_bucketCiphertexts_complete[ (2 * i + 1) * BucketConfig::BUCKET_SIZE + j] = std::move(this->bucketCiphertextsEvictComplete[j]);
                     }
                 }
-                ++TreeConfig::ACCESS_COUNT_EVICTION_COMPLETE;
-                // read the root bucket data to the rootBucketDataEvictComplete
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                logger.startTiming(this->LogEvictionLoadRootBucketFromDiskScheme2);
-                #endif
-                ifs_evict.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0), std::ios::binary);
-                    ifs_evict.read(this->rootBucketDataEvictComplete.data(), ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                ifs_evict.close();
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                logger.stopTiming(this->LogEvictionLoadRootBucketFromDiskScheme2);
-                logger.writeToFile();
-                #endif
-                #if USE_COUT
-                std::cout << "Received command: CMD_COMPLETE_EVICT_CLIENT_TO_SERVER" << std::endl;
-                #endif
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                this->logger.startTiming(this->LogEvictionSendRootBucketToClientScheme2);
-                #endif
-                this->communicator.sendData(clientSockfd,
-                                            this->rootBucketDataEvictComplete.data(),
-                                            ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                this->communicator.receiveCommand(clientSockfd, this->cmd1);
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                this->logger.stopTiming(this->LogEvictionSendRootBucketToClientScheme2);
-                this->logger.writeToFile();
-                #endif
-                this->communicator.receiveData(clientSockfd,
-                                                this->rootBucketDataEvictComplete.data(),
-                                                ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {
-                    // std::memcpy(this->blockCiphertextsSerializedData.data(),
-                    //             this->rootBucketDataEvictComplete.data() + i * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,
-                    //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                    // this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, this->triplet_evict_bucketCiphertexts[i]);
-                    this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->rootBucketDataEvictComplete.data() + i * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS),
-                                                        this->triplet_evict_bucketCiphertexts[i]);
-                    #if USE_COUT
-                        std::cout << "Block ID: for the root bucket: " << i << std::endl;
-                        std::vector<char> blockData;
-                        this->elgamal.ParallelDecrypt(this->triplet_evict_bucketCiphertexts[i], blockData);
-                        BlockConfig::TYPE_BLOCK_ID blockID;
-                        std::memcpy(&blockID, blockData.data(), sizeof(BlockConfig::TYPE_BLOCK_ID));
-                        std::cout << "Block ID: " << blockID << std::endl;
-                    #endif
-                }
-                // Multi-threading version of above code
-                // this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->rootBucketDataEvictComplete.data()),
-                //                                     this->single_bucketCiphertexts_flat,
-                //                                     this->bucketCiphertextsNumPairs);
-
-                // // Compare the this->single_bucketCiphertexts_flat with the this->triplet_evict_bucketCiphertexts[0]
-                // for (size_t i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {
-                //     this->triplet_evict_bucketCiphertexts[i].resize(this->blockCiphertextsNumPairs);
-                //     for (size_t j = 0; j < this->blockCiphertextsNumPairs; ++j) {
-                //         // if (this->single_bucketCiphertexts_flat[i * this->blockCiphertextsNumPairs + j] != this->triplet_evict_bucketCiphertexts[i][j]) {
-                //         //     std::cerr << "[Eviction]Error: The single_bucketCiphertexts_flat is not equal to the triplet_evict_bucketCiphertexts[0]" << std::endl;
-                //         // }
-                //         this->triplet_evict_bucketCiphertexts[i][j] = std::move(this->single_bucketCiphertexts_flat[i * this->blockCiphertextsNumPairs + j]);
-                //     }
-                // }
-                
-                                    
-                // this->triplet_evict_bucketCiphertexts[0] = std::move(this->single_bucketCiphertexts_flat);
-                // for (size_t i = 1; i < 3; ++i) {
-                //     // Wrtie the this->bucketCiphertextsEvictComplete to this->triplet_evict_bucketCiphertexts
-                //     for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                //         // this->triplet_evict_bucketCiphertexts[i * BucketConfig::BUCKET_SIZE + j] = this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j];
-                //         // Use std::move to avoid the copy
-                //         this->triplet_evict_bucketCiphertexts[i * BucketConfig::BUCKET_SIZE + j] = std::move(this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j]);
-                //     }
-                // }
-                this->triplet_evict_bucketCiphertexts_flat.clear();
-                for (BucketConfig::TYPE__SMALL_INDEX i = 0; i < 3; ++i) {
-                    for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                        if (i == 0) {
-                            this->triplet_evict_bucketCiphertexts_flat.insert(
-                                this->triplet_evict_bucketCiphertexts_flat.end(),
-                                std::make_move_iterator(this->triplet_evict_bucketCiphertexts[j].begin()),
-                                std::make_move_iterator(this->triplet_evict_bucketCiphertexts[j].end())
-                            );
-                        } else {
-                            this->triplet_evict_bucketCiphertexts_flat.insert(
-                                this->triplet_evict_bucketCiphertexts_flat.end(),
-                                std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j].begin()),
-                                std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j].end())
-                            );
-                        }
-                    }
-                }
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                logger.startTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
-                #endif
-                // rerandomize the triplet_evict_bucketCiphertexts
-                // for (auto& blockCiphertexts : this->triplet_evict_bucketCiphertexts) {
-                //     this->elgamal.ParallelRerandomize(blockCiphertexts);
-                // }
-                this->elgamal.ParallelRerandomize(this->triplet_evict_bucketCiphertexts_flat);
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                logger.stopTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
-                logger.writeToFile();
-                #endif
-                // Clear existing data in the triplet_evict_bucketCiphertexts before refilling
-                for (auto& inner_vector : this->triplet_evict_bucketCiphertexts) {
-                    inner_vector.clear();
-                }
-                // Move all data from the triplet_evict_bucketCiphertexts_flat to the triplet_evict_bucketCiphertexts
-                auto flat_iter = this->triplet_evict_bucketCiphertexts_flat.begin();
-                for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < 3 * BucketConfig::BUCKET_SIZE; ++i) {
-                    if (flat_iter == this->triplet_evict_bucketCiphertexts_flat.end()) {
-                        std::cerr << "[Eviction]Error: Not enough data in triplet_evict_bucketCiphertexts_flat" << std::endl;
-                        break;
-                    }
-                    this->triplet_evict_bucketCiphertexts[i].insert(
-                        this->triplet_evict_bucketCiphertexts[i].begin(),
-                        std::make_move_iterator(flat_iter),
-                        std::make_move_iterator(flat_iter + ElGamalNTLConfig::BLOCK_CHUNK_SIZE)
-                    );
-                    // Advance the iterator by the number of elements moved
-                    flat_iter += ElGamalNTLConfig::BLOCK_CHUNK_SIZE;
-                }
-                this->communicator.receiveData(clientSockfd,
-                                                this->tripletEvictPermComplete.data(),
-                                                this->triplet_evict_perm_size);
-                this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                logger.startTiming(this->LogEvictPermutateFirstTripletBuckets);
-                #endif
-                // Apply the permutation to the triplet_evict_bucketCiphertexts
-                BucketConfig::ApplyPermInPlace(this->triplet_evict_bucketCiphertexts, this->tripletEvictPermComplete);
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                logger.stopTiming(this->LogEvictPermutateFirstTripletBuckets);
-                logger.writeToFile();
-                #endif
-                // Serialize the triplet_evict_bucketCiphertexts into triplet_evict_bucketCiphertextsSerializedData
-                size_t offset = 0;
-                for (auto &blockCiphertexts : this->triplet_evict_bucketCiphertexts) {
-                    this->elgamal.SerializeCiphertexts(blockCiphertexts, this->blockCiphertextsSerializedData);
-                    std::memcpy(this->triplet_evict_bucketCiphertextsSerializedData.data() + offset,
-                                this->blockCiphertextsSerializedData.data(),
-                                ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                    offset += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
-                }
-                // Send the triplet_evict_bucketCiphertextsSerializedData to the third party
-                this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(),
-                                                          ServerConfig::CMD_COMPLETE_EVICT_SERVER_TO_THIRD_PARTY);
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                logger.startTiming(this->LogEvictionSendTripletBucketsToThirdPartyScheme2);
-                #endif
-                this->communicator2ThirdParty.sendData(this->communicator2ThirdParty.getSockfd(),
-                                                       this->triplet_evict_bucketCiphertextsSerializedData.data(),
-                                                         this->triplet_evict_bucketCiphertextsSerializedData.size());
-                this->communicator2ThirdParty.receiveCommand(this->communicator2ThirdParty.getSockfd(), this->command);
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                this->logger.stopTiming(this->LogEvictionSendTripletBucketsToThirdPartyScheme2);
-                this->logger.writeToFile();
-                #endif
-                this->communicator2ThirdParty.receiveData(this->communicator2ThirdParty.getSockfd(),
-                                                        this->triplet_evict_bucketCiphertextsSerializedData.data(),
-                                                        this->triplet_evict_bucketCiphertextsSerializedDataSize);
-                this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(), ServerConfig::CMD_SUCCESS);
-                #if USE_COUT
-                // Test the correctness of the triplet_evict_bucketCiphertextsSerializedData
-                offset = 0;
-                for (auto &blockCiphertexts : this->triplet_evict_bucketCiphertexts) {
-                    std::memcpy(this->blockCiphertextsSerializedData.data(),
-                                this->triplet_evict_bucketCiphertextsSerializedData.data() + offset,
-                                ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                    this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, blockCiphertexts);
-                    std::vector<char> blockData;
-                    this->elgamal.ParallelDecrypt(blockCiphertexts, blockData);
-                    BlockConfig::TYPE_BLOCK_ID blockID;
-                    std::memcpy(&blockID, blockData.data(), sizeof(BlockConfig::TYPE_BLOCK_ID));
-                    std::cout << "Block ID: " << blockID << std::endl;
-                    offset += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
-                }
-                #endif
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                this->logger.startTiming(this->LogEvictionWriteRootBucketBackToDiskScheme2);
-                #endif
-                std::thread([this]() {
-                    this->ofs_evict_root.open(
-                        BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0),
-                        std::ios::binary
-                    );
-                    this->ofs_evict_root.write(
-                        this->triplet_evict_bucketCiphertextsSerializedData.data(),
-                        ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS
-                    );
-                    this->ofs_evict_root.close();
-                    
-                }).detach();
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                this->logger.stopTiming(this->LogEvictionWriteRootBucketBackToDiskScheme2);
-                this->logger.writeToFile();
-                #endif
-                // Deserialize the triplet_evict_bucketCiphertextsSerializedData into this->path_evict_bucketCiphertexts_complete
-                for (BucketConfig::TYPE_SMALL_INDEX_U i = 1; i < 3; ++i) {
-                    for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                        // std::memcpy(this->blockCiphertextsSerializedData.data(),
-                        //             this->triplet_evict_bucketCiphertextsSerializedData.data() + i * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,
-                        //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                        // this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j]);
-                        this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->triplet_evict_bucketCiphertextsSerializedData.data() + i * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS),
-                                                            this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j]);
-                    }
-                }
-
-                this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                
-                for (PathConfig::TYPE_PATH_SIZE i = 1; i < TreeConfig::HEIGHT - 1; ++i) {
-                    #if USE_COUT
-                        std::cout << "i: " << i << std::endl;
-                        std::cout << "The tripletBucketIDsComplete: ";
-                        for (auto& id : this->tripletBucketIDsComplete) {
-                            std::cout << id << " ";
-                        }
-                        std::cout << std::endl;
-                    #endif
-                    this->triplet_evict_bucketCiphertexts_flat.clear();
-                    for (BucketConfig::TYPE_SMALL_INDEX_U ii = 0; ii < 3; ++ii) {
-                        if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 1) {
-                            for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                                // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j];
-                                // Use std::move to avoid the copy
-                                // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = std::move(this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j]);
-                                this->triplet_evict_bucketCiphertexts_flat.insert(
-                                    this->triplet_evict_bucketCiphertexts_flat.end(),
-                                    std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j].begin()),
-                                    std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j].end())
-                                );
-                            }
-                        } else if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 0) {
-                            for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                                // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j];
-                                // Use std::move to avoid the copy
-                                // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = std::move(this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j]);
-                                this->triplet_evict_bucketCiphertexts_flat.insert(
-                                    this->triplet_evict_bucketCiphertexts_flat.end(),
-                                    std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j].begin()),
-                                    std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j].end())
-                                );
-                            }
-                        } else {
-                            for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                                // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j];
-                                // Use std::move to avoid the copy
-                                // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = std::move(this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j]);
-                                this->triplet_evict_bucketCiphertexts_flat.insert(
-                                    this->triplet_evict_bucketCiphertexts_flat.end(),
-                                    std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j].begin()),
-                                    std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j].end())
-                                );
-                            }
-                        }
-                    }
-                    // rerandomize the triplet_evict_bucketCiphertexts
-                    // for (auto& blockCiphertexts : this->triplet_evict_bucketCiphertexts) {
-                    //     this->elgamal.ParallelRerandomize(blockCiphertexts);
-                    // }
-                     #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                    logger.startTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
-                    #endif
-                    this->elgamal.ParallelRerandomize(this->triplet_evict_bucketCiphertexts_flat);
-                    #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                    logger.stopTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
-                    logger.writeToFile();
-                    #endif
-                    // Write the data in the triplet_evict_bucketCiphertexts_flat back to the triplet_evict_bucketCiphertexts
-                    flat_iter = this->triplet_evict_bucketCiphertexts_flat.begin();
-                    for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < 3 * BucketConfig::BUCKET_SIZE; ++j) {
-                        if (flat_iter == this->triplet_evict_bucketCiphertexts_flat.end()) {
-                            std::cerr << "[Eviction]Error: Not enough data in triplet_evict_bucketCiphertexts_flat" << std::endl;
-                            break;
-                        }
-                        this->triplet_evict_bucketCiphertexts[j].clear();
-                        this->triplet_evict_bucketCiphertexts[j].insert(
-                            this->triplet_evict_bucketCiphertexts[j].begin(),
-                            std::make_move_iterator(flat_iter),
-                            std::make_move_iterator(flat_iter + ElGamalNTLConfig::BLOCK_CHUNK_SIZE)
-                        );
-                        // Advance the iterator by the number of elements moved
-                        flat_iter += ElGamalNTLConfig::BLOCK_CHUNK_SIZE;
-                    }
-                    this->communicator.receiveData(clientSockfd,
-                                                    this->tripletEvictPermComplete.data(),
-                                                    this->triplet_evict_perm_size);
-                    this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                    // Apply the permutation to the triplet_evict_bucketCiphertexts
-                    #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                    this->logger.startTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
-                    #endif
-                    BucketConfig::ApplyPermInPlace(this->triplet_evict_bucketCiphertexts, this->tripletEvictPermComplete);
-                     #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                    this->logger.stopTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
-                    this->logger.writeToFile();
-                    #endif
-                    // Serialize the triplet_evict_bucketCiphertexts into triplet_evict_bucketCiphertextsSerializedData
-                    size_t offset = 0;
-                    for (auto &blockCiphertexts : this->triplet_evict_bucketCiphertexts) {
-                        this->elgamal.SerializeCiphertexts(blockCiphertexts, this->blockCiphertextsSerializedData);
-                        std::memcpy(this->triplet_evict_bucketCiphertextsSerializedData.data() + offset,
-                                    this->blockCiphertextsSerializedData.data(),
-                                    ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                        offset += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
-                    }
-                    // Send the triplet_evict_bucketCiphertextsSerializedData to the third party
-                    this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(),
-                                                            ServerConfig::CMD_COMPLETE_EVICT_SERVER_TO_THIRD_PARTY);
-                    #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                    this->logger.startTiming(this->LogEvictionSendTripletBucketsToThirdPartyScheme2);
-                    #endif
-                    this->communicator2ThirdParty.sendData(this->communicator2ThirdParty.getSockfd(),
-                                                        this->triplet_evict_bucketCiphertextsSerializedData.data(),
-                                                        this->triplet_evict_bucketCiphertextsSerializedData.size());
-                    this->communicator2ThirdParty.receiveCommand(this->communicator2ThirdParty.getSockfd(), this->command);
-                    #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                    this->logger.stopTiming(this->LogEvictionSendTripletBucketsToThirdPartyScheme2);
-                    this->logger.writeToFile();
-                    #endif
-                    this->communicator2ThirdParty.receiveData(this->communicator2ThirdParty.getSockfd(),
-                                                            this->triplet_evict_bucketCiphertextsSerializedData.data(),
-                                                            this->triplet_evict_bucketCiphertextsSerializedDataSize);
-                    this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(), ServerConfig::CMD_SUCCESS);
-                    // Deserialize the triplet_evict_bucketCiphertextsSerializedData into this->path_evict_bucketCiphertexts_complete
-                    for (BucketConfig::TYPE_SMALL_INDEX_U ii = 0; ii < 3; ++ii) {
-                        if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 1) {
-                            for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                                // std::memcpy(this->blockCiphertextsSerializedData.data(),
-                                //             this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,
-                                //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                                // this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j]);
-                                this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS),
-                                                                    this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j]);
-                            }
-                        } else if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 0) {
-                            for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                                // std::memcpy(this->blockCiphertextsSerializedData.data(),
-                                //             this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,
-                                //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                                // this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j]);
-                                this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS),
-                                                                    this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j]);
-                            }
-                        } else {
-                            for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                                // std::memcpy(this->blockCiphertextsSerializedData.data(),
-                                //             this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,
-                                //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                                // this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j]);
-                                this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS),
-                                                                    this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j]);
-                            }
-                        }
-                    }
-                    this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                }
-                // Write the this->path_evict_bucketCiphertexts_complete to the disk
-                for (PathConfig::TYPE_PATH_SIZE i = 0; i < TreeConfig::HEIGHT - 1; ++i) {
-                    this->ofs_evict.open(
-                        BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 1),
-                        std::ios::binary
-                    );
-                    for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                        this->elgamal.SerializeCiphertexts(this->path_evict_bucketCiphertexts_complete[i * 2 * BucketConfig::BUCKET_SIZE + j], this->blockCiphertextsSerializedData);
-                        #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                            this->logger.startTiming(this->LogEvictionWritePathBucketsBackToDiskScheme2);
-                        #endif
-                         this->ofs_evict.write(
-                            this->blockCiphertextsSerializedData.data(),
-                            ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS
-                        );
-                         #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                            this->logger.stopTiming(this->LogEvictionWritePathBucketsBackToDiskScheme2);
-                            this->logger.writeToFile();
-                        #endif
-                    }
-                    this->ofs_evict.close();
-                    this->ofs_evict.open(
-                        BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 2),
-                        std::ios::binary
-                    );
-                    for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                        this->elgamal.SerializeCiphertexts(this->path_evict_bucketCiphertexts_complete[(i * 2 + 1) * BucketConfig::BUCKET_SIZE + j], this->blockCiphertextsSerializedData);
-                        #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                            this->logger.startTiming(this->LogEvictionWritePathBucketsBackToDiskScheme2);
-                        #endif
-                         this->ofs_evict.write(
-                            this->blockCiphertextsSerializedData.data(),
-                            ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS
-                        );
-                        #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                            this->logger.stopTiming(this->LogEvictionWritePathBucketsBackToDiskScheme2);
-                            this->logger.writeToFile();
-                        #endif
-                    }
-                     this->ofs_evict.close();
-                }
+                // ++TreeConfig::ACCESS_COUNT_EVICTION_COMPLETE;
+                // // read the root bucket data to the rootBucketDataEvictComplete
                 // #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                // this->logger.startTiming(this->LogEvictionWritePathBucketsBackToDiskScheme2);
+                // logger.startTiming(this->LogEvictionLoadRootBucketFromDiskScheme2);
                 // #endif
-                // std::vector<std::future<void>> futures;
-
-                // for (PathConfig::TYPE_PATH_SIZE i = 0; i < TreeConfig::HEIGHT - 1; ++i) {
-                //     futures.push_back(std::async(std::launch::async, [this, i]() {
-                //         // Write to File A and B in parallel
-                //         std::vector<std::future<void>> inner_futures;
-
-                //         // File A
-                //         inner_futures.push_back(std::async(std::launch::async, [this, i]() {
-                //             std::ofstream ofs_evict(
-                //                 BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 1),
-                //                 std::ios::binary
+                // ifs_evict.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0), std::ios::binary);
+                //     ifs_evict.read(this->rootBucketDataEvictComplete.data(), ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                // ifs_evict.close();
+                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                // logger.stopTiming(this->LogEvictionLoadRootBucketFromDiskScheme2);
+                // logger.writeToFile();
+                // #endif
+                // #if USE_COUT
+                // std::cout << "Received command: CMD_COMPLETE_EVICT_CLIENT_TO_SERVER" << std::endl;
+                // #endif
+                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                // this->logger.startTiming(this->LogEvictionSendRootBucketToClientScheme2);
+                // #endif
+                // this->communicator.sendData(clientSockfd,
+                //                             this->rootBucketDataEvictComplete.data(),
+                //                             ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                // this->communicator.receiveCommand(clientSockfd, this->cmd1);
+                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                // this->logger.stopTiming(this->LogEvictionSendRootBucketToClientScheme2);
+                // this->logger.writeToFile();
+                // #endif
+                // this->communicator.receiveData(clientSockfd,
+                //                                 this->rootBucketDataEvictComplete.data(),
+                //                                 ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                // this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
+                // for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {
+                //     // std::memcpy(this->blockCiphertextsSerializedData.data(),
+                //     //             this->rootBucketDataEvictComplete.data() + i * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,
+                //     //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+                //     // this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, this->triplet_evict_bucketCiphertexts[i]);
+                //     this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->rootBucketDataEvictComplete.data() + i * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS),
+                //                                         this->triplet_evict_bucketCiphertexts[i]);
+                //     #if USE_COUT
+                //         std::cout << "Block ID: for the root bucket: " << i << std::endl;
+                //         std::vector<char> blockData;
+                //         this->elgamal.ParallelDecrypt(this->triplet_evict_bucketCiphertexts[i], blockData);
+                //         BlockConfig::TYPE_BLOCK_ID blockID;
+                //         std::memcpy(&blockID, blockData.data(), sizeof(BlockConfig::TYPE_BLOCK_ID));
+                //         std::cout << "Block ID: " << blockID << std::endl;
+                //     #endif
+                // }
+                
+                // this->triplet_evict_bucketCiphertexts_flat.clear();
+                // for (BucketConfig::TYPE__SMALL_INDEX i = 0; i < 3; ++i) {
+                //     for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
+                //         if (i == 0) {
+                //             this->triplet_evict_bucketCiphertexts_flat.insert(
+                //                 this->triplet_evict_bucketCiphertexts_flat.end(),
+                //                 std::make_move_iterator(this->triplet_evict_bucketCiphertexts[j].begin()),
+                //                 std::make_move_iterator(this->triplet_evict_bucketCiphertexts[j].end())
                 //             );
-                //             for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                //                 std::vector<char> serializedData; // Use local variable
-                //                 serializedData.resize(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                //                 this->elgamal.SerializeCiphertexts(
-                //                     this->path_evict_bucketCiphertexts_complete[i * 2 * BucketConfig::BUCKET_SIZE + j], 
-                //                     serializedData
-                //                 );
-                //                 ofs_evict.write(
-                //                     serializedData.data(),
-                //                     ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS
-                //                 );
-                //             }
-                //         }));
-
-                //         // File B
-                //         inner_futures.push_back(std::async(std::launch::async, [this, i]() {
-                //             std::ofstream ofs_evict(
-                //                 BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 2),
-                //                 std::ios::binary
+                //         } else {
+                //             this->triplet_evict_bucketCiphertexts_flat.insert(
+                //                 this->triplet_evict_bucketCiphertexts_flat.end(),
+                //                 std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j].begin()),
+                //                 std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j].end())
                 //             );
-                //             for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                //                 std::vector<char> serializedData; // Use local variable
-                //                 serializedData.resize(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                //                 this->elgamal.SerializeCiphertexts(
-                //                     this->path_evict_bucketCiphertexts_complete[(i * 2 + 1) * BucketConfig::BUCKET_SIZE + j], 
-                //                     serializedData
-                //                 );
-                //                 ofs_evict.write(
-                //                     serializedData.data(),
-                //                     ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS
-                //                 );
-                //             }
-                //         }));
-
-                //         // Wait for both files to be written
-                //         for (auto& future : inner_futures) {
-                //             future.get();
                 //         }
-                //     }));
+                //     }
+                // }
+                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                // logger.startTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
+                // #endif
+                // // rerandomize the triplet_evict_bucketCiphertexts
+                // // for (auto& blockCiphertexts : this->triplet_evict_bucketCiphertexts) {
+                // //     this->elgamal.ParallelRerandomize(blockCiphertexts);
+                // // }
+                // this->elgamal.ParallelRerandomize(this->triplet_evict_bucketCiphertexts_flat);
+                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                // logger.stopTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
+                // logger.writeToFile();
+                // #endif
+                // // Clear existing data in the triplet_evict_bucketCiphertexts before refilling
+                // for (auto& inner_vector : this->triplet_evict_bucketCiphertexts) {
+                //     inner_vector.clear();
+                // }
+                // // Move all data from the triplet_evict_bucketCiphertexts_flat to the triplet_evict_bucketCiphertexts
+                // auto flat_iter = this->triplet_evict_bucketCiphertexts_flat.begin();
+                // for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < 3 * BucketConfig::BUCKET_SIZE; ++i) {
+                //     if (flat_iter == this->triplet_evict_bucketCiphertexts_flat.end()) {
+                //         std::cerr << "[Eviction]Error: Not enough data in triplet_evict_bucketCiphertexts_flat" << std::endl;
+                //         break;
+                //     }
+                //     this->triplet_evict_bucketCiphertexts[i].insert(
+                //         this->triplet_evict_bucketCiphertexts[i].begin(),
+                //         std::make_move_iterator(flat_iter),
+                //         std::make_move_iterator(flat_iter + ElGamalNTLConfig::BLOCK_CHUNK_SIZE)
+                //     );
+                //     // Advance the iterator by the number of elements moved
+                //     flat_iter += ElGamalNTLConfig::BLOCK_CHUNK_SIZE;
+                // }
+                // this->communicator.receiveData(clientSockfd,
+                //                                 this->tripletEvictPermComplete.data(),
+                //                                 this->triplet_evict_perm_size);
+                // this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
+                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                // logger.startTiming(this->LogEvictPermutateFirstTripletBuckets);
+                // #endif
+                // // Apply the permutation to the triplet_evict_bucketCiphertexts
+                // BucketConfig::ApplyPermInPlace(this->triplet_evict_bucketCiphertexts, this->tripletEvictPermComplete);
+                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                // logger.stopTiming(this->LogEvictPermutateFirstTripletBuckets);
+                // logger.writeToFile();
+                // #endif
+                // // Serialize the triplet_evict_bucketCiphertexts into triplet_evict_bucketCiphertextsSerializedData
+                // size_t offset = 0;
+                // for (auto &blockCiphertexts : this->triplet_evict_bucketCiphertexts) {
+                //     this->elgamal.SerializeCiphertexts(blockCiphertexts, this->blockCiphertextsSerializedData);
+                //     std::memcpy(this->triplet_evict_bucketCiphertextsSerializedData.data() + offset,
+                //                 this->blockCiphertextsSerializedData.data(),
+                //                 ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+                //     offset += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
+                // }
+                // // Send the triplet_evict_bucketCiphertextsSerializedData to the third party
+                // this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(),
+                //                                           ServerConfig::CMD_COMPLETE_EVICT_SERVER_TO_THIRD_PARTY);
+                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                // logger.startTiming(this->LogEvictionSendTripletBucketsToThirdPartyScheme2);
+                // #endif
+                // this->communicator2ThirdParty.sendData(this->communicator2ThirdParty.getSockfd(),
+                //                                        this->triplet_evict_bucketCiphertextsSerializedData.data(),
+                //                                          this->triplet_evict_bucketCiphertextsSerializedData.size());
+                // this->communicator2ThirdParty.receiveCommand(this->communicator2ThirdParty.getSockfd(), this->command);
+                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                // this->logger.stopTiming(this->LogEvictionSendTripletBucketsToThirdPartyScheme2);
+                // this->logger.writeToFile();
+                // #endif
+                // this->communicator2ThirdParty.receiveData(this->communicator2ThirdParty.getSockfd(),
+                //                                         this->triplet_evict_bucketCiphertextsSerializedData.data(),
+                //                                         this->triplet_evict_bucketCiphertextsSerializedDataSize);
+                // this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(), ServerConfig::CMD_SUCCESS);
+                // #if USE_COUT
+                // // Test the correctness of the triplet_evict_bucketCiphertextsSerializedData
+                // offset = 0;
+                // for (auto &blockCiphertexts : this->triplet_evict_bucketCiphertexts) {
+                //     std::memcpy(this->blockCiphertextsSerializedData.data(),
+                //                 this->triplet_evict_bucketCiphertextsSerializedData.data() + offset,
+                //                 ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+                //     this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, blockCiphertexts);
+                //     std::vector<char> blockData;
+                //     this->elgamal.ParallelDecrypt(blockCiphertexts, blockData);
+                //     BlockConfig::TYPE_BLOCK_ID blockID;
+                //     std::memcpy(&blockID, blockData.data(), sizeof(BlockConfig::TYPE_BLOCK_ID));
+                //     std::cout << "Block ID: " << blockID << std::endl;
+                //     offset += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
+                // }
+                // #endif
+                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                // this->logger.startTiming(this->LogEvictionWriteRootBucketBackToDiskScheme2);
+                // #endif
+                // std::thread([this]() {
+                //     this->ofs_evict_root.open(
+                //         BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0),
+                //         std::ios::binary
+                //     );
+                //     this->ofs_evict_root.write(
+                //         this->triplet_evict_bucketCiphertextsSerializedData.data(),
+                //         ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS
+                //     );
+                //     this->ofs_evict_root.close();
+                    
+                // }).detach();
+                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                // this->logger.stopTiming(this->LogEvictionWriteRootBucketBackToDiskScheme2);
+                // this->logger.writeToFile();
+                // #endif
+                // // Deserialize the triplet_evict_bucketCiphertextsSerializedData into this->path_evict_bucketCiphertexts_complete
+                // for (BucketConfig::TYPE_SMALL_INDEX_U i = 1; i < 3; ++i) {
+                //     for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
+                //         // std::memcpy(this->blockCiphertextsSerializedData.data(),
+                //         //             this->triplet_evict_bucketCiphertextsSerializedData.data() + i * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,
+                //         //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+                //         // this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j]);
+                //         this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->triplet_evict_bucketCiphertextsSerializedData.data() + i * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS),
+                //                                             this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j]);
+                //     }
                 // }
 
-                // // Wait for all `i` iterations to complete
-                // for (auto& future : futures) {
-                //     future.get();
+                // this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
+                
+                // for (PathConfig::TYPE_PATH_SIZE i = 1; i < TreeConfig::HEIGHT - 1; ++i) {
+                //     #if USE_COUT
+                //         std::cout << "i: " << i << std::endl;
+                //         std::cout << "The tripletBucketIDsComplete: ";
+                //         for (auto& id : this->tripletBucketIDsComplete) {
+                //             std::cout << id << " ";
+                //         }
+                //         std::cout << std::endl;
+                //     #endif
+                //     this->triplet_evict_bucketCiphertexts_flat.clear();
+                //     for (BucketConfig::TYPE_SMALL_INDEX_U ii = 0; ii < 3; ++ii) {
+                //         if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 1) {
+                //             for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
+                //                 // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j];
+                //                 // Use std::move to avoid the copy
+                //                 // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = std::move(this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j]);
+                //                 this->triplet_evict_bucketCiphertexts_flat.insert(
+                //                     this->triplet_evict_bucketCiphertexts_flat.end(),
+                //                     std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j].begin()),
+                //                     std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j].end())
+                //                 );
+                //             }
+                //         } else if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 0) {
+                //             for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
+                //                 // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j];
+                //                 // Use std::move to avoid the copy
+                //                 // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = std::move(this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j]);
+                //                 this->triplet_evict_bucketCiphertexts_flat.insert(
+                //                     this->triplet_evict_bucketCiphertexts_flat.end(),
+                //                     std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j].begin()),
+                //                     std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j].end())
+                //                 );
+                //             }
+                //         } else {
+                //             for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
+                //                 // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j];
+                //                 // Use std::move to avoid the copy
+                //                 // this->triplet_evict_bucketCiphertexts[ii * BucketConfig::BUCKET_SIZE + j] = std::move(this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j]);
+                //                 this->triplet_evict_bucketCiphertexts_flat.insert(
+                //                     this->triplet_evict_bucketCiphertexts_flat.end(),
+                //                     std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j].begin()),
+                //                     std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j].end())
+                //                 );
+                //             }
+                //         }
+                //     }
+                //     // rerandomize the triplet_evict_bucketCiphertexts
+                //     // for (auto& blockCiphertexts : this->triplet_evict_bucketCiphertexts) {
+                //     //     this->elgamal.ParallelRerandomize(blockCiphertexts);
+                //     // }
+                //      #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                //     logger.startTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
+                //     #endif
+                //     this->elgamal.ParallelRerandomize(this->triplet_evict_bucketCiphertexts_flat);
+                //     #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                //     logger.stopTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
+                //     logger.writeToFile();
+                //     #endif
+                //     // Write the data in the triplet_evict_bucketCiphertexts_flat back to the triplet_evict_bucketCiphertexts
+                //     flat_iter = this->triplet_evict_bucketCiphertexts_flat.begin();
+                //     for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < 3 * BucketConfig::BUCKET_SIZE; ++j) {
+                //         if (flat_iter == this->triplet_evict_bucketCiphertexts_flat.end()) {
+                //             std::cerr << "[Eviction]Error: Not enough data in triplet_evict_bucketCiphertexts_flat" << std::endl;
+                //             break;
+                //         }
+                //         this->triplet_evict_bucketCiphertexts[j].clear();
+                //         this->triplet_evict_bucketCiphertexts[j].insert(
+                //             this->triplet_evict_bucketCiphertexts[j].begin(),
+                //             std::make_move_iterator(flat_iter),
+                //             std::make_move_iterator(flat_iter + ElGamalNTLConfig::BLOCK_CHUNK_SIZE)
+                //         );
+                //         // Advance the iterator by the number of elements moved
+                //         flat_iter += ElGamalNTLConfig::BLOCK_CHUNK_SIZE;
+                //     }
+                //     this->communicator.receiveData(clientSockfd,
+                //                                     this->tripletEvictPermComplete.data(),
+                //                                     this->triplet_evict_perm_size);
+                //     this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
+                //     // Apply the permutation to the triplet_evict_bucketCiphertexts
+                //     #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                //     this->logger.startTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
+                //     #endif
+                //     BucketConfig::ApplyPermInPlace(this->triplet_evict_bucketCiphertexts, this->tripletEvictPermComplete);
+                //      #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                //     this->logger.stopTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
+                //     this->logger.writeToFile();
+                //     #endif
+                //     // Serialize the triplet_evict_bucketCiphertexts into triplet_evict_bucketCiphertextsSerializedData
+                //     size_t offset = 0;
+                //     for (auto &blockCiphertexts : this->triplet_evict_bucketCiphertexts) {
+                //         this->elgamal.SerializeCiphertexts(blockCiphertexts, this->blockCiphertextsSerializedData);
+                //         std::memcpy(this->triplet_evict_bucketCiphertextsSerializedData.data() + offset,
+                //                     this->blockCiphertextsSerializedData.data(),
+                //                     ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+                //         offset += ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
+                //     }
+                //     // Send the triplet_evict_bucketCiphertextsSerializedData to the third party
+                //     this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(),
+                //                                             ServerConfig::CMD_COMPLETE_EVICT_SERVER_TO_THIRD_PARTY);
+                //     #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                //     this->logger.startTiming(this->LogEvictionSendTripletBucketsToThirdPartyScheme2);
+                //     #endif
+                //     this->communicator2ThirdParty.sendData(this->communicator2ThirdParty.getSockfd(),
+                //                                         this->triplet_evict_bucketCiphertextsSerializedData.data(),
+                //                                         this->triplet_evict_bucketCiphertextsSerializedData.size());
+                //     this->communicator2ThirdParty.receiveCommand(this->communicator2ThirdParty.getSockfd(), this->command);
+                //     #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                //     this->logger.stopTiming(this->LogEvictionSendTripletBucketsToThirdPartyScheme2);
+                //     this->logger.writeToFile();
+                //     #endif
+                //     this->communicator2ThirdParty.receiveData(this->communicator2ThirdParty.getSockfd(),
+                //                                             this->triplet_evict_bucketCiphertextsSerializedData.data(),
+                //                                             this->triplet_evict_bucketCiphertextsSerializedDataSize);
+                //     this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(), ServerConfig::CMD_SUCCESS);
+                //     // Deserialize the triplet_evict_bucketCiphertextsSerializedData into this->path_evict_bucketCiphertexts_complete
+                //     for (BucketConfig::TYPE_SMALL_INDEX_U ii = 0; ii < 3; ++ii) {
+                //         if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 1) {
+                //             for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
+                //                 // std::memcpy(this->blockCiphertextsSerializedData.data(),
+                //                 //             this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,
+                //                 //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+                //                 // this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j]);
+                //                 this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS),
+                //                                                     this->path_evict_bucketCiphertexts_complete[(2 * (i - 1)) * BucketConfig::BUCKET_SIZE + j]);
+                //             }
+                //         } else if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 0) {
+                //             for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
+                //                 // std::memcpy(this->blockCiphertextsSerializedData.data(),
+                //                 //             this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,
+                //                 //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+                //                 // this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j]);
+                //                 this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS),
+                //                                                     this->path_evict_bucketCiphertexts_complete[(2 * i - 1) * BucketConfig::BUCKET_SIZE + j]);
+                //             }
+                //         } else {
+                //             for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
+                //                 // std::memcpy(this->blockCiphertextsSerializedData.data(),
+                //                 //             this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,
+                //                 //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+                //                 // this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j]);
+                //                 this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->triplet_evict_bucketCiphertextsSerializedData.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + j * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS),
+                //                                                     this->path_evict_bucketCiphertexts_complete[(2 * i + ii - 1) * BucketConfig::BUCKET_SIZE + j]);
+                //             }
+                //         }
+                //     }
+                //     this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
                 // }
+                // // Write the this->path_evict_bucketCiphertexts_complete to the disk
+                // for (PathConfig::TYPE_PATH_SIZE i = 0; i < TreeConfig::HEIGHT - 1; ++i) {
+                //     this->ofs_evict.open(
+                //         BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 1),
+                //         std::ios::binary
+                //     );
+                //     for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
+                //         this->elgamal.SerializeCiphertexts(this->path_evict_bucketCiphertexts_complete[i * 2 * BucketConfig::BUCKET_SIZE + j], this->blockCiphertextsSerializedData);
+                //         #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                //             this->logger.startTiming(this->LogEvictionWritePathBucketsBackToDiskScheme2);
+                //         #endif
+                //          this->ofs_evict.write(
+                //             this->blockCiphertextsSerializedData.data(),
+                //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS
+                //         );
+                //          #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                //             this->logger.stopTiming(this->LogEvictionWritePathBucketsBackToDiskScheme2);
+                //             this->logger.writeToFile();
+                //         #endif
+                //     }
+                //     this->ofs_evict.close();
+                //     this->ofs_evict.open(
+                //         BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 2),
+                //         std::ios::binary
+                //     );
+                //     for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
+                //         this->elgamal.SerializeCiphertexts(this->path_evict_bucketCiphertexts_complete[(i * 2 + 1) * BucketConfig::BUCKET_SIZE + j], this->blockCiphertextsSerializedData);
+                //         #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                //             this->logger.startTiming(this->LogEvictionWritePathBucketsBackToDiskScheme2);
+                //         #endif
+                //          this->ofs_evict.write(
+                //             this->blockCiphertextsSerializedData.data(),
+                //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS
+                //         );
+                //         #if LOG_EVICT_BREAKDOWN_COST_SERVER
+                //             this->logger.stopTiming(this->LogEvictionWritePathBucketsBackToDiskScheme2);
+                //             this->logger.writeToFile();
+                //         #endif
+                //     }
+                //      this->ofs_evict.close();
+                // }
+                
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
             } else if (this->command == ServerConfig::CMD_INIT_BINARY_TREE_SCHEME1_CLIENT_TO_SERVER) {
                 std::cout << "Received command: CMD_INIT_BINARY_TREE_SCHEME1_CLIENT_TO_SERVER" << std::endl;
