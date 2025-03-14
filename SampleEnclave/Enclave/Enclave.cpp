@@ -344,6 +344,42 @@ void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
     BNConfig::FreeMGHC();
 }
 
+void ecall_evict_2(char* buffer, uint8_t* flags) {
+    std::vector<TYPE_SLOT_ID_SGX> perm1TripletBucketsEviction2(BUCKET_SIZE_SGX * 3, 1);
+    std::vector<std::vector<BIGNUM*>> perm1TripletCiphertextsEviction2(2, std::vector<BIGNUM*>(BNConfig::BUCKET_CHUNK_SIZE_SGX * 3, BN_new()));
+    BNConfig::InitMGHC();
+    while (!flags[0]) {
+        // Wait for the buffer to be ready
+        __asm__ __volatile__("pause");
+    }
+    std::memcpy(perm1TripletBucketsEviction2.data(), buffer, perm1TripletBucketsEviction2.size() * sizeof(TYPE_SLOT_ID_SGX));
+    // Check the values in the perm1TripletBucketsEviction2 vector
+    // for (size_t i = 0; i < perm1TripletBucketsEviction2.size(); ++i) {
+    //     printf("perm1TripletBucketsEviction2[%d] = %d\n", i, perm1TripletBucketsEviction2[i]);
+    // }
+    flags[1] = 1;
+    while (!flags[2]) {
+        __asm__ __volatile__("pause");
+    }
+    BNConfig::ConvertVecCharCipher2VecBN(buffer, perm1TripletCiphertextsEviction2);
+    while (!flags[3]) {
+        __asm__ __volatile__("pause");
+    }
+    BNConfig::ApplyPermutation(perm1TripletCiphertextsEviction2, BNConfig::BUCKET_CHUNK_SIZE_SGX * 3, BUCKET_SIZE_SGX * 3, perm1TripletBucketsEviction2);
+    BNConfig::ParallelReRandomize(perm1TripletCiphertextsEviction2[0], perm1TripletCiphertextsEviction2[1]);
+    flags[4] = 1; 
+    BNConfig::ConvertVecBNCipher2VecChar(perm1TripletCiphertextsEviction2[0], perm1TripletCiphertextsEviction2[1], buffer);
+    flags[5] = 1;
+
+    // free the BIGNUM objects
+    for (size_t i = 0; i < 2; ++i) {
+        for (size_t j = 0; j < BNConfig::BUCKET_CHUNK_SIZE_SGX * 3; ++j) {
+            BN_free(perm1TripletCiphertextsEviction2[i][j]);
+        }
+    }
+    BNConfig::FreeMGHC();
+}
+
 void ecall_sort_array(int* arr, size_t arr_len) {
     std::sort(arr, arr + arr_len);
 }
