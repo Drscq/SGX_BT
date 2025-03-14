@@ -36,10 +36,10 @@ namespace BNConfig {
     inline int BUCKET_CHUNK_SIZE_SGX = BUCKET_SIZE_SGX * BLOCK_CHUNK_SIZE_SGX;
     inline int BLOCK_CIPHERTEXT_NUM_CHARS_SGX = BLOCK_CHUNK_SIZE_SGX * PER_CIPHERTEXT_SIZE_SGX * 2;
     inline int BUCKET_CIPHERTEXT_NUM_CHARS_SGX = BUCKET_SIZE_SGX * BLOCK_CIPHERTEXT_NUM_CHARS_SGX;
-    inline void ApplyPermutation(std::vector<std::vector<BIGNUM*>>& bucketCiphertextsBN, int numChunks, std::vector<TYPE_SLOT_ID_SGX>& perm) {
+    inline void ApplyPermutation(std::vector<std::vector<BIGNUM*>>& bucketCiphertextsBN, int numChunks, int numBlocks, std::vector<TYPE_SLOT_ID_SGX>& perm) {
         std::vector<BIGNUM*> newCiphertexts0(numChunks);
         std::vector<BIGNUM*> newCiphertexts1(numChunks);
-        for (int i = 0; i < BUCKET_SIZE_SGX; ++i) {
+        for (int i = 0; i < numBlocks; ++i) {
             int oldStart = i * BLOCK_CHUNK_SIZE_SGX;
             int newStart = perm[i] * BLOCK_CHUNK_SIZE_SGX;
             for (int j = 0; j < BLOCK_CHUNK_SIZE_SGX; ++j) {

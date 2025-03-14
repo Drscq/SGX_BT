@@ -331,7 +331,7 @@ void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
         __asm__ __volatile__("pause");
     }
     BNConfig::ConvertVecCharCipher2VecBN(buffer, BucketCiphertexts);
-    BNConfig::ApplyPermutation(BucketCiphertexts, BNConfig::BUCKET_CHUNK_SIZE_SGX, perm1EarlyReshuffleComplete_sgx);
+    BNConfig::ApplyPermutation(BucketCiphertexts, BNConfig::BUCKET_CHUNK_SIZE_SGX, BUCKET_SIZE_SGX, perm1EarlyReshuffleComplete_sgx);
     BNConfig::ParallelReRandomize(BucketCiphertexts[0], BucketCiphertexts[1]);
     BNConfig::ConvertVecBNCipher2VecChar(BucketCiphertexts[0], BucketCiphertexts[1], buffer);
     flags[4] = 1;

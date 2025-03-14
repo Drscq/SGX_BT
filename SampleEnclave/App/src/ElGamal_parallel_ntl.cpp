@@ -802,6 +802,7 @@ void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<BIGNUM*>& c1, std::ve
         this->currentIdxBN = 0;
         int actualThreads = 0; // track how many threads we actually start
         for (int t = 0; t < this->num_threads; ++t) {
+            // std::cout << "Starting thread " << t << std::endl;
             this->startIdxBN = this->currentIdxBN;
             this->endIdxBN = std::min(this->startIdxBN + this->threadChunkSizeBN, static_cast<int>(c1.size()));
             if (this->startIdxBN >= this->endIdxBN) {
@@ -817,11 +818,11 @@ void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<BIGNUM*>& c1, std::ve
             this->thread_bn_data[t].endIdx = this->endIdxBN;
 
             pthread_create(&this->threads[t], nullptr, WorkerFunction, &this->thread_bn_data[t]);
-            // Then set CPU affinity:
+            // // Then set CPU affinity:
             // cpu_set_t cpuset;
             // CPU_ZERO(&cpuset);
             // // Suppose you pin to core t if it exists, or you pick some mapping
-            // CPU_SET(56 - t, &cpuset);
+            // CPU_SET(t + 1, &cpuset);
             // pthread_setaffinity_np(this->threads[t], sizeof(cpu_set_t), &cpuset);
             this->currentIdxBN = this->endIdxBN;
             actualThreads++;

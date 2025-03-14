@@ -136,15 +136,29 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     this->evictCipherPathsDataBNCompleteSize = ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS
                                                 * ((TreeConfig::HEIGHT - 1) * 2 + 1);
     this->evictCipherPathsDataBNComplete.resize(this->evictCipherPathsDataBNCompleteSize);
+    this->tripletBucketCiphertextsSerializedDataSgxSize = 3 * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;
+    this->tripletBucketCiphertextsSerializedDataSgx.resize(this->tripletBucketCiphertextsSerializedDataSgxSize);
+    this->tripletBucketCiphertextsBNSgxSize = 3 * ElGamalNTLConfig::BLOCK_CHUNK_SIZE * BucketConfig::BUCKET_SIZE;
+    this->tripletBucketCiphertextsBNSgx.resize(2);
+    this->tripletBucketCiphertextsBNSgx[0].resize(this->tripletBucketCiphertextsBNSgxSize);
+    this->tripletBucketCiphertextsBNSgx[1].resize(this->tripletBucketCiphertextsBNSgxSize);
+    for (int i = 0; i < this->tripletBucketCiphertextsBNSgxSize; i++) {
+        this->tripletBucketCiphertextsBNSgx[0][i] = BN_new();
+        this->tripletBucketCiphertextsBNSgx[1][i] = BN_new();
+    }
 }
 Server::Server(ServerConfig::TYPE_PORT_NUM port, sgx_enclave_id_t eid) : Server(port) {
     this->eidSgx = eid;
 }
 Server::~Server() {
-    // std::cout << "Server destructor" << std::endl;
+    // std::cout << "Server destructor" << std::endl;se
     for (int i = 0; i < this->bucketCiphertextsBNSgxSize; i++) {
         BN_free(this->bucketCiphertextsBNSgx[0][i]);
         BN_free(this->bucketCiphertextsBNSgx[1][i]);
+    }
+    for (int i = 0; i < this->tripletBucketCiphertextsBNSgxSize; i++) {
+        BN_free(this->tripletBucketCiphertextsBNSgx[0][i]);
+        BN_free(this->tripletBucketCiphertextsBNSgx[1][i]);
     }
 }
 
@@ -562,6 +576,7 @@ void Server::handleClient(int clientSockfd) {
                 start = std::chrono::high_resolution_clock::now();
                 BNConfig::ApplyPermutation(this->bucketCiphertextsBNSgx, 
                     this->bucketCiphertextsBNSgxSize,
+                    BucketConfig::BUCKET_SIZE,
                     this->perm2EarlyReshuffleComplete);
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
@@ -670,6 +685,28 @@ void Server::handleClient(int clientSockfd) {
                 //         }
                 //     }
                 // }
+                this->communicator.receiveData(clientSockfd,
+                                                this->tripletBucketCiphertextsSerializedDataSgx.data(),
+                                                this->triplet_evict_perm_size * 2);
+                this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
+                std::memcpy(this->tripletEvictPermComplete.data(),
+                            this->tripletBucketCiphertextsSerializedDataSgx.data() + this->triplet_evict_perm_size,
+                            this->triplet_evict_perm_size);
+                std::cout << "The tripletEvictPermComplete: ";
+                for (auto &p : this->tripletEvictPermComplete) {
+                    std::cout << p << " ";
+                }
+                std::cout << std::endl;
+                std::cout << "The size of the tripletBucketCiphertextsSerializedDataSgx: " << this->tripletBucketCiphertextsSerializedDataSgx.size() << std::endl;
+                // std::memcpy(this->tripletBucketCiphertextsSerializedDataSgx.data(),
+                //             this->evictCipherPathsDataBNComplete.data(),
+                //             this->tripletBucketCiphertextsSerializedDataSgxSize);
+                // this->elgamal.ConvertVecCharCipher2VecBN(this->tripletBucketCiphertextsSerializedDataSgx, this->tripletBucketCiphertextsBNSgx);
+                // start = std::chrono::high_resolution_clock::now();
+                // this->elgamal.ParallelRerandomize(this->tripletBucketCiphertextsBNSgx[0], this->tripletBucketCiphertextsBNSgx[1]);
+                // end = std::chrono::high_resolution_clock::now();
+                // elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+                // std::cout << "ServerComputationParallelRerandomize: " << elapsed_ns.count() << " ns\n";
                 // #if LOG_EVICT_BREAKDOWN_COST_SERVER
                 // logger.startTiming(this->LogEvictionRerandomizationTripletBucketsScheme2);
                 // #endif
