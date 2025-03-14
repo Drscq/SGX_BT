@@ -133,6 +133,9 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
         this->bucketCiphertextsBNSgx[0][i] = BN_new();
         this->bucketCiphertextsBNSgx[1][i] = BN_new();
     }
+    this->evictCipherPathsDataBNCompleteSize = ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS
+                                                * ((TreeConfig::HEIGHT - 1) * 2 + 1);
+    this->evictCipherPathsDataBNComplete.resize(this->evictCipherPathsDataBNCompleteSize);
 }
 Server::Server(ServerConfig::TYPE_PORT_NUM port, sgx_enclave_id_t eid) : Server(port) {
     this->eidSgx = eid;
@@ -166,10 +169,11 @@ struct EnclaveThreadParams {
     char* buffer;
 };
 // static uint8_t flag_shared_sgx = 0;
-static std::vector<uint8_t> flag_shared_sgx(4, 0);
+static std::vector<uint8_t> flag_shared_sgx(5, 0);
 void* SgxEnclaveThreadFuncEarlyReshuffleScheme2(void* arg) {
+    std::fill(flag_shared_sgx.begin(), flag_shared_sgx.end(), 0);
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
-    ecall_early_reshuffle_2(params->eid, params->buffer, flag_shared_sgx.data());
+    ecall_early_reshuffle_2(params->eid, params->buffer, flag_shared_sgx.data()); 
     return nullptr;
 }
 void Server::handleClient(int clientSockfd) {
@@ -513,12 +517,17 @@ void Server::handleClient(int clientSockfd) {
                 params->eid = this->eidSgx;
                 params->buffer = this->bufferSgx.data();
                 pthread_create(&this->enclaveThread, NULL, &SgxEnclaveThreadFuncEarlyReshuffleScheme2, params);
+                while (flag_shared_sgx[0] == 0) {
+                    // Wait for the enclave to finish the set up
+                    __asm__ __volatile__("pause");
+                }
                 this->communicator.receiveData(clientSockfd, this->bufferSgx.data(), this->permsAddIdSizeEarlyReshuffleSgx);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                flag_shared_sgx[0] = 1;
-                #if defined(UNIT_TEST_SGX)
-                std::cout << "Received command: CMD_COMPLETE_EARLY_RESHUFFLE" << std::endl;
-                #endif
+                flag_shared_sgx[1] = 1;
+                while (flag_shared_sgx[2] == 0) {
+                    // Wait for the enclave to finish the early reshuffle
+                    __asm__ __volatile__("pause");
+                }
                 std::memcpy(this->perm2EarlyReshuffleComplete.data(),
                             this->bufferSgx.data() + this->permDataSize,
                             this->permDataSize);
@@ -550,7 +559,7 @@ void Server::handleClient(int clientSockfd) {
                 std::cout << "The size of the bucketCiphertextsBNSgx[0]: " << this->bucketCiphertextsBNSgx[0].size() << std::endl;
                 std::cout << "The size of the bucketCiphertextsBNSgx[1]: " << this->bucketCiphertextsBNSgx[1].size() << std::endl;
                 #endif
-                // start = std::chrono::high_resolution_clock::now();
+                start = std::chrono::high_resolution_clock::now();
                 BNConfig::ApplyPermutation(this->bucketCiphertextsBNSgx, 
                     this->bucketCiphertextsBNSgxSize,
                     this->perm2EarlyReshuffleComplete);
@@ -562,23 +571,16 @@ void Server::handleClient(int clientSockfd) {
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "ServerComputationParallelRerandomize: " << elapsed_ns.count() << " ns\n";
-
-                while (flag_shared_sgx[1] == 0) {
-                    // Wait for the enclave to finish the early reshuffle
-                    __asm__ __volatile__("pause");
-                }
-                // std::cout << "The flag_shared_sgx[1] is: " << flag_shared_sgx[1] << std::endl;
-                this->elgamal.ConvertVecBNCipher2VecChar(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], this->bufferSgx);
-                flag_shared_sgx[2] = 1;
+                flag_shared_sgx[3] = 1;
                 start = std::chrono::high_resolution_clock::now();
-                while (flag_shared_sgx[3] == 0) {
+                while (flag_shared_sgx[4] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
-                // std::cout << "The flag_shared_sgx[3] is: " << flag_shared_sgx[3] << std::endl;
+                this->elgamal.ConvertVecBNCipher2VecChar(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], this->bufferSgx);
                 ofs_early_reshuffle.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDEarlyReshuffleComplete), std::ios::binary);
                 start = std::chrono::high_resolution_clock::now();
                 ofs_early_reshuffle.write(this->bufferSgx.data(), ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
@@ -599,55 +601,40 @@ void Server::handleClient(int clientSockfd) {
                 this->logger.stopTiming(this->LogEvictionGenPathBucketIDsScheme2);
                 this->logger.writeToFile();
                 #endif
+                // Load the root bucket data from the disk to the evictCipherPathDataBNComplete
+                auto start = std::chrono::high_resolution_clock::now();
+                auto it = this->evictCipherPathsDataBNComplete.data();
+                this->bucket.LoadBucketCiphertextsFromDiskBN(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0),
+                                                            it, ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                it += ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;                    
                 for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < TreeConfig::HEIGHT - 1; ++i) {
-                    this->bucket.LoadDataFromDisk(BucketConfig::DATADIR,
-                                                BucketConfig::BUCKETPREFIX + std::to_string(2 * this->evictPathBucketIDsComplete[i] + 1),
-                                                this->bucketCiphertextsEvictComplete);
-                    // Wrtie the this->bucketCiphertextsEvictComplete to this->path_evict_bucketCiphertexts_complete
-                    for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                        // this->path_evict_bucketCiphertexts_complete[ 2 * i * BucketConfig::BUCKET_SIZE + j] = this->bucketCiphertextsEvictComplete[j];
-                        // Use std::move to avoid the copy
-                        this->path_evict_bucketCiphertexts_complete[ 2 * i * BucketConfig::BUCKET_SIZE + j] = std::move(this->bucketCiphertextsEvictComplete[j]);
+                    this->bucket.LoadBucketCiphertextsFromDiskBN(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(2 * this->evictPathBucketIDsComplete[i] + 1),
+                                                                it, ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                    if (i != TreeConfig::HEIGHT - 2) {
+                        it += ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;
                     }
-                    this->bucket.LoadDataFromDisk(BucketConfig::DATADIR,
-                                                BucketConfig::BUCKETPREFIX + std::to_string(2 * this->evictPathBucketIDsComplete[i] + 2),
-                                                this->bucketCiphertextsEvictComplete);
-                    for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                        // this->path_evict_bucketCiphertexts_complete[ (2 * i + 1) * BucketConfig::BUCKET_SIZE + j] = this->bucketCiphertextsEvictComplete[j];
-                        // Use std::move to avoid the copy
-                        this->path_evict_bucketCiphertexts_complete[ (2 * i + 1) * BucketConfig::BUCKET_SIZE + j] = std::move(this->bucketCiphertextsEvictComplete[j]);
+                    this->bucket.LoadBucketCiphertextsFromDiskBN(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(2 * this->evictPathBucketIDsComplete[i] + 2),
+                                                                it, ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                    if (i != TreeConfig::HEIGHT - 2) {
+                        it += ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;
                     }
                 }
-                // ++TreeConfig::ACCESS_COUNT_EVICTION_COMPLETE;
-                // // read the root bucket data to the rootBucketDataEvictComplete
-                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                // logger.startTiming(this->LogEvictionLoadRootBucketFromDiskScheme2);
-                // #endif
-                // ifs_evict.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0), std::ios::binary);
-                //     ifs_evict.read(this->rootBucketDataEvictComplete.data(), ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                // ifs_evict.close();
-                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                // logger.stopTiming(this->LogEvictionLoadRootBucketFromDiskScheme2);
-                // logger.writeToFile();
-                // #endif
-                // #if USE_COUT
-                // std::cout << "Received command: CMD_COMPLETE_EVICT_CLIENT_TO_SERVER" << std::endl;
-                // #endif
-                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                // this->logger.startTiming(this->LogEvictionSendRootBucketToClientScheme2);
-                // #endif
-                // this->communicator.sendData(clientSockfd,
-                //                             this->rootBucketDataEvictComplete.data(),
-                //                             ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                // this->communicator.receiveCommand(clientSockfd, this->cmd1);
-                // #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                // this->logger.stopTiming(this->LogEvictionSendRootBucketToClientScheme2);
-                // this->logger.writeToFile();
-                // #endif
-                // this->communicator.receiveData(clientSockfd,
-                //                                 this->rootBucketDataEvictComplete.data(),
-                //                                 ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                // this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
+                auto end = std::chrono::high_resolution_clock::now();
+                auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+                std::cout << "DiskIOLoadBucketCiphertextsFromDiskBN: " << elapsed_ns.count() << " ns\n";
+                ++TreeConfig::ACCESS_COUNT_EVICTION_COMPLETE;
+                start = std::chrono::high_resolution_clock::now();
+                this->communicator.sendData(clientSockfd,
+                                            this->evictCipherPathsDataBNComplete.data(),
+                                            ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                this->communicator.receiveCommand(clientSockfd, this->cmd1);
+                end = std::chrono::high_resolution_clock::now();
+                elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+                std::cout << "ServerCommunicationSendData: " << elapsed_ns.count() << " ns\n";
+                this->communicator.receiveData(clientSockfd,
+                                                this->evictCipherPathsDataBNComplete.data(),
+                                                ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
                 // for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {
                 //     // std::memcpy(this->blockCiphertextsSerializedData.data(),
                 //     //             this->rootBucketDataEvictComplete.data() + i * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,

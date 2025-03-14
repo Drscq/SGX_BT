@@ -818,11 +818,11 @@ void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<BIGNUM*>& c1, std::ve
 
             pthread_create(&this->threads[t], nullptr, WorkerFunction, &this->thread_bn_data[t]);
             // Then set CPU affinity:
-            cpu_set_t cpuset;
-            CPU_ZERO(&cpuset);
-            // Suppose you pin to core t if it exists, or you pick some mapping
-            CPU_SET(56 - t, &cpuset);
-            pthread_setaffinity_np(this->threads[t], sizeof(cpu_set_t), &cpuset);
+            // cpu_set_t cpuset;
+            // CPU_ZERO(&cpuset);
+            // // Suppose you pin to core t if it exists, or you pick some mapping
+            // CPU_SET(56 - t, &cpuset);
+            // pthread_setaffinity_np(this->threads[t], sizeof(cpu_set_t), &cpuset);
             this->currentIdxBN = this->endIdxBN;
             actualThreads++;
             if (this->currentIdxBN >= (int)c1.size()) {

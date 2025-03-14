@@ -33,6 +33,7 @@ public:
                           const std::string& fileName,
                           std::vector<std::vector<std::pair<ZZ_p, ZZ_p>>>& bucketCiphertexts);
     void LoadBucketCiphertextsFromDiskBN(const std::string& filePath, std::vector<char>& bucketCiphertextsSerializedData);
+    void LoadBucketCiphertextsFromDiskBN(const std::string& filePath, char* bucketCiphertextsSerializedData, size_t bucketCiphertextsSerializedDataSize);
     void LoadDataFromDiskSupportMT(const std::string& dirPath,
                                    const std::string& fileName,
                                    std::vector<std::vector<std::pair<ZZ_p, ZZ_p>>>& bucketCiphertexts);

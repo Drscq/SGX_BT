@@ -310,12 +310,8 @@ void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
     std::vector<TYPE_SLOT_ID_SGX> perm1EarlyReshuffleComplete_sgx(BUCKET_SIZE_SGX, 1);
     std::vector<std::vector<BIGNUM*>> BucketCiphertexts(2, std::vector<BIGNUM*>(BNConfig::BUCKET_CHUNK_SIZE_SGX, BN_new()));
     BNConfig::InitMGHC();
-    // Check for zero chunk size to avoid divide-by-zero
-    if (BNConfig::BUCKET_CHUNK_SIZE_SGX == 0) {
-        printf("Error: BNConfig::BUCKET_CHUNK_SIZE_SGX cannot be 0.\n");
-        return;
-    }
-    while (!flags[0]) {
+    flags[0] = 1;
+    while (flags[1] == 0) {
         // Wait for the buffer to be ready
         __asm__ __volatile__("pause");
     }
@@ -330,15 +326,15 @@ void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
         printf("perm1EarlyReshuffleComplete_sgx[%d] = %d\n", i, perm1EarlyReshuffleComplete_sgx[i]);
     }
     #endif
-    flags[1] = 1;
-    while (!flags[2]) {
+    flags[2] = 1;
+    while (!flags[3]) {
         __asm__ __volatile__("pause");
     }
     BNConfig::ConvertVecCharCipher2VecBN(buffer, BucketCiphertexts);
     BNConfig::ApplyPermutation(BucketCiphertexts, BNConfig::BUCKET_CHUNK_SIZE_SGX, perm1EarlyReshuffleComplete_sgx);
     BNConfig::ParallelReRandomize(BucketCiphertexts[0], BucketCiphertexts[1]);
     BNConfig::ConvertVecBNCipher2VecChar(BucketCiphertexts[0], BucketCiphertexts[1], buffer);
-    flags[3] = 1;
+    flags[4] = 1;
     // free the BIGNUM objects
     for (size_t i = 0; i < 2; ++i) {
         for (size_t j = 0; j < BNConfig::BUCKET_CHUNK_SIZE_SGX; ++j) {

@@ -96,6 +96,9 @@ public:
     std::vector<BucketConfig::TYPE_BUCKET_ID> tripletBucketIDsComplete;
     ClientConfig::TYPE_CHAR_SIZE tripletBucketIDsCompleteCharNum;
     std::vector<BucketConfig::TYPE_BUCKET_ID> evictPathBucketIDsComplete;
+    // OpenSSSl version
+    std::vector<char> evictCipherPathsDataBNComplete;
+    int evictCipherPathsDataBNCompleteSize;
     // file class
     std::ofstream ofs_evict;
     std::ofstream ofs_evict_root;
@@ -216,6 +219,11 @@ public:
         // Openssl variables
         std::vector<std::vector<BIGNUM*>> bucketCiphertextsBNSgx;
         int bucketCiphertextsBNSgxSize;
+        // for the eviction
+        std::vector<std::vector<BIGNUM*>> tripletBucketCiphertextsBNSgx;
+        int tripletBucketCiphertextsBNSgxSize;
+        std::vector<char> tripletBucketCiphertextsSerializedDataSgx;
+        int tripletBucketCiphertextsSerializedDataSgxSize;
 };
 
 

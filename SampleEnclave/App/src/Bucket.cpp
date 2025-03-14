@@ -198,6 +198,14 @@ void Bucket::LoadBucketCiphertextsFromDiskBN(const std::string& filePath,
     FileConfig::bucketFileLoad.close();
 }
 
+void Bucket::LoadBucketCiphertextsFromDiskBN(const std::string& filePath,
+                                            char* bucketCiphertextsSerializedData,
+                                            size_t bucketCiphertextsSerializedDataSize) {
+    FileConfig::bucketFileLoad.open(filePath, std::ios::binary);
+    FileConfig::bucketFileLoad.read(bucketCiphertextsSerializedData, bucketCiphertextsSerializedDataSize);
+    FileConfig::bucketFileLoad.close();
+}
+
 void Bucket::LoadDataFromDiskSupportMT(const std::string& dirPath,
                                        const std::string& fileName,
                                        std::vector<std::vector<std::pair<ZZ_p, ZZ_p>>>& bucketCiphertexts) {
