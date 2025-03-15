@@ -370,6 +370,25 @@ void ecall_evict_2(char* buffer, uint8_t* flags) {
     flags[4] = 1; 
     BNConfig::ConvertVecBNCipher2VecChar(perm1TripletCiphertextsEviction2[0], perm1TripletCiphertextsEviction2[1], buffer);
     flags[5] = 1;
+    for (int i = 1; i < TreeConfigSgx::HEIGHT - 1; ++i) {
+        while (!flags[i * 6 + 0]) {
+            __asm__ __volatile__("pause");
+        }
+        std::memcpy(perm1TripletBucketsEviction2.data(), buffer, perm1TripletBucketsEviction2.size() * sizeof(TYPE_SLOT_ID_SGX));
+        flags[i * 6 + 1] = 1;
+        while (!flags[i * 6 + 2]) {
+            __asm__ __volatile__("pause");
+        }
+        BNConfig::ConvertVecCharCipher2VecBN(buffer, perm1TripletCiphertextsEviction2);
+        while (!flags[i * 6 + 3]) {
+            __asm__ __volatile__("pause");
+        }
+        BNConfig::ApplyPermutation(perm1TripletCiphertextsEviction2, BNConfig::BUCKET_CHUNK_SIZE_SGX * 3, BUCKET_SIZE_SGX * 3, perm1TripletBucketsEviction2);
+        BNConfig::ParallelReRandomize(perm1TripletCiphertextsEviction2[0], perm1TripletCiphertextsEviction2[1]);
+        flags[i * 6 + 4] = 1;
+        BNConfig::ConvertVecBNCipher2VecChar(perm1TripletCiphertextsEviction2[0], perm1TripletCiphertextsEviction2[1], buffer);
+        flags[i * 6 + 5] = 1;
+    }
 
     // free the BIGNUM objects
     for (size_t i = 0; i < 2; ++i) {

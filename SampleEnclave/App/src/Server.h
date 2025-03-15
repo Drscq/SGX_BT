@@ -224,6 +224,7 @@ public:
         int tripletBucketCiphertextsBNSgxSize;
         std::vector<char> tripletBucketCiphertextsSerializedDataSgx;
         int tripletBucketCiphertextsSerializedDataSgxSize;
+        int flagIdxEvict2;
 };
 
 
