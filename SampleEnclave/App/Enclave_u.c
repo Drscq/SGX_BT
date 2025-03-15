@@ -154,6 +154,22 @@ typedef struct ms_ocall_print_string_t {
 	const char* ms_str;
 } ms_ocall_print_string_t;
 
+typedef struct ms_pthread_wait_timeout_ocall_t {
+	int ms_retval;
+	unsigned long long ms_waiter;
+	unsigned long long ms_timeout;
+} ms_pthread_wait_timeout_ocall_t;
+
+typedef struct ms_pthread_create_ocall_t {
+	int ms_retval;
+	unsigned long long ms_self;
+} ms_pthread_create_ocall_t;
+
+typedef struct ms_pthread_wakeup_ocall_t {
+	int ms_retval;
+	unsigned long long ms_waiter;
+} ms_pthread_wakeup_ocall_t;
+
 typedef struct ms_ocall_pointer_user_check_t {
 	int* ms_val;
 } ms_ocall_pointer_user_check_t;
@@ -202,6 +218,30 @@ static sgx_status_t SGX_CDECL Enclave_ocall_print_string(void* pms)
 {
 	ms_ocall_print_string_t* ms = SGX_CAST(ms_ocall_print_string_t*, pms);
 	ocall_print_string(ms->ms_str);
+
+	return SGX_SUCCESS;
+}
+
+static sgx_status_t SGX_CDECL Enclave_pthread_wait_timeout_ocall(void* pms)
+{
+	ms_pthread_wait_timeout_ocall_t* ms = SGX_CAST(ms_pthread_wait_timeout_ocall_t*, pms);
+	ms->ms_retval = pthread_wait_timeout_ocall(ms->ms_waiter, ms->ms_timeout);
+
+	return SGX_SUCCESS;
+}
+
+static sgx_status_t SGX_CDECL Enclave_pthread_create_ocall(void* pms)
+{
+	ms_pthread_create_ocall_t* ms = SGX_CAST(ms_pthread_create_ocall_t*, pms);
+	ms->ms_retval = pthread_create_ocall(ms->ms_self);
+
+	return SGX_SUCCESS;
+}
+
+static sgx_status_t SGX_CDECL Enclave_pthread_wakeup_ocall(void* pms)
+{
+	ms_pthread_wakeup_ocall_t* ms = SGX_CAST(ms_pthread_wakeup_ocall_t*, pms);
+	ms->ms_retval = pthread_wakeup_ocall(ms->ms_waiter);
 
 	return SGX_SUCCESS;
 }
@@ -287,11 +327,14 @@ static sgx_status_t SGX_CDECL Enclave_sgx_thread_set_multiple_untrusted_events_o
 
 static const struct {
 	size_t nr_ocall;
-	void * table[11];
+	void * table[14];
 } ocall_table_Enclave = {
-	11,
+	14,
 	{
 		(void*)Enclave_ocall_print_string,
+		(void*)Enclave_pthread_wait_timeout_ocall,
+		(void*)Enclave_pthread_create_ocall,
+		(void*)Enclave_pthread_wakeup_ocall,
 		(void*)Enclave_ocall_pointer_user_check,
 		(void*)Enclave_ocall_pointer_in,
 		(void*)Enclave_ocall_pointer_out,

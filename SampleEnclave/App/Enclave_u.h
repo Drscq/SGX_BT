@@ -43,6 +43,18 @@ typedef union union_foo_t {
 #define OCALL_PRINT_STRING_DEFINED__
 void SGX_UBRIDGE(SGX_NOCONVENTION, ocall_print_string, (const char* str));
 #endif
+#ifndef PTHREAD_WAIT_TIMEOUT_OCALL_DEFINED__
+#define PTHREAD_WAIT_TIMEOUT_OCALL_DEFINED__
+int SGX_UBRIDGE(SGX_CDECL, pthread_wait_timeout_ocall, (unsigned long long waiter, unsigned long long timeout));
+#endif
+#ifndef PTHREAD_CREATE_OCALL_DEFINED__
+#define PTHREAD_CREATE_OCALL_DEFINED__
+int SGX_UBRIDGE(SGX_CDECL, pthread_create_ocall, (unsigned long long self));
+#endif
+#ifndef PTHREAD_WAKEUP_OCALL_DEFINED__
+#define PTHREAD_WAKEUP_OCALL_DEFINED__
+int SGX_UBRIDGE(SGX_CDECL, pthread_wakeup_ocall, (unsigned long long waiter));
+#endif
 #ifndef OCALL_POINTER_USER_CHECK_DEFINED__
 #define OCALL_POINTER_USER_CHECK_DEFINED__
 void SGX_UBRIDGE(SGX_NOCONVENTION, ocall_pointer_user_check, (int* val));

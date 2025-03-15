@@ -122,7 +122,7 @@ endif
 Crypto_Library_Name := sgx_tcrypto
 
 Enclave_Cpp_Files := Enclave/Enclave.cpp $(wildcard Enclave/Edger8rSyntax/*.cpp) $(wildcard Enclave/TrustedLibrary/*.cpp) $(wildcard Enclave/src/*.cpp)
-Enclave_Include_Paths := -IInclude -IEnclave -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -IEnclave/src -I$(SGX_SSL_DIR)/include
+Enclave_Include_Paths := -IInclude -IEnclave -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -IEnclave/src -I$(SGX_SSL_DIR)/include -I$(SGX_SDK)/include/openmp
 Enclave_Library_Paths := -L$(SGX_SSL_DIR)/lib64
 Enclave_Libraries := 
 
@@ -134,7 +134,8 @@ else
     Enclave_C_Flags += -fstack-protector-strong
 endif
 
-Enclave_Cpp_Flags := $(Enclave_C_Flags) -nostdinc++ -std=c++17 $(Enclave_Library_Paths)
+Enclave_Cpp_Flags := $(Enclave_C_Flags) -nostdinc++ -std=c++17 $(Enclave_Library_Paths) $(Enclave_Library_Paths) \
+                     
 
 # Enable the security flags
 Enclave_Security_Link_Flags := -Wl,-z,relro,-z,now,-z,noexecstack
@@ -150,7 +151,7 @@ Enclave_Link_Flags := $(MITIGATION_LDFLAGS) $(Enclave_Security_Link_Flags) \
     -Wl,--no-undefined -nostdlib -nodefaultlibs -nostartfiles -L$(SGX_TRUSTED_LIBRARY_PATH) $(Enclave_Library_Paths) \
 	-Wl,--whole-archive -l$(Trts_Library_Name) -Wl,--no-whole-archive \
 	-Wl,--start-group -lsgx_tstdc -lsgx_tcxx -l$(Crypto_Library_Name) -l$(Service_Library_Name) \
-	-lsgx_tsgxssl -lsgx_tsgxssl_crypto \
+	-lsgx_tsgxssl -lsgx_tsgxssl_crypto -lsgx_pthread\
 	-Wl,--end-group \
 	-Wl,-Bstatic -Wl,-Bsymbolic -Wl,--no-undefined \
 	-Wl,-pie,-eenclave_entry -Wl,--export-dynamic  \

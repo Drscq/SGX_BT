@@ -8,6 +8,7 @@
 #define G_POW_K_SGX_STR "40083997855862118923937149344645589792674528038057978735481375139222151232361106251704467686182942665522560614084897132392533394398852097840465776782001027075746728893709508786343499198273674380907212414800497498145397548260423112481243950738720675694427946192983487310949830082117540629404300848853885591847"
 #define H_POW_K_SGX_STR "29618508524561166517497136886316688555076983847870737959949097739501240636104977753252594986224341925077749351500447866214294446970585478997054852466103612436615858995071186029084625705788845743453097498903225997726460262018803024684635745186667474696683522206632417563612057972685348857762605895901004828228"
 #include <openssl/bn.h>
+#include <sgx_tpthread.h>  // or <pthread.h> if aliased by the SGX environment
 typedef long long TYPE_BLOCK_ID_SGX;
 typedef unsigned long TYPE_UNSIGNED_SIZE_SGX;
 typedef long long TYPE_PATH_ID_SGX;
@@ -61,6 +62,14 @@ namespace BNConfig {
         BIGNUM* modulus_sgx; // pointer to modulus_sgx
         BN_CTX* ctx_sgx; // pointer to ctx_sgx
     };
+    static void* WorkerFunction(void* arg) {
+        BNConfig::ThreadBNData* thread_data = reinterpret_cast<BNConfig::ThreadBNData*>(arg);
+        for (int i = thread_data->startIdx; i < thread_data->endIdx; ++i) {
+            BN_mod_mul((*thread_data->c1)[i], (*thread_data->c1)[i], thread_data->g_pow_k_sgx, thread_data->modulus_sgx, thread_data->ctx_sgx);
+            BN_mod_mul((*thread_data->c2)[i], (*thread_data->c2)[i], thread_data->h_pow_k_sgx, thread_data->modulus_sgx, thread_data->ctx_sgx);
+        }
+        return nullptr;
+    }
     inline void ConvertVecCharCipher2VecBN(const char* data, std::vector<std::vector<BIGNUM*>>& ciphertexts) {
         auto it = data;
         for (int ii = 0; ii < ciphertexts[0].size(); ++ii) {
@@ -87,10 +96,13 @@ namespace BNConfig {
             }
         }
     }
+    inline const int num_threads = 4;
     inline BIGNUM* MODULUS_SGX_BN = nullptr;
     inline BIGNUM* G_POW_K_SGX_BN = nullptr;
     inline BIGNUM* H_POW_K_SGX_BN = nullptr;
     inline BN_CTX* CTX_SGX = nullptr;
+    inline std::vector<BN_CTX*> m_ctx_vec_sgx(4);
+    inline pthread_t threads[num_threads];
     inline void InitMGHC() {
         MODULUS_SGX_BN = BN_new();
         BN_dec2bn(&MODULUS_SGX_BN, MODULUS_SGX_STR);
@@ -99,21 +111,60 @@ namespace BNConfig {
         H_POW_K_SGX_BN = BN_new();
         BN_dec2bn(&H_POW_K_SGX_BN, H_POW_K_SGX_STR);
         CTX_SGX = BN_CTX_new();
+        for (int i = 0; i < 4; ++i) {
+            m_ctx_vec_sgx[i] = BN_CTX_new();
+        }
     }
     inline void FreeMGHC() {
         BN_free(MODULUS_SGX_BN);
         BN_free(G_POW_K_SGX_BN);
         BN_free(H_POW_K_SGX_BN);
         BN_CTX_free(CTX_SGX);
+        for (int i = 0; i < 4; ++i) {
+            BN_CTX_free(m_ctx_vec_sgx[i]);
+        }
     }
     inline void ReRandomizeChunk(BIGNUM* c1, BIGNUM* c2) {
         BN_mod_mul(c1, c1, G_POW_K_SGX_BN, MODULUS_SGX_BN, CTX_SGX);
         BN_mod_mul(c2, c2, H_POW_K_SGX_BN, MODULUS_SGX_BN, CTX_SGX);
     }
+    inline int threadChunkSizeBN,currentIdxBN, actualThreads, startIdxBN, endIdxBN;
+    inline std::vector<ThreadBNData> thread_bn_data(num_threads);
+    inline pthread_t threadsBN[num_threads];
     inline void ParallelReRandomize(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2) {
-        for (int i = 0; i < c1.size(); ++i) {
-            BN_mod_mul(c1[i], c1[i], G_POW_K_SGX_BN, MODULUS_SGX_BN, CTX_SGX);
-            BN_mod_mul(c2[i], c2[i], H_POW_K_SGX_BN, MODULUS_SGX_BN, CTX_SGX);
+        threadChunkSizeBN = (c1.size() + num_threads - 1) / num_threads;
+        currentIdxBN = 0;
+        actualThreads = 0; // track how many threads we actually start
+        for (int t = 0; t < num_threads; ++t) {
+            // std::cout << "Starting thread " << t << std::endl;
+            startIdxBN = currentIdxBN;
+            endIdxBN = std::min(startIdxBN + threadChunkSizeBN, static_cast<int>(c1.size()));
+            thread_bn_data[t].c1 = &c1;
+            thread_bn_data[t].c2 = &c2;
+            thread_bn_data[t].g_pow_k_sgx = G_POW_K_SGX_BN;
+            thread_bn_data[t].h_pow_k_sgx = H_POW_K_SGX_BN;
+            thread_bn_data[t].modulus_sgx = MODULUS_SGX_BN;
+            thread_bn_data[t].ctx_sgx = m_ctx_vec_sgx[t];
+            thread_bn_data[t].startIdx = startIdxBN;
+            thread_bn_data[t].endIdx = endIdxBN;
+
+            pthread_create(&threadsBN[t], nullptr, WorkerFunction, &thread_bn_data[t]);
+            // // Then set CPU affinity:
+            // cpu_set_t cpuset;
+            // CPU_ZERO(&cpuset);
+            // // Suppose you pin to core t if it exists, or you pick some mapping
+            // CPU_SET(t + 1, &cpuset);
+            // pthread_setaffinity_np(this->threads[t], sizeof(cpu_set_t), &cpuset);
+            currentIdxBN = endIdxBN;
+            actualThreads++;
+            if (currentIdxBN >= (int)c1.size()) {
+                // No more data to process
+                break;
+            }
+        }
+
+        for (int t = 0; t < actualThreads; ++t) {
+            pthread_join(threadsBN[t], nullptr);
         }
     }
 }
