@@ -28,7 +28,7 @@ typedef long unsigned int TYPE_BUCKET_SIZE_SGX;
 typedef unsigned long long TYPE_BLOCK_SIZE_SGX;
 typedef uint_fast16_t TYPE_SMALL_INDEX_U_SGX;
 typedef size_t TYPE_PATH_SIZE_SGX;
-inline TYPE_BLOCK_SIZE_SGX BLOCK_SIZE_SGX = 1024 * 64;
+inline TYPE_BLOCK_SIZE_SGX BLOCK_SIZE_SGX = 65536;
 typedef size_t TYPE_PATH_SIZE_SGX;
 namespace BNConfig {
     inline int CHUNK_SIZE_SGX = 127;

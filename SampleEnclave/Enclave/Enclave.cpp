@@ -331,10 +331,15 @@ void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
         __asm__ __volatile__("pause");
     }
     BNConfig::ConvertVecCharCipher2VecBN(buffer, BucketCiphertexts);
+    flags[4] = 1;
+    while (!flags[5]) {
+        __asm__ __volatile__("pause");
+    }
     BNConfig::ApplyPermutation(BucketCiphertexts, BNConfig::BUCKET_CHUNK_SIZE_SGX, BUCKET_SIZE_SGX, perm1EarlyReshuffleComplete_sgx);
     BNConfig::ParallelReRandomize(BucketCiphertexts[0], BucketCiphertexts[1]);
+    flags[6] = 1;
     BNConfig::ConvertVecBNCipher2VecChar(BucketCiphertexts[0], BucketCiphertexts[1], buffer);
-    flags[4] = 1;
+    flags[7] = 1;
     // free the BIGNUM objects
     for (size_t i = 0; i < 2; ++i) {
         for (size_t j = 0; j < BNConfig::BUCKET_CHUNK_SIZE_SGX; ++j) {

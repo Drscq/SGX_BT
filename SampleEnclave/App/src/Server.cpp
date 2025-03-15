@@ -184,7 +184,7 @@ struct EnclaveThreadParams {
     char* buffer;
 };
 // static uint8_t flag_shared_sgx = 0;
-static std::vector<uint8_t> flag_shared_sgx(5, 0);
+static std::vector<uint8_t> flag_shared_sgx(8, 0);
 void* SgxEnclaveThreadFuncEarlyReshuffleScheme2(void* arg) {
     std::fill(flag_shared_sgx.begin(), flag_shared_sgx.end(), 0);
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
@@ -595,14 +595,23 @@ void Server::handleClient(int clientSockfd) {
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "ServerComputationParallelRerandomize: " << elapsed_ns.count() << " ns\n";
                 flag_shared_sgx[3] = 1;
-                start = std::chrono::high_resolution_clock::now();
                 while (flag_shared_sgx[4] == 0) {
+                    // Wait for the enclave to finish the early reshuffle
+                    __asm__ __volatile__("pause");
+                }
+                flag_shared_sgx[5] = 1;
+                start = std::chrono::high_resolution_clock::now();
+                while (flag_shared_sgx[6] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
+                while (flag_shared_sgx[7] == 0) {
+                    // Wait for the enclave to finish the early reshuffle
+                    __asm__ __volatile__("pause");
+                }
                 this->elgamal.ConvertVecBNCipher2VecChar(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], this->bufferSgx);
                 ofs_early_reshuffle.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDEarlyReshuffleComplete), std::ios::binary);
                 start = std::chrono::high_resolution_clock::now();
