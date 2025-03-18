@@ -91,9 +91,6 @@ TYPE_BUCKET_ID_SGX bucket_id_sgx = 0;
 AES_CTR_SGX  aes_sgx(reinterpret_cast<const uint8_t*>(key));
 uint8_t iv[AES_BLOCK_SIZE] = {0};
 void ecall_early_reshuffle_1(char* buffer, uint8_t* flag) {
-    // printf("The test value is: %d\n", META_DATA_SIZE_SGX);
-    // printf("Hello from inside the enclave!\n");
-    // printf("The flag value is: %d\n", *flag);
     while (!flag[0]) {
         // Wait for the buffer to be ready
         __asm__ __volatile__("pause");

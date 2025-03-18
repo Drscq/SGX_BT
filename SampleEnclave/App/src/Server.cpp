@@ -1438,6 +1438,7 @@ struct EnclaveThreadParams {
 // static uint8_t flag_shared_sgx = 0;
 static std::vector<uint8_t> flag_shared_sgx(4, 0);
 void* SgxEnclaveThreadFunc(void* arg) {
+    std::fill(flag_shared_sgx.begin(), flag_shared_sgx.end(), 0);
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
     ecall_early_reshuffle_1(params->eid, params->buffer, reinterpret_cast<uint8_t*>(&flag_shared_sgx[0]));
     return nullptr;
@@ -1455,16 +1456,24 @@ void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_B
     pthread_create(&this->enclaveThread, NULL, &SgxEnclaveThreadFunc, params);
 
     FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
+    auto start = std::chrono::high_resolution_clock::now();
     FileConfig::fileReadScheme1.read(this->sharedBucketBuffer.data(), BucketConfig::META_DATA_SIZE);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "DiskIOReadBucketMD: " << elapsed_ns.count() << " ns" << std::endl;
     // Set the flag to 1 to indicate that the data is ready
     flag_shared_sgx[0] = 1;
     FileConfig::fileReadScheme1.close();
 
     // Wait for the enclave thread to finish
+    start = std::chrono::high_resolution_clock::now();
     while (flag_shared_sgx[1] == 0) {
         // Wait for the buffer to be ready
         __asm__ __volatile__("pause");
     }
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "SGXComputationProcessMetaData: " << elapsed_ns.count() << " ns" << std::endl;
     std::vector<BucketConfig::TYPE_SLOT_ID> realBlocksOffsetEarlyReshuffle1(BucketConfig::BUCKET_REAL_BLOCK_CAPACITY);
     std::memcpy(realBlocksOffsetEarlyReshuffle1.data(), this->sharedBucketBuffer.data(), BucketConfig::BUCKET_REAL_BLOCK_CAPACITY * sizeof(BucketConfig::TYPE_SLOT_ID));
     #if USE_COUT
@@ -1475,6 +1484,7 @@ void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_B
     std::cout << std::endl;
     #endif
     // Load the real blocks from the disk to the memory
+    start = std::chrono::high_resolution_clock::now();
     FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
     auto it = this->sharedBucketBuffer.data();
     for (BucketConfig::TYPE_SLOT_ID i = 0; i < BucketConfig::BUCKET_REAL_BLOCK_CAPACITY; ++i) {
@@ -1482,18 +1492,29 @@ void Server::SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_B
         FileConfig::fileReadScheme1.read(it, BlockConfig::BLOCK_SIZE);
         it += BlockConfig::BLOCK_SIZE;
     }
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "DiskIOReadRealBlocks: " << elapsed_ns.count() << " ns" << std::endl;
     FileConfig::fileReadScheme1.close();
     // Set the flag to 2 to indicate that the real blocks are ready
     flag_shared_sgx[2] = 1;
 
     // Wait for the enclave thread to finish
+    start = std::chrono::high_resolution_clock::now();
     while(flag_shared_sgx[3] == 0) {
         // Wait for the buffer to be ready
         __asm__ __volatile__("pause");
     }
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "SGXComputationProcessRealBlocks: " << elapsed_ns.count() << " ns" << std::endl;
     it = this->sharedBucketBuffer.data();
     FileConfig::fileWriteScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bucketID), std::ios::binary);
+    start = std::chrono::high_resolution_clock::now();
     FileConfig::fileWriteScheme1.write(it, this->bucketCipherDataEarlyReshuffle1Size);
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "DiskIOWriteBucketCiphertexts: " << elapsed_ns.count() << " ns" << std::endl;
     FileConfig::fileWriteScheme1.close();
     // Clean up allocated memory
     delete[] params;
@@ -1676,11 +1697,16 @@ void Server::SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID path
     params->buffer = this->tripletBucketsDataEviction1.data();
     pthread_create(&this->enclaveThread, NULL, &SgxEnclaveThreadFuncEvict, params);
     // Convert the path_id to the bunch of bucket IDs in the reverselexicographical order
+    auto start = std::chrono::high_resolution_clock::now();
     TreeConfig::GenPathBucketIDsInReverseOrder(path_id,
         TreeConfig::HEIGHT,
         this->evictPathBucketIDsComplete);
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "ServerComputationGenPathBucketIDsInReverseOrder: " << elapsed_ns.count() << " ns" << std::endl;
     auto it = this->pathBucketsDataEviction1.data();
     // Read the root bucket from the disk to the memory
+    start = std::chrono::high_resolution_clock::now();
     FileConfig::fileReadScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0), std::ios::binary);
     FileConfig::fileReadScheme1.read(it, this->bucketSizeEviction1);
     FileConfig::fileReadScheme1.close();
@@ -1694,6 +1720,9 @@ void Server::SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID path
         FileConfig::fileReadScheme1.read(it, this->bucketSizeEviction1);
         FileConfig::fileReadScheme1.close();
     }
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "DiskIOReadPathBuckets: " << elapsed_ns.count() << " ns" << std::endl;
     // Process the first triplet buckets
     // 1. Read the triplet buckets MD from the disk to the memory
     it = this->pathBucketsDataEviction1.data();
@@ -1714,10 +1743,14 @@ void Server::SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID path
     // Set the flag to 1 to indicate that the data is ready
     flag_shared_sgx_evict[0] = 1;
     // Wait for the enclave thread to finish
+    start = std::chrono::high_resolution_clock::now();
     while (flag_shared_sgx_evict[1] == 0) {
         // Wait for the buffer to be ready
         __asm__ __volatile__("pause");
     }
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "SGXComputationProcessMetaData: " << elapsed_ns.count() << " ns" << std::endl;
     // copy the real blocks offsets from the tripletBucketsDataEviction1 to the tripletBucketRealBlocksOffsetEviction1
     std::memcpy(this->tripletBucketRealBlocksOffsetEviction1.data(), this->tripletBucketsDataEviction1.data(), this->tripletBucketRealBlocksOffsetEviction1Size);
     #if defined(UNIT_TEST_SGX)
@@ -1740,10 +1773,14 @@ void Server::SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID path
     // Set the flag to 2 to indicate that the real blocks are ready
     flag_shared_sgx_evict[2] = 1;
     // Wait for the enclave thread to finish
+    start = std::chrono::high_resolution_clock::now();
     while (flag_shared_sgx_evict[3] == 0) {
         // Wait for the buffer to be ready
         __asm__ __volatile__("pause");
     }
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "SGXComputationProcessRealBlocks: " << elapsed_ns.count() << " ns" << std::endl;
     for (BucketConfig::TYPE_SMALL_INDEX_U i = 0; i < 3; ++i) {
         it = this->pathBucketsDataEviction1.data() + i * this->bucketSizeEviction1;
         it_block = this->tripletBucketsDataEviction1.data() + i * this->bucketSizeEviction1;
@@ -1831,6 +1868,7 @@ void Server::SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID path
     }
     // Write the pathBucketsDataEviction1 to the disk
     it = this->pathBucketsDataEviction1.data();
+    start = std::chrono::high_resolution_clock::now();
     FileConfig::fileWriteScheme1.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0), std::ios::binary);
     FileConfig::fileWriteScheme1.write(it, this->bucketSizeEviction1);
     FileConfig::fileWriteScheme1.close();
@@ -1844,6 +1882,9 @@ void Server::SgxEvictScheme1(sgx_enclave_id_t eid, PathConfig::TYPE_PATH_ID path
         FileConfig::fileWriteScheme1.write(it, this->bucketSizeEviction1);
         FileConfig::fileWriteScheme1.close();
     }
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "DiskIOWritePathBuckets: " << elapsed_ns.count() << " ns" << std::endl;
     pthread_join(this->enclaveThread, NULL);
 }
 
