@@ -848,12 +848,28 @@ void Server::handleClient(int clientSockfd) {
                 }
                 // Write the this->path_evict_bucketCiphertexts_complete to the disk
                 start = std::chrono::high_resolution_clock::now();
+                this->ofs_evict.open(
+                    BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0),
+                    std::ios::binary
+                );
+                this->ofs_evict.write(this->evictCipherPathsDataBNComplete.data(),
+                    ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS
+                );
+                this->ofs_evict.close();
                 for (PathConfig::TYPE_PATH_SIZE i = 0; i < TreeConfig::HEIGHT - 1; ++i) {
                     this->ofs_evict.open(
                         BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 1),
                         std::ios::binary
                     );
-                    this->ofs_evict.write(this->evictCipherPathsDataBNComplete.data() + i * 2 * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                    this->ofs_evict.write(this->evictCipherPathsDataBNComplete.data() + (i * 2 + 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                                        ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                     this->ofs_evict.close();
+
+                     this->ofs_evict.open(
+                        BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 2),
+                        std::ios::binary
+                    );
+                    this->ofs_evict.write(this->evictCipherPathsDataBNComplete.data() + (i * 2 + 2) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
                                         ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                      this->ofs_evict.close();
                 }
