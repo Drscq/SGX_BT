@@ -49,8 +49,8 @@ for file in files_sorted:
         total = get_all_categories_total(content)
         evict_total_delays[height] = total // access_time
 
-# for height, total in evict_total_delays.items():
-#     print(f"Height: {height}, Total Delay: {total} ns")
+# # for height, total in evict_total_delays.items():
+# #     print(f"Height: {height}, Total Delay: {total} ns")
 
 # sort the dictionary by its values
 sorted_dict = dict(sorted(evict_total_delays.items(), key=lambda item: item[1]))

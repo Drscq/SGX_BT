@@ -627,16 +627,13 @@ void Server::handleClient(int clientSockfd) {
                 params->eid = this->eidSgx;
                 params->buffer = this->tripletBucketCiphertextsSerializedDataSgx.data();
                 pthread_create(&this->enclaveThread, NULL, &SgxEnclaveThreadFuncEvictScheme2, params);
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                this->logger.startTiming(this->LogEvictionGenPathBucketIDsScheme2);
-                #endif
+                auto start_gen_bucket_ids = std::chrono::high_resolution_clock::now();
                 TreeConfig::GenPathBucketIDsInReverseOrder(TreeConfig::ACCESS_COUNT_EVICTION_COMPLETE,
                                                         TreeConfig::HEIGHT,
                                                         this->evictPathBucketIDsComplete);
-                #if LOG_EVICT_BREAKDOWN_COST_SERVER
-                this->logger.stopTiming(this->LogEvictionGenPathBucketIDsScheme2);
-                this->logger.writeToFile();
-                #endif
+                auto end_gen_bucket_ids = std::chrono::high_resolution_clock::now();
+                auto elapsed_ns_gen_bucket_ids = std::chrono::duration_cast<std::chrono::nanoseconds>(end_gen_bucket_ids - start_gen_bucket_ids);
+                std::cout << "ServerComputationGenPathBucketIDsInReverseOrder: " << elapsed_ns_gen_bucket_ids.count() << " ns\n";
                 // Load the root bucket data from the disk to the evictCipherPathDataBNComplete
                 auto start = std::chrono::high_resolution_clock::now();
                 auto it = this->evictCipherPathsDataBNComplete.data();
@@ -646,6 +643,7 @@ void Server::handleClient(int clientSockfd) {
                 for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < TreeConfig::HEIGHT - 1; ++i) {
                     this->bucket.LoadBucketCiphertextsFromDiskBN(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(2 * this->evictPathBucketIDsComplete[i] + 1),
                                                                 it, ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                
                     if (i != TreeConfig::HEIGHT - 2) {
                         it += ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;
                     }
@@ -671,41 +669,6 @@ void Server::handleClient(int clientSockfd) {
                                                 this->evictCipherPathsDataBNComplete.data(),
                                                 ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                // for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < BucketConfig::BUCKET_SIZE; ++i) {
-                //     // std::memcpy(this->blockCiphertextsSerializedData.data(),
-                //     //             this->rootBucketDataEvictComplete.data() + i * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS,
-                //     //             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
-                //     // this->elgamal.DeserializeCiphertexts(this->blockCiphertextsSerializedData, this->triplet_evict_bucketCiphertexts[i]);
-                //     this->elgamal.DeserializeCiphertexts(reinterpret_cast<const unsigned char*>(this->rootBucketDataEvictComplete.data() + i * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS),
-                //                                         this->triplet_evict_bucketCiphertexts[i]);
-                //     #if USE_COUT
-                //         std::cout << "Block ID: for the root bucket: " << i << std::endl;
-                //         std::vector<char> blockData;
-                //         this->elgamal.ParallelDecrypt(this->triplet_evict_bucketCiphertexts[i], blockData);
-                //         BlockConfig::TYPE_BLOCK_ID blockID;
-                //         std::memcpy(&blockID, blockData.data(), sizeof(BlockConfig::TYPE_BLOCK_ID));
-                //         std::cout << "Block ID: " << blockID << std::endl;
-                //     #endif
-                // }
-                
-                // this->triplet_evict_bucketCiphertexts_flat.clear();
-                // for (BucketConfig::TYPE__SMALL_INDEX i = 0; i < 3; ++i) {
-                //     for (BucketConfig::TYPE_BUCKET_SIZE j = 0; j < BucketConfig::BUCKET_SIZE; ++j) {
-                //         if (i == 0) {
-                //             this->triplet_evict_bucketCiphertexts_flat.insert(
-                //                 this->triplet_evict_bucketCiphertexts_flat.end(),
-                //                 std::make_move_iterator(this->triplet_evict_bucketCiphertexts[j].begin()),
-                //                 std::make_move_iterator(this->triplet_evict_bucketCiphertexts[j].end())
-                //             );
-                //         } else {
-                //             this->triplet_evict_bucketCiphertexts_flat.insert(
-                //                 this->triplet_evict_bucketCiphertexts_flat.end(),
-                //                 std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j].begin()),
-                //                 std::make_move_iterator(this->path_evict_bucketCiphertexts_complete[(i - 1) * BucketConfig::BUCKET_SIZE + j].end())
-                //             );
-                //         }
-                //     }
-                // }
                 this->communicator.receiveData(clientSockfd,
                                                 this->tripletBucketCiphertextsSerializedDataSgx.data(),
                                                 this->triplet_evict_perm_size * 2);
@@ -714,12 +677,6 @@ void Server::handleClient(int clientSockfd) {
                 std::memcpy(this->tripletEvictPermComplete.data(),
                             this->tripletBucketCiphertextsSerializedDataSgx.data() + this->triplet_evict_perm_size,
                             this->triplet_evict_perm_size);
-                // std::cout << "The tripletEvictPermComplete: ";
-                // for (auto &p : this->tripletEvictPermComplete) {
-                //     std::cout << p << " ";
-                // }
-                // std::cout << std::endl;
-                // std::cout << "The size of the tripletBucketCiphertextsSerializedDataSgx: " << this->tripletBucketCiphertextsSerializedDataSgx.size() << std::endl;
                 while (flag_shared_sgx_evict2[1] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");

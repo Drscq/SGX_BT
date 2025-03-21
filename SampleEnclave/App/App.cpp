@@ -411,7 +411,28 @@ int SGX_CDECL main(int argc, char *argv[])
             }
             std::cout << "The test_bignum_in_enclave is done" << std::endl;
 
-        } else {
+        } else if (strcmp(argv[1], "test_read_write_data") == 0) {
+            std::cout << "Testing read and write data..." << std::endl;
+            std::ofstream file;
+            // open a file in binary mode
+            file.open("test_data.bin", std::ios::out | std::ios::binary);
+            // write ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS bytes of data
+            std::vector<char> data(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS, 'A');
+            file.write(data.data(), data.size());
+            file.close();
+
+            std::vector<char> read_data(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+            auto start = high_resolution_clock::now();
+            // read the data back
+            std::ifstream infile("test_data.bin", std::ios::in | std::ios::binary);
+            infile.read(read_data.data(), read_data.size());
+            infile.close();
+            auto stop = high_resolution_clock::now();
+            auto duration = duration_cast<microseconds>(stop - start);
+            std::cout << "Reading data took " << duration.count() << " microseconds" << std::endl;
+
+        }
+        else {
             std::cout << "Usage: " << argv[0] << " [earlyReshuffle1|eviction1|server|test_bignum]" << std::endl;
         }
     } else {

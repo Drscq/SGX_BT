@@ -892,19 +892,7 @@ static void* WorkerFunction(void* arg) {
     for (int i = thread_data->startIdx; i < thread_data->endIdx; ++i) {
         BN_mod_mul((*thread_data->c1)[i], (*thread_data->c1)[i], thread_data->g_pow_k_sgx, thread_data->modulus_sgx, thread_data->ctx_sgx);
         BN_mod_mul((*thread_data->c2)[i], (*thread_data->c2)[i], thread_data->h_pow_k_sgx, thread_data->modulus_sgx, thread_data->ctx_sgx);
-        if (i == 1) {
-            std::cout << "Thread " << pthread_self() << " processing index " << i << std::endl;
-            std::cout << "Thread " << pthread_self() << " c1: " << BN_bn2dec((*thread_data->c1)[i]) << std::endl;
-            std::cout << "Thread " << pthread_self() << " c2: " << BN_bn2dec((*thread_data->c2)[i]) << std::endl;
-            std::cout << "Thread " << pthread_self() << " g_pow_k: " << BN_bn2dec(thread_data->g_pow_k_sgx) << std::endl;
-            std::cout << "Thread " << pthread_self() << " h_pow_k: " << BN_bn2dec(thread_data->h_pow_k_sgx) << std::endl;
-            std::cout << "Thread " << pthread_self() << " modulus: " << BN_bn2dec(thread_data->modulus_sgx) << std::endl;
-            std::cout << "Thread " << pthread_self() << " after processing index " << i << std::endl;
-        }
     }
-    auto end_time = std::chrono::high_resolution_clock::now();
-    auto dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count();
-    std::cout << "Thread " << pthread_self() << " completed in " << dur_ns << " ns" << std::endl;
     return nullptr;
 }
 void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2) {
