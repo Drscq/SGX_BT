@@ -22,11 +22,8 @@ public:
     // ElGamal_parallel_ntl();
     ElGamal_parallel_ntl(size_t num_threads = 1, size_t data_size = 1024);
     ~ElGamal_parallel_ntl();
-    ElGamal_parallel_ntl(const ElGamal_parallel_ntl&) = delete;
-    ElGamal_parallel_ntl& operator=(const ElGamal_parallel_ntl&) = delete;
-    ElGamal_parallel_ntl(ElGamal_parallel_ntl&&) = default;
-    ElGamal_parallel_ntl& operator=(ElGamal_parallel_ntl&&) = default;
-    // Function to generate ElGamal parameters
+    ElGamal_parallel_ntl(const ElGamal_parallel_ntl& other);
+    ElGamal_parallel_ntl& operator=(const ElGamal_parallel_ntl& other);
     void GenerateParams(long bitLength = 1024, long seed = 32);
 
     // Function to encrypt a single block
@@ -99,16 +96,17 @@ public:
     std::vector<char> ZZ_to_vector(const ZZ &zz_data, size_t original_size);
     std::vector<char> ZZ_p_to_vector(const ZZ_p &zz_data, size_t original_size);
     void ZZ_p_to_bytes(unsigned char* buffer, size_t buffer_size, const ZZ_p& value);
-private:
-    // OpenSSL Related Variables
-    BIGNUM* m_modulus_sgx;
-    BIGNUM* m_g_pow_k_bn_sgx;
-    BIGNUM* m_h_pow_k_bn_sgx;
-    BIGNUM* m_g_pow_k_x_inv_bn_sgx;
-    BIGNUM* m_x_bn_sgx;
-    BN_CTX* m_ctx_sgx;
-    std::vector<BN_CTX*> m_ctx_vec_sgx;
 
+     // OpenSSL Related Variables
+     BIGNUM* m_modulus_sgx;
+     BIGNUM* m_g_pow_k_bn_sgx;
+     BIGNUM* m_h_pow_k_bn_sgx;
+     BIGNUM* m_g_pow_k_x_inv_bn_sgx;
+     BIGNUM* m_x_bn_sgx;
+     BN_CTX* m_ctx_sgx;
+     std::vector<BN_CTX*> m_ctx_vec_sgx;
+ 
+private:
     size_t num_threads;
     size_t num_threads_deserialize = 4;
     size_t chunk_size;
@@ -239,8 +237,6 @@ private:
     }
 
     std::vector<ThreadArgsDeserialize> thread_args_deserialize;
-
-
 };
 
-#endif // ELGAMAL_PARALLEL_NTL_H;
+#endif // ELGAMAL_PARALLEL_NTL_H

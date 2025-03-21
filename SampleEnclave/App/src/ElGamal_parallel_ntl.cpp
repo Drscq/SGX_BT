@@ -4,6 +4,8 @@
 #endif
 #include <cassert>
 #include <NTL/BasicThreadPool.h>
+#include <openssl/bn.h>
+#include <openssl/crypto.h> // Add this line to include the header for BN_CTX_dup
 #include <sched.h>    // For sched_getcpu()
 #include <sstream>
 
@@ -74,9 +76,112 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
     }
 }
 
+ElGamal_parallel_ntl::ElGamal_parallel_ntl(const ElGamal_parallel_ntl& other) {
+    this->num_threads = other.num_threads;
+    this->data_size = other.data_size;
+    this->chunk_size = other.chunk_size;
+    this->per_ciphertext_size = other.per_ciphertext_size;
+    this->p = other.p;
+    this->g = other.g;
+    this->g_p = other.g_p;
+    this->x = other.x;
+    this->x_p = other.x_p;
+    this->h = other.h;
+    this->h_p = other.h_p;
+    this->k = other.k;
+    this->k_p = other.k_p;
+    this->g_pow_k = other.g_pow_k;
+    this->h_pow_k = other.h_pow_k;
+    this->k = other.k;
+    this->k_p = other.k_p;
+    this->g_pow_k = other.g_pow_k;
+    this->h_pow_k = other.h_pow_k;
+    this->total_chunks = other.total_chunks;
+    this->batch_size_encrypt = other.batch_size_encrypt;
+    this->batch_size_total_encrypt = other.batch_size_total_encrypt;
+    this->buffer = new unsigned char[other.per_ciphertext_size];
+    this->num_pairs = other.num_pairs;
+    this->thread_compute = new pthread_t[other.num_threads];
+    this->threads.resize(other.num_threads);
+    this->thread_args.resize(other.num_threads);
+    this->thread_args_deserialize.resize(other.num_threads);
+    this->thread_bn_data.resize(other.num_threads);
+    // Allocate new memory for pointers and copy the values
+    this->m_modulus_sgx = BN_dup(other.m_modulus_sgx);
+    this->m_g_pow_k_bn_sgx = BN_dup(other.m_g_pow_k_bn_sgx);
+    this->m_h_pow_k_bn_sgx = BN_dup(other.m_h_pow_k_bn_sgx);
+    this->m_g_pow_k_x_inv_bn_sgx = BN_dup(other.m_g_pow_k_x_inv_bn_sgx);
+    this->m_x_bn_sgx = BN_dup(other.m_x_bn_sgx);
+    this->m_ctx_sgx = BN_CTX_new();
+    this->m_ctx_vec_sgx.resize(other.m_ctx_vec_sgx.size());
+    for (size_t i = 0; i < other.m_ctx_vec_sgx.size(); ++i) {
+        this->m_ctx_vec_sgx[i] = BN_CTX_new();
+    }
+}
+
+ElGamal_parallel_ntl& ElGamal_parallel_ntl::operator=(const ElGamal_parallel_ntl& other) {
+    if (this != &other) {
+        // Free existing resources
+        BN_free(m_modulus_sgx);
+        BN_free(m_g_pow_k_bn_sgx);
+        BN_free(m_h_pow_k_bn_sgx);
+        BN_free(m_g_pow_k_x_inv_bn_sgx);
+        BN_free(m_x_bn_sgx);
+        BN_CTX_free(m_ctx_sgx);
+        for (auto& ctx : m_ctx_vec_sgx) {
+            BN_CTX_free(ctx);
+        }
+
+        // Copy values from the other object
+        this->num_threads = other.num_threads;
+        this->data_size = other.data_size;
+        this->chunk_size = other.chunk_size;
+        this->per_ciphertext_size = other.per_ciphertext_size;
+        this->p = other.p;
+        this->g = other.g;
+        this->g_p = other.g_p;
+        this->x = other.x;
+        this->x_p = other.x_p;
+        this->h = other.h;
+        this->h_p = other.h_p;
+        this->k = other.k;
+        this->k_p = other.k_p;
+        this->g_pow_k = other.g_pow_k;
+        this->h_pow_k = other.h_pow_k;
+        this->k = other.k;
+        this->k_p = other.k_p;
+        this->g_pow_k = other.g_pow_k;
+        this->h_pow_k = other.h_pow_k;
+        this->total_chunks = other.total_chunks;
+        this->batch_size_encrypt = other.batch_size_encrypt;
+        this->batch_size_total_encrypt = other.batch_size_total_encrypt;
+        this->buffer = new unsigned char[other.per_ciphertext_size];
+        this->num_pairs = other.num_pairs;
+        this->thread_compute = new pthread_t[other.num_threads];
+        this->threads.resize(other.num_threads);
+        this->thread_args.resize(other.num_threads);
+        this->thread_args_deserialize.resize(other.num_threads);
+        this->thread_bn_data.resize(other.num_threads);
+        // Allocate new memory for pointers and copy the values
+        this->m_modulus_sgx = BN_dup(other.m_modulus_sgx);
+        this->m_g_pow_k_bn_sgx = BN_dup(other.m_g_pow_k_bn_sgx);
+        this->m_h_pow_k_bn_sgx = BN_dup(other.m_h_pow_k_bn_sgx);
+        this->m_g_pow_k_x_inv_bn_sgx = BN_dup(other.m_g_pow_k_x_inv_bn_sgx);
+        this->m_x_bn_sgx = BN_dup(other.m_x_bn_sgx);
+        this->m_ctx_sgx = BN_CTX_new();
+        this->m_ctx_vec_sgx.resize(other.m_ctx_vec_sgx.size());
+        for (size_t i = 0; i < other.m_ctx_vec_sgx.size(); ++i) {
+            this->m_ctx_vec_sgx[i] = BN_CTX_new();
+        }
+    }
+}
+
+
+        
+
 ElGamal_parallel_ntl::~ElGamal_parallel_ntl() {
     // std::cout << "ElGamal_parallel_ntl destructor" << std::endl;
-    // delete[] this->buffer;
+    delete[] this->buffer;
     // delete[] this->thread_compute;
     for (auto &ctx : m_ctx_vec_sgx) {
         if (ctx != nullptr) {
@@ -783,10 +888,23 @@ void ElGamal_parallel_ntl::ReRandomizeChunk(BIGNUM* c1, BIGNUM* c2) {
 */
 static void* WorkerFunction(void* arg) {
     BNConfig::ThreadBNData* thread_data = reinterpret_cast<BNConfig::ThreadBNData*>(arg);
+    auto start_time = std::chrono::high_resolution_clock::now();
     for (int i = thread_data->startIdx; i < thread_data->endIdx; ++i) {
         BN_mod_mul((*thread_data->c1)[i], (*thread_data->c1)[i], thread_data->g_pow_k_sgx, thread_data->modulus_sgx, thread_data->ctx_sgx);
         BN_mod_mul((*thread_data->c2)[i], (*thread_data->c2)[i], thread_data->h_pow_k_sgx, thread_data->modulus_sgx, thread_data->ctx_sgx);
+        if (i == 1) {
+            std::cout << "Thread " << pthread_self() << " processing index " << i << std::endl;
+            std::cout << "Thread " << pthread_self() << " c1: " << BN_bn2dec((*thread_data->c1)[i]) << std::endl;
+            std::cout << "Thread " << pthread_self() << " c2: " << BN_bn2dec((*thread_data->c2)[i]) << std::endl;
+            std::cout << "Thread " << pthread_self() << " g_pow_k: " << BN_bn2dec(thread_data->g_pow_k_sgx) << std::endl;
+            std::cout << "Thread " << pthread_self() << " h_pow_k: " << BN_bn2dec(thread_data->h_pow_k_sgx) << std::endl;
+            std::cout << "Thread " << pthread_self() << " modulus: " << BN_bn2dec(thread_data->modulus_sgx) << std::endl;
+            std::cout << "Thread " << pthread_self() << " after processing index " << i << std::endl;
+        }
     }
+    auto end_time = std::chrono::high_resolution_clock::now();
+    auto dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end_time - start_time).count();
+    std::cout << "Thread " << pthread_self() << " completed in " << dur_ns << " ns" << std::endl;
     return nullptr;
 }
 void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2) {
