@@ -45,7 +45,6 @@ Bucket::Bucket(BucketConfig::TYPE_BUCKET_ID id,
                num_threads(num_threads),
                elgamal(num_threads, blockSize),
                blockData(blockSize) {
-    std::cout << "After the elgamal constructor" << std::endl;
     data.resize(bucketSize * this->blockSize);
     this->dummyBlock.reserve(this->blockSize);
     this->block.GenData(this->blockSize, false, -1, this->dummyBlock);
@@ -117,9 +116,8 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
     if (!std::filesystem::exists(path)) {
         std::filesystem::create_directories(path); 
     }
-    std::cout << "Saving bucket data to disk: " << dirPath + "/" + fileName << std::endl;
     #if USE_OPENSSL
-    std::ofstream bucketFile(dirPath + "/" + fileName, std::ios::binary);
+    std::ofstream bucketFile(dirPath + fileName, std::ios::binary);
     std::vector<BIGNUM*> data_bn(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
     std::vector<std::vector<BIGNUM*>> ciphertexts(2);
     ciphertexts[0].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
@@ -145,7 +143,7 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
     #endif
     // Save the this->data to the file namely fileName
     #if USE_NTL
-    std::ofstream bucketFile(dirPath + "/" + fileName, std::ios::binary);
+    std::ofstream bucketFile(dirPath + fileName, std::ios::binary);
     for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < this->bucketSize; i++) {
         // Encrypt the block data before saving to disk via ElGamal_parallel_ntl
         std::copy(data.begin() + i * this->blockSize, data.begin() + (i + 1) * this->blockSize, this->blockData.begin());

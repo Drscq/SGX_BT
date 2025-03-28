@@ -251,7 +251,7 @@ namespace BucketConfig {
     typedef uint_fast16_t TYPE_SMALL_INDEX_U;
     typedef int_fast16_t TYPE__SMALL_INDEX;
     /// directory to store the bucket data
-    inline std::string DATADIR = "data";
+    inline std::string DATADIR = "data/";
     inline std::string BUCKETPREFIX = "bucket_";
     typedef long unsigned int TYPE_BUCKET_SIZE;
     // typedef unsigned int TYPE_SLOT_ID;

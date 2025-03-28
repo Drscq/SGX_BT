@@ -676,6 +676,9 @@ void Server::handleClient(int clientSockfd) {
                                 this->elgamal.ParallelDecrypt(bucketCiphertextsBN_test[0], bucketCiphertextsBN_test[1], bucketDataBN);
                                 std::cout << "Bucket ID: " << i << std::endl;
                                 for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
+                                    if (BN_cmp(bucketDataBN[j], bn_one) != 0) {
+                                        std::cout << "The bucket data is not correct: " << BN_bn2dec(bucketDataBN[j]) << " with index: " << j << std::endl;
+                                    }
                                     assert(BN_cmp(bucketDataBN[j], bn_one) == 0 && "[Server] The bucket data is not correct");
                                 }
                                 // free the memory
