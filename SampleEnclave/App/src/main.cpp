@@ -20,7 +20,6 @@
 #include "Bucket.h"
 #include "Block.h"
 #include "Path.h"
-#include "Server.h"
 #include "Client.h"
 #include "Tree.h"
 #include "AES_CTR.h"    
@@ -66,10 +65,6 @@ int main(int argc, char* argv[]) {
     if (argc != 2) {
         std::cout << "Usage: " << argv[0] << " <port>" << std::endl;
         return 1;
-   } else if (argv[1] == std::string("server")) {
-        // LogConfig::CheckLogDir();
-        Server server(ServerConfig::PORT);
-        server.Start();
    } else if (argv[1] == std::string("client_read_path")) {
           #if LOG_READ_PATH_TOTAL_DELAY
             LogConfig::CheckLogDir();
