@@ -4,7 +4,6 @@
 Path::Path() {};
 Path::Path(PathConfig::TYPE_PATH_ID id,
            PathConfig::TYPE_PATH_SIZE height) : id(id), height(height) {
-            std::cout << "Path ID: " << id << std::endl;
             this->bIDs.reserve(height);
             ConvertPID2BIDs(id, height, this->bIDs);
             this->leafNum = std::pow(2, height - 1);

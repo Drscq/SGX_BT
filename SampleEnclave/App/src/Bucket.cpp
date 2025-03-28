@@ -4,7 +4,6 @@
 
 Bucket::Bucket() :
       elgamal(ServerConfig::num_threads, BlockConfig::BLOCK_SIZE){
-    std::cout << "In the default constructor" << std::endl;
     data.resize(BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
     this->id = -1;
     this->bucketSize = BucketConfig::BUCKET_SIZE;
