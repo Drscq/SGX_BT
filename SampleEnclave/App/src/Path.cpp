@@ -1,6 +1,7 @@
 #include "Path.h"
 #include <bitset>
 #include <cassert>
+Path::Path() {};
 Path::Path(PathConfig::TYPE_PATH_ID id,
            PathConfig::TYPE_PATH_SIZE height) : id(id), height(height) {
             std::cout << "Path ID: " << id << std::endl;

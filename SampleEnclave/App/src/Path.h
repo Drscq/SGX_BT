@@ -5,6 +5,7 @@
 #include "Block.h"
 class Path {
 public:
+    Path();
     Path(PathConfig::TYPE_PATH_ID id, PathConfig::TYPE_PATH_SIZE height); // The realBlockNum is less than the BucketConfig::BUCKET_REAL_BLOCK_CAPACITY * height
     ~Path();
 

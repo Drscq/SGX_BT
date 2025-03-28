@@ -86,7 +86,7 @@ endif
 # Define SGX SSL path
 SGX_SSL_DIR ?= /lhome/oramtee/DownLoad/intel-sgx-ssl/Linux/package
 
-App_Cpp_Files := App/App.cpp $(wildcard App/Edger8rSyntax/*.cpp) $(wildcard App/TrustedLibrary/*.cpp) $(wildcard App/src/*.cpp)
+App_Cpp_Files := App/App.cpp App/src/AES_CTR.cpp App/src/Block.cpp App/src/Bucket.cpp App/src/DurationLogger.cpp App/src/ElGamal_parallel_ntl.cpp App/src/Path.cpp App/src/Server.cpp App/src/SocketCommunicator.cpp App/src/Tree.cpp $(wildcard App/Edger8rSyntax/*.cpp) $(wildcard App/TrustedLibrary/*.cpp)
 App_Include_Paths := -IInclude -IApp -IApp/src -I$(SGX_SDK)/include 
 
 App_C_Flags := -fPIC -Wno-attributes $(App_Include_Paths)
