@@ -43,9 +43,9 @@ for file in files_sorted:
             # if category == "ServerClientBandwidth": # remove this category from the results
             if category == "ServerClientBandwidth":
                 total = 0
-            
 
-            # print(f"{category}: {total} ns")
+            print(f"{category}: {total // 3} ns")
+
         total = get_all_categories_total(content)
         evict_total_delays[height] = total // access_time
 
@@ -53,8 +53,8 @@ for file in files_sorted:
 # #     print(f"Height: {height}, Total Delay: {total} ns")
 
 # sort the dictionary by its values
-sorted_dict = dict(sorted(evict_total_delays.items(), key=lambda item: item[1]))
-for height, total in sorted_dict.items():
-    print(f"Height: {height}, Total Delay: {total} ns")
+# sorted_dict = dict(sorted(evict_total_delays.items(), key=lambda item: item[1]))
+# for height, total in sorted_dict.items():
+#     print(f"Height: {height}, Total Delay: {total} ns")
 
 

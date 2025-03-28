@@ -1,6 +1,4 @@
-Initializing ElGamal Parameters...
-Starting server...
-Server started on port 2000
+
 ServerComputationGenPathBucketIDsInReverseOrder: 1126 ns
 DiskIOLoadBucketCiphertextsFromDiskBN: 52679064 ns
 ServerCommunicationSendData: 240418725 ns
