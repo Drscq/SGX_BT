@@ -45,6 +45,29 @@ target_link_libraries(crtgamal
 
 set_property(TARGET crtgamal PROPERTY CXX_STANDARD 17)
 
+add_executable(crtgamal_client
+    main.cpp
+    Client.cpp
+    DurationLogger.cpp
+    ElGamal_parallel_ntl.cpp
+    Bucket.cpp
+    Block.cpp
+    Path.cpp
+    SocketCommunicator.cpp
+    AES_CTR.cpp
+    Tree.cpp
+)
+
+target_link_libraries(crtgamal_client
+    OpenSSL::Crypto
+    OpenSSL::SSL
+    ${LOCAL_PREFIX}/lib/libntl.a
+    ${LOCAL_PREFIX}/lib/libgmp.a
+    stdc++fs
+    pthread
+)
+
+set_property(TARGET crtgamal_client PROPERTY CXX_STANDARD 17)
 ####################################
 ############### Tests ##############
 ####################################
