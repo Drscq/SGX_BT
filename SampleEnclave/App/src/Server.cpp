@@ -644,15 +644,52 @@ void Server::handleClient(int clientSockfd) {
                     this->bucket.LoadBucketCiphertextsFromDiskBN(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(2 * this->evictPathBucketIDsComplete[i] + 1),
                                                                 it, ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                 
-                    if (i != TreeConfig::HEIGHT - 2) {
+                    // if (i != TreeConfig::HEIGHT - 2) {
                         it += ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;
-                    }
+                    // }
                     this->bucket.LoadBucketCiphertextsFromDiskBN(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(2 * this->evictPathBucketIDsComplete[i] + 2),
                                                                 it, ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                     if (i != TreeConfig::HEIGHT - 2) {
                         it += ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;
                     }
                 }
+                #if UNIT_TEST_OPENSSL
+                            // Test the elements are equal to 1 or not in the evictCipherPathsDataBNComplete
+                            for (int i = 0; i < 2 * (PathConfig::HEIGHT - 1) + 1; ++i) {
+                                BIGNUM* bn_one = BN_new();
+                                BN_one(bn_one);
+                                std::vector<char> bucketCiphertextsDataChar(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                                std::memcpy(bucketCiphertextsDataChar.data(), this->evictCipherPathsDataBNComplete.data() + i * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                                            ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                                std::vector<std::vector<BIGNUM*>> bucketCiphertextsBN_test(2);
+                                for (size_t ii = 0; ii < 2; ++ii) {
+                                    bucketCiphertextsBN_test[ii].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+                                    for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
+                                        bucketCiphertextsBN_test[ii][j] = BN_new();
+                                    }
+                                }
+                                this->elgamal.ConvertVecCharCipher2VecBN(bucketCiphertextsDataChar, bucketCiphertextsBN_test);
+                                std::vector<BIGNUM*> bucketDataBN(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+                                for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
+                                    bucketDataBN[j] = BN_new();
+                                }
+                                this->elgamal.ParallelDecrypt(bucketCiphertextsBN_test[0], bucketCiphertextsBN_test[1], bucketDataBN);
+                                std::cout << "Bucket ID: " << i << std::endl;
+                                for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
+                                    assert(BN_cmp(bucketDataBN[j], bn_one) == 0 && "[Server] The bucket data is not correct");
+                                }
+                                // free the memory
+                                for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
+                                    BN_free(bucketDataBN[j]);
+                                }
+                                for (size_t ii = 0; ii < 2; ++ii) {
+                                    for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
+                                        BN_free(bucketCiphertextsBN_test[ii][j]);
+                                    }
+                                }
+                                BN_free(bn_one);
+                            }
+                        #endif
                 auto end = std::chrono::high_resolution_clock::now();
                 auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "DiskIOLoadBucketCiphertextsFromDiskBN: " << elapsed_ns.count() << " ns\n";

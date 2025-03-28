@@ -1,6 +1,7 @@
 #ifndef CONFIGSGX_H
 #define CONFIGSGX_H
 // #define UNIT_TEST_SGX
+#define UNIT_TEST_OPENSSL 1
 #define USE_OPENSSL 1
 #define USE_NTL 0
 #define FLAG_ENCRYPT_BLOCK_SGX 0

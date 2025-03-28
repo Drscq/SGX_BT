@@ -112,9 +112,7 @@ namespace FileConfig
 
 namespace ServerConfig {
     #if  MULTI_THREAD_RERANDOMIZE_SWITCH
-        // #if BLOCK_SIZE_IS_64KB
-        inline size_t num_threads = 20;
-        // #endif
+        inline size_t num_threads = 32;
     #else
         inline size_t num_threads = 1;
     #endif
