@@ -2,7 +2,9 @@
 #include <cassert>
 #include <filesystem>
 
-Bucket::Bucket() {
+Bucket::Bucket() :
+      elgamal(ServerConfig::num_threads, BlockConfig::BLOCK_SIZE){
+    std::cout << "In the default constructor" << std::endl;
     data.resize(BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
     this->id = -1;
     this->bucketSize = BucketConfig::BUCKET_SIZE;
@@ -11,7 +13,7 @@ Bucket::Bucket() {
     this->blockSize = BlockConfig::BLOCK_SIZE;
     // this->num_threads = (BucketConfig::TYPE_THREAD_NUM)std::thread::hardware_concurrency();
     this->num_threads = ServerConfig::num_threads;
-    elgamal = ElGamal_parallel_ntl(this->num_threads, this->blockSize);
+    // elgamal = ElGamal_parallel_ntl(this->num_threads, this->blockSize);
     this->blockData.resize(this->blockSize);
     this->dummyBlock.reserve(this->blockSize);
     this->block.GenData(this->blockSize, false, -1, this->dummyBlock);
@@ -44,6 +46,7 @@ Bucket::Bucket(BucketConfig::TYPE_BUCKET_ID id,
                num_threads(num_threads),
                elgamal(num_threads, blockSize),
                blockData(blockSize) {
+    std::cout << "After the elgamal constructor" << std::endl;
     data.resize(bucketSize * this->blockSize);
     this->dummyBlock.reserve(this->blockSize);
     this->block.GenData(this->blockSize, false, -1, this->dummyBlock);
@@ -115,23 +118,45 @@ void Bucket::SaveData2Disk(const std::string& dirPath,
     if (!std::filesystem::exists(path)) {
         std::filesystem::create_directories(path); 
     }
+    std::cout << "Saving bucket data to disk: " << dirPath + "/" + fileName << std::endl;
+    #if USE_OPENSSL
+    std::ofstream bucketFile(dirPath + "/" + fileName, std::ios::binary);
+    std::vector<BIGNUM*> data_bn(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+    std::vector<std::vector<BIGNUM*>> ciphertexts(2);
+    ciphertexts[0].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+    ciphertexts[1].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+    // BN_new(); to allocate memory for BIGNUM
+    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
+        data_bn[i] = BN_new();
+        ciphertexts[0][i] = BN_new();
+        ciphertexts[1][i] = BN_new();
+    }
+    this->elgamal.ConvertVecChar2VecBN(this->data, data_bn);
+    this->elgamal.ParallelEncrypt(data_bn, ciphertexts[0], ciphertexts[1]);
+    std::vector<char> bucktCiphertextData(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+    this->elgamal.ConvertVecBNCipher2VecChar(ciphertexts[0], ciphertexts[1], bucktCiphertextData);
+    // Write the ciphertext data to the file
+    bucketFile.write(bucktCiphertextData.data(), ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+    // free the BIGNUM
+    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
+        BN_free(data_bn[i]);
+        BN_free(ciphertexts[0][i]);
+        BN_free(ciphertexts[1][i]);
+    }
+    #endif
     // Save the this->data to the file namely fileName
+    #if USE_NTL
     std::ofstream bucketFile(dirPath + "/" + fileName, std::ios::binary);
     for (BucketConfig::TYPE_BUCKET_SIZE i = 0; i < this->bucketSize; i++) {
         // Encrypt the block data before saving to disk via ElGamal_parallel_ntl
         std::copy(data.begin() + i * this->blockSize, data.begin() + (i + 1) * this->blockSize, this->blockData.begin());
-        #if USE_OPENSSL
-            elgamal.ConvertVecChar2VecBN(this->blockData, block_data_bn_sgx);
-            elgamal.ParallelEncrypt(block_data_bn_sgx, ciphertexts_data_bn_sgx[0], ciphertexts_data_bn_sgx[1]);
-            elgamal.ConvertVecBNCipher2VecChar(ciphertexts_data_bn_sgx[0], ciphertexts_data_bn_sgx[1], this->ciphertextsData);
-        #else
             elgamal.ParallelEncrypt(this->blockData, this->ciphertexts_ZZ_p);
             // elgamal.SerializeCiphertexts(ciphertexts, this->ciphertextsData);
             elgamal.SerializeCiphertexts(this->ciphertexts_ZZ_p, this->ciphertextsData);
-        #endif
         bucketFile.write(this->ciphertextsData.data(), this->ciphertextsData.size());
     }
     bucketFile.close();
+    #endif
 }
 /**
  * @brief Load the encrypted bucket data from disk

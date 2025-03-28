@@ -1,10 +1,9 @@
 #include "Path.h"
 #include <bitset>
 #include <cassert>
-Path::Path() {}
 Path::Path(PathConfig::TYPE_PATH_ID id,
            PathConfig::TYPE_PATH_SIZE height) : id(id), height(height) {
-
+            std::cout << "Path ID: " << id << std::endl;
             this->bIDs.reserve(height);
             ConvertPID2BIDs(id, height, this->bIDs);
             this->leafNum = std::pow(2, height - 1);
@@ -194,6 +193,7 @@ void Path::GenEvictPath(PathConfig::TYPE_PATH_ID path_id, PathConfig::TYPE_PATH_
     //     }
     //     bucket.SaveData2Disk(BucketConfig::DATADIR, BucketConfig::BUCKETPREFIX + std::to_string(bID));
     // }
+    std::cout << "Generating Evict Path" << std::endl;
     BucketConfig::TYPE_BUCKET_ID bID = 0;
     Bucket bucket_0(bID, BucketConfig::BUCKET_SIZE,
     BucketConfig::BUCKET_REAL_BLOCK_CAPACITY,

@@ -168,7 +168,7 @@ namespace ServerConfig {
 namespace PathConfig {
     typedef long long TYPE_PATH_ID;
     typedef size_t TYPE_PATH_SIZE;
-    inline constexpr TYPE_PATH_SIZE HEIGHT = 27;
+    inline constexpr TYPE_PATH_SIZE HEIGHT = 4;
     inline TYPE_PATH_SIZE REAL_BLOCK_NUM = 2 * HEIGHT;
     inline TYPE_PATH_ID GenPathID() {
         std::random_device rd;
@@ -183,7 +183,7 @@ namespace PathConfig {
 namespace BlockConfig {
     typedef long long TYPE_BLOCK_ID;
     typedef unsigned long long TYPE_BLOCK_SIZE;
-    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 65536;
+    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 1024;
 }
 
 namespace AESConfig {
@@ -253,7 +253,7 @@ namespace BucketConfig {
     typedef uint_fast16_t TYPE_SMALL_INDEX_U;
     typedef int_fast16_t TYPE__SMALL_INDEX;
     /// directory to store the bucket data
-    inline std::string DATADIR = "data/";
+    inline std::string DATADIR = "data";
     inline std::string BUCKETPREFIX = "bucket_";
     typedef long unsigned int TYPE_BUCKET_SIZE;
     // typedef unsigned int TYPE_SLOT_ID;
@@ -873,6 +873,7 @@ namespace ElGamalNTLConfig {
     inline size_t CHUNK_SIZE = 127;
     inline size_t PER_CIPHERTEXT_SIZE = CHUNK_SIZE + 1;
     inline unsigned long long BLOCK_CHUNK_SIZE = (BlockConfig::BLOCK_SIZE + CHUNK_SIZE - 1) / CHUNK_SIZE;
+    inline unsigned long long BUCKET_CHUNK_SIZE = BucketConfig::BUCKET_SIZE * BLOCK_CHUNK_SIZE;
     inline unsigned long long BLOCK_CIPHERTEXT_NUM_CHARS = (BlockConfig::BLOCK_SIZE + CHUNK_SIZE  - 1) / CHUNK_SIZE * PER_CIPHERTEXT_SIZE * 2;
     inline unsigned long long BUCKET_CIPHERTEXT_NUM_CHARS = BucketConfig::BUCKET_SIZE * BLOCK_CIPHERTEXT_NUM_CHARS;
     typedef unsigned long long TYPE_BATCH_SIZE;

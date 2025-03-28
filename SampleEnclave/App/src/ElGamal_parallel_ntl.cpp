@@ -10,12 +10,10 @@
 #include <sstream>
 
 ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size) :
-    num_threads(num_threads), data_size(data_size) {
+    num_threads(num_threads), data_size(data_size),
+    logger(LogConfig::LOG_DIR + LogConfig::LOG_FILE) {
     m_modulus_sgx = BN_new();
     BN_dec2bn(&m_modulus_sgx, MODULUS_SGX_STR);
-    #if defined(UNIT_TEST_SGX)
-    std::cout << "[Construction]The value of m_modulus_sgx in decimal: " << BN_bn2dec(m_modulus_sgx) << std::endl;
-    #endif
     this->chunk_size = ElGamalNTLConfig::CHUNK_SIZE;
     this->per_ciphertext_size = ElGamalNTLConfig::PER_CIPHERTEXT_SIZE;
     this->p = ElGamalNTLConfig::P;
@@ -55,7 +53,7 @@ ElGamal_parallel_ntl::ElGamal_parallel_ntl(size_t num_threads, size_t data_size)
      this->total_chunks = (this->data_size + this->chunk_size - 1) / this->chunk_size;
      this->batch_size_encrypt = (this->total_chunks + this->num_threads - 1) / this->num_threads;
      this->batch_size_total_encrypt = this->batch_size_encrypt * this->chunk_size;
-     this->logger = DurationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
+    //  this->logger = DurationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
      this->buffer = new unsigned char[this->per_ciphertext_size];
      this->num_pairs = ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS / (this->per_ciphertext_size * 2);
     //  this->thread_compute = new pthread_t[this->num_threads];
@@ -250,8 +248,8 @@ void ElGamal_parallel_ntl::DecryptBlock(BIGNUM* c1, BIGNUM* c2, BIGNUM* message)
     BN_mod_inverse(c1, c1, m_modulus_sgx, m_ctx_sgx);
     // message = c2 * c1 mod m_modulus_sgx
     BN_mod_mul(message, c2, c1, m_modulus_sgx, m_ctx_sgx);
-    // Preprocessing Version
-    BN_mod_mul(message, c2, m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+    // // Preprocessing Version
+    // BN_mod_mul(message, c2, m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
 }
 void ElGamal_parallel_ntl::ConvertZZPToBIGNUM(const ZZ_p& message, BIGNUM* bn_message) {
     // Check the bn_message is not NULL
@@ -264,8 +262,10 @@ void ElGamal_parallel_ntl::ConvertZZPToBIGNUM(const ZZ_p& message, BIGNUM* bn_me
     std::cout << "The value of z: " << m_z_convert_sgx << std::endl;
     #endif
     // clear the m_ss_sgx
-    m_ss_sgx.str("");
-    m_ss_sgx.clear();
+    // m_ss_sgx.str("");
+    // m_ss_sgx.clear();
+    // define the m_ss_sgx
+    std::ostringstream m_ss_sgx;
     m_ss_sgx << m_z_convert_sgx;
     #if defined(UNIT_TEST_SGX)
     std::cout << "The value of str: " << m_ss_sgx.str() << std::endl;
@@ -509,6 +509,24 @@ void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<char>& data, std::v
         ciphertexts.insert(ciphertexts.end(), batch_ciphertexts.begin(), batch_ciphertexts.end());
     }
 }
+void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<ZZ_p>& data, std::vector<ZZ_p>& c1, std::vector<ZZ_p>& c2) {
+    assert(data.size() == c1.size() && data.size() == c2.size());
+    for (size_t i = 0; i < data.size(); ++i) {
+        c1[i] = this->g_pow_k;
+        c2[i] = data[i] * this->h_pow_k;
+    }
+}
+
+void ElGamal_parallel_ntl::ParallelDecrypt(const std::vector<ZZ_p>& c1, const std::vector<ZZ_p>& c2, std::vector<ZZ_p>& data) {
+    assert(c1.size() == c2.size() && c1.size() == data.size());
+    for (size_t i = 0; i < c1.size(); ++i) {
+        if (i == 0) {
+            this->g_pow_k_x_inv = inv(power(c1[i], x));
+        }
+        // data[i] = DecryptBlock(c1[i], c2[i]);
+        data[i] = c2[i] * this->g_pow_k_x_inv;
+    }
+}
 
 void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<BIGNUM*>& data, std::vector<BIGNUM*>&c1, std::vector<BIGNUM*>&c2) {
     #if defined(UNIT_TEST_SGX)
@@ -519,13 +537,17 @@ void ElGamal_parallel_ntl::ParallelEncrypt(const std::vector<BIGNUM*>& data, std
     }
 }
 void ElGamal_parallel_ntl::ConvertVecChar2VecBN(const std::vector<char>& data, std::vector<BIGNUM*>& bn_data) {
-    int i = 0;
-    for (; i + this->chunk_size <= data.size(); i += this->chunk_size) {
-        BN_bin2bn(reinterpret_cast<const unsigned char*>(data.data() + i), this->chunk_size, bn_data[i / this->chunk_size]);
-    }
-    // for the remaining data
-    if (i < data.size()) {
-        BN_bin2bn(reinterpret_cast<const unsigned char*>(data.data() + i), data.size() - i, bn_data[bn_data.size() - 1]);
+    int num_blocks = data.size() / BlockConfig::BLOCK_SIZE;
+    assert(num_blocks > 0 && "Error: The size of data is less than the block size");
+    for (int i = 0; i < num_blocks; ++i) {
+        int ii = 0;
+        for (; ii + this->chunk_size <= BlockConfig::BLOCK_SIZE; ii += this->chunk_size) {
+            BN_bin2bn(reinterpret_cast<const unsigned char*>(data.data() + ii + i * BlockConfig::BLOCK_SIZE), this->chunk_size, bn_data[i * ElGamalNTLConfig::BLOCK_CHUNK_SIZE + ii / this->chunk_size]);
+        }
+        // for the remaining data
+        if (ii < BlockConfig::BLOCK_SIZE) {
+            BN_bin2bn(reinterpret_cast<const unsigned char*>(data.data() + ii + i * BlockConfig::BLOCK_SIZE), BlockConfig::BLOCK_SIZE - ii, bn_data[i * ElGamalNTLConfig::BLOCK_CHUNK_SIZE + ii / this->chunk_size]);
+        }
     }
 }
 
@@ -558,9 +580,9 @@ void ElGamal_parallel_ntl::ConvertVecBNCipher2VecChar(std::vector<BIGNUM*>& c1, 
     auto it = data.begin();
     for (int i = 0; i < c1.size(); ++i) {
         BN_bn2binpad(c1[i], reinterpret_cast<unsigned char*>(&(*it)), this->per_ciphertext_size);
-        if (i != c1.size() - 1) {
+        // if (i != c1.size() - 1) {
             it += this->per_ciphertext_size;
-        }
+        // }
         BN_bn2binpad(c2[i], reinterpret_cast<unsigned char*>(&(*it)), this->per_ciphertext_size);
         if (i != c1.size() - 1) {
             it += this->per_ciphertext_size;
@@ -572,9 +594,9 @@ void ElGamal_parallel_ntl::ConvertVecCharCipher2VecBN(const std::vector<char>& d
     auto it = data.begin();
     for (int ii = 0; ii < ciphertexts[0].size(); ++ii) {
         BN_bin2bn(reinterpret_cast<const unsigned char*>(&(*it)), this->per_ciphertext_size, ciphertexts[0][ii]);
-        if (ii != ciphertexts[0].size() - 1) {
+        // if (ii != ciphertexts[0].size() - 1) {
             it += this->per_ciphertext_size;
-        }
+        // }
         BN_bin2bn(reinterpret_cast<const unsigned char*>(&(*it)), this->per_ciphertext_size, ciphertexts[1][ii]);
         if (ii != ciphertexts[0].size() - 1) {
             it += this->per_ciphertext_size;
@@ -606,11 +628,13 @@ void ElGamal_parallel_ntl::ParallelDecrypt(const std::vector<std::vector<BIGNUM*
     
 
 void ElGamal_parallel_ntl::ParallelDecrypt(const std::vector<BIGNUM*>& c1, const std::vector<BIGNUM*>& c2, std::vector<BIGNUM*>& data) {
-    #if defined(UNIT_TEST_SGX)
-    assert((data.size() == c1.size()) && (c1.size()== c2.size()) && "Error: c1 and c2 size mismatch");
-    #endif
-    for (ElGamalNTLConfig::TYPE_BATCH_SIZE i = 0; i < c1.size(); ++i) {
-        this->DecryptBlock(c1[i], c2[i], data[i]);
+    assert(c1.size() == c2.size() && c1.size() == data.size());
+    for (int i = 0; i < c1.size(); ++i) {
+        if (i % ElGamalNTLConfig::BLOCK_CHUNK_SIZE == 0) {
+            BN_mod_exp(m_g_pow_k_x_inv_bn_sgx, c1[i], m_x_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+            BN_mod_inverse(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
+        }
+        BN_mod_mul(data[i], c2[i], m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
     }
 }
 
@@ -1091,7 +1115,13 @@ void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<std::pair<ZZ_p, ZZ_p>
             this->endIdx = ciphertexts.size();
         }
 
-        thread_args[batch] = { &ciphertexts, this->startIdx, this->endIdx, this->g_pow_k, this->h_pow_k, batch % this->num_threads };
+        // thread_args[batch] = { &ciphertexts, this->startIdx, this->endIdx, this->g_pow_k, this->h_pow_k, batch % this->num_threads };
+        thread_args[batch].ciphertexts = &ciphertexts;
+        thread_args[batch].startIdx = this->startIdx;
+        thread_args[batch].endIdx = this->endIdx;
+        thread_args[batch].g_pow_k = this->g_pow_k;
+        thread_args[batch].h_pow_k = this->h_pow_k;
+        thread_args[batch].core_id = batch % this->num_threads;
         pthread_create(&threads[batch], nullptr, thread_func, (void*)&thread_args[batch]);
     }
     for (size_t batch = 0; batch <this->num_batches; ++batch) {
@@ -1124,24 +1154,6 @@ void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<std::pair<ZZ_p, ZZ_p>
     #endif
 }
 #endif
-
-// // The version of the customized ThreadPool class
-// void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts ) {
-//     this->batch_size_rerandomize = ciphertexts.size() / this->num_threads;
-//     ThreadPool pool(this->num_threads);
-//     for (ElGamalNTLConfig::TYPE_BATCH_SIZE i = 0; i < ciphertexts.size(); i += this->batch_size_rerandomize) {
-//         pool.enqueue(
-//             [this, &ciphertexts, i]() {
-//                 // ZZ_p::init(ElGamalNTLConfig::P); // Initialize ZZ_p
-//                 for (int j = i; j < i + this->batch_size_rerandomize && j < ciphertexts.size(); j++) {
-//                     ciphertexts[j] = ReRandomizeBlock(ciphertexts[j]);
-//                 }
-//             }
-//         );
-//     }
-
-//     pool.wait_until_done();
-// }
 
 
 std::pair<ZZ, ZZ> ElGamal_parallel_ntl::MultiplyCiphertexts(const std::pair<ZZ, ZZ> &ciphertext1, const std::pair<ZZ, ZZ> &ciphertext2) {
@@ -1454,36 +1466,6 @@ void ElGamal_parallel_ntl::DeserializeCiphertexts(const unsigned char* data_ptr,
     }
 }
 
-
-// void ElGamal_parallel_ntl::DeserializeCiphertexts(const std::vector<char>& serializedData, std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts) {
-//     ZZ_p::init(ElGamalNTLConfig::P);
-//     ciphertexts.clear();
-//     size_t offset = 0;
-//     while (offset < serializedData.size()) {
-//         // Read the size of the first component
-//         long first_num_bytes;
-//         std::memcpy(&first_num_bytes, serializedData.data() + offset, sizeof(long));
-//         offset += sizeof(long);
-//         // Read the bytes of the first component
-//         ZZ first_zz;
-//         NTL::ZZFromBytes(first_zz, reinterpret_cast<const unsigned char*>(serializedData.data() + offset), first_num_bytes);
-//         ZZ_p first_part = conv<ZZ_p>(first_zz);
-//         offset += first_num_bytes;
-
-//         // Read the size of the second component
-//         long second_num_bytes;
-//         std::memcpy(&second_num_bytes, serializedData.data() + offset, sizeof(long));
-//         offset += sizeof(long);
-//         // Read the bytes of the second component
-//         ZZ second_zz;
-//         NTL::ZZFromBytes(second_zz, reinterpret_cast<const unsigned char*>(serializedData.data() + offset), second_num_bytes);
-//         ZZ_p second_part = conv<ZZ_p>(second_zz);
-//         offset += second_num_bytes;
-
-//         ciphertexts.emplace_back(first_part, second_part);
-//     }
-// }
-
 void ElGamal_parallel_ntl::DeserializeCiphertexts(const char* dataPtr, size_t dataSize, std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts) {
     ZZ_p::init(ElGamalNTLConfig::P);
     ciphertexts.clear();
@@ -1546,47 +1528,60 @@ void ElGamal_parallel_ntl::DeserializeCiphertexts(const char* dataPtr, size_t da
 //     }
 // }
 
-// void ElGamal_parallel_ntl::DeserializeCiphertexts(const std::vector<char>& serializedData, std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts) {
-//     ZZ_p::init(ElGamalNTLConfig::P);
-//     ciphertexts.clear();
-//     size_t offset = 0;
-//     while (offset < serializedData.size()) {
-//         // Read the size of the first ZZ_p
-//         // size_t first_size;
-//         // std::memcpy(&first_size, serializedData.data() + offset, sizeof(first_size));
-//         // offset += sizeof(first_size);
-//         // Deserialize the first ZZ_p in the pair
-//         ZZ_p first_part;
-//         first_part = conv<ZZ_p>(ZZFromBytes(reinterpret_cast<const unsigned char*>(serializedData.data() + offset), this->per_ciphertext_size));
-//         offset += this->per_ciphertext_size;
 
-//         // // Read the size of the second ZZ_p
-//         // size_t second_size;
-//         // std::memcpy(&second_size, serializedData.data() + offset, sizeof(second_size));
-//         // offset += sizeof(second_size);
 
-//         // Deserialize the second ZZ_p in the pair
-//         ZZ_p second_part;
-//         second_part = conv<ZZ_p>(ZZFromBytes(reinterpret_cast<const unsigned char*>(serializedData.data() + offset), this->per_ciphertext_size));
-//         offset += this->per_ciphertext_size;
+static void* WorkerFunctionNTL(void* arg) {
+    ElGamal_parallel_ntl::ThreadArgs* args = static_cast<ElGamal_parallel_ntl::ThreadArgs*>(arg);
+    ZZ_p::init(args->p); // Initialize ZZ_p
+    for (ElGamalNTLConfig::TYPE_BATCH_SIZE j = args->startIdx; j < args->endIdx; j++) {
+        (*args->c1)[j] = (*args->c1)[j] * args->g_pow_k;   // Efficient in-place multiplication 
+        (*args->c2)[j] = (*args->c2)[j] * args->h_pow_k;  // Efficient in-place multiplication
+    }
+    return nullptr;
+}
 
-//         ciphertexts.emplace_back(first_part, second_part);
-        
-//     }
-//     // std::cout << "End the deserialization" << std::endl;
-// }
+void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<ZZ_p>& c1, std::vector<ZZ_p>& c2) {
+    assert(c1.size() == c2.size());
+    if (this->num_threads <= 1) {
+        for (size_t i = 0; i < c1.size(); ++i) {
+            c1[i] *= this->g_pow_k;
+            c2[i] *= this->h_pow_k;
+        }
+    } else {
+        this->threadChunkSizeBN = (c1.size() + this->num_threads - 1) / this->num_threads;
+        this->currentIdxBN = 0;
+        int actualThreads = 0; // track how many threads we actually start
+        for (int t = 0; t < this->num_threads; ++t) {
+            this->startIdxBN = this->currentIdxBN;
+            this->endIdxBN = std::min(this->startIdxBN + this->threadChunkSizeBN, static_cast<int>(c1.size()));
+            if (this->startIdxBN >= this->endIdxBN) {
+                throw std::runtime_error("Error: Invalid thread chunk size");
+            }
+            this->thread_args[t].c1 = &c1;
+            this->thread_args[t].c2 = &c2;
+            this->thread_args[t].g_pow_k = this->g_pow_k;
+            this->thread_args[t].h_pow_k = this->h_pow_k;
+            this->thread_args[t].startIdx = this->startIdxBN;
+            this->thread_args[t].endIdx = this->endIdxBN;
+            this->thread_args[t].p = this->p;
 
-// ZZ ElGamal_parallel_ntl::ZZFromBytes(const unsigned char* data, size_t size) {
-//     ZZ z;
-//     for (size_t i = 0; i < size; ++i) {
-//         z <<= 8;
-//         z += data[i];
-//     }
-//     return z;
-// }
+            pthread_create(&this->threads[t], nullptr, WorkerFunctionNTL, &this->thread_args[t]);
+            // Then set CPU affinity:
+            cpu_set_t cpuset;
+            CPU_ZERO(&cpuset);
+            // Suppose you pin to core t if it exists, or you pick some mapping
+            CPU_SET(t + 1, &cpuset);
+            pthread_setaffinity_np(this->threads[t], sizeof(cpu_set_t), &cpuset);
+            this->currentIdxBN = this->endIdxBN;
+            actualThreads++;
+            if (this->currentIdxBN >= (int)c1.size()) {
+                // No more data to process
+                break;
+            }
+        }
 
-// ZZ_p ElGamal_parallel_ntl::ZZ_pFromBytes(const unsigned char* data, size_t size) {
-//     // ZZ_p::init(ElGamalNTLConfig::P);
-//     ZZ z = ZZFromBytes(data, size);
-//     return conv<ZZ_p>(z);
-// }
+        for (int t = 0; t < actualThreads; ++t) {
+            pthread_join(this->threads[t], nullptr);
+        }
+    }
+}

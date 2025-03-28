@@ -55,6 +55,7 @@ public:
     // Function to encrypt data in parallel
     void ParallelEncrypt(const std::vector<char>& data, std::vector<std::pair<ZZ, ZZ>>& ciphertexts);
     void ParallelEncrypt(const std::vector<char>& data, std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts);
+    void ParallelEncrypt(const std::vector<ZZ_p>& data, std::vector<ZZ_p>& c1, std::vector<ZZ_p>& c2);
     // Reload the ParallelEncrypt function to use BN in openssl
     void ConvertVecChar2VecBN(const std::vector<char>& data, std::vector<BIGNUM*>& bn_data);
     void ParallelEncrypt(const std::vector<BIGNUM*>& data, std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2);
@@ -63,6 +64,7 @@ public:
     // Function to decrypt data in parallel
     void ParallelDecrypt(const std::vector<std::pair<ZZ, ZZ>>& ciphertexts, std::vector<char>& data);
     void ParallelDecrypt(const std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts, std::vector<char>& data);
+    void ParallelDecrypt(const std::vector<ZZ_p>& c1, const std::vector<ZZ_p>& c2, std::vector<ZZ_p>& data);
     // Reload the ParallelDecrypt function to use BN in openssl
     void ParallelDecrypt(const std::vector<BIGNUM*>& c1, const std::vector<BIGNUM*>& c2, std::vector<BIGNUM*>& data);
     void ParallelDecrypt(const std::vector<std::vector<BIGNUM*>>& ciphertexts, std::vector<char>& data);
@@ -70,6 +72,7 @@ public:
     // Function to re-randomize data in parallel
     void ParallelRerandomize(std::vector<std::pair<ZZ, ZZ>>& ciphertexts);
     void ParallelRerandomize(std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts);
+    void ParallelRerandomize(std::vector<ZZ_p>& c1, std::vector<ZZ_p>& c2);
     void ParallelRerandomize(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2);
     // Function to multiply two sets of ciphertexts in parallel
     void ParallelMultiplyCiphertexts(const std::vector<std::pair<ZZ, ZZ>>& ciphertexts1, const std::vector<std::pair<ZZ, ZZ>>& ciphertexts2, std::vector<std::pair<ZZ, ZZ>>& result);
@@ -106,14 +109,14 @@ public:
      BN_CTX* m_ctx_sgx;
      std::vector<BN_CTX*> m_ctx_vec_sgx;
  
-private:
+// private:
     size_t num_threads;
     size_t num_threads_deserialize = 4;
     size_t chunk_size;
     size_t per_ciphertext_size;
     size_t data_size;
     // stringstream 
-    std::stringstream m_ss_sgx;
+    // std::stringstream m_ss_sgx;
     // NTL Variables
     ZZ m_z_convert_sgx;
     ZZ p; // Prime modulus
@@ -162,10 +165,13 @@ private:
     void set_thread_affinity(std::thread& thread, int cpu_id);
    struct ThreadArgs {
         std::vector<std::pair<ZZ_p, ZZ_p>>* ciphertexts;
+        std::vector<ZZ_p>* c1;
+        std::vector<ZZ_p>* c2;
         ElGamalNTLConfig::TYPE_BATCH_SIZE startIdx;
         ElGamalNTLConfig::TYPE_BATCH_SIZE endIdx;
         ZZ_p g_pow_k;
         ZZ_p h_pow_k;
+        ZZ p;
         ElGamalNTLConfig::TYPE_BATCH_SIZE core_id;
     };
     static void ReRandomizeBlock(std::pair<ZZ_p, ZZ_p>& ciphertext, const ZZ_p& g_pow_k, const ZZ_p& h_pow_k) noexcept {
