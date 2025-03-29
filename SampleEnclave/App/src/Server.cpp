@@ -138,7 +138,7 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     this->evictCipherPathsDataBNComplete.resize(this->evictCipherPathsDataBNCompleteSize);
     this->tripletBucketCiphertextsSerializedDataSgxSize = 3 * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;
     this->tripletBucketCiphertextsSerializedDataSgx.resize(this->tripletBucketCiphertextsSerializedDataSgxSize);
-    this->tripletBucketCiphertextsBNSgxSize = 3 * ElGamalNTLConfig::BLOCK_CHUNK_SIZE * BucketConfig::BUCKET_SIZE;
+    this->tripletBucketCiphertextsBNSgxSize = 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE;
     this->tripletBucketCiphertextsBNSgx.resize(2);
     this->tripletBucketCiphertextsBNSgx[0].resize(this->tripletBucketCiphertextsBNSgxSize);
     this->tripletBucketCiphertextsBNSgx[1].resize(this->tripletBucketCiphertextsBNSgxSize);
@@ -654,45 +654,45 @@ void Server::handleClient(int clientSockfd) {
                     }
                 }
                 #if UNIT_TEST_OPENSSL
-                            // Test the elements are equal to 1 or not in the evictCipherPathsDataBNComplete
-                            for (int i = 0; i < 2 * (PathConfig::HEIGHT - 1) + 1; ++i) {
-                                BIGNUM* bn_one = BN_new();
-                                BN_one(bn_one);
-                                std::vector<char> bucketCiphertextsDataChar(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                                std::memcpy(bucketCiphertextsDataChar.data(), this->evictCipherPathsDataBNComplete.data() + i * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
-                                            ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                                std::vector<std::vector<BIGNUM*>> bucketCiphertextsBN_test(2);
-                                for (size_t ii = 0; ii < 2; ++ii) {
-                                    bucketCiphertextsBN_test[ii].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
-                                    for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
-                                        bucketCiphertextsBN_test[ii][j] = BN_new();
-                                    }
-                                }
-                                this->elgamal.ConvertVecCharCipher2VecBN(bucketCiphertextsDataChar, bucketCiphertextsBN_test);
-                                std::vector<BIGNUM*> bucketDataBN(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
-                                for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
-                                    bucketDataBN[j] = BN_new();
-                                }
-                                this->elgamal.ParallelDecrypt(bucketCiphertextsBN_test[0], bucketCiphertextsBN_test[1], bucketDataBN);
-                                std::cout << "Bucket ID: " << i << std::endl;
-                                for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
-                                    if (BN_cmp(bucketDataBN[j], bn_one) != 0) {
-                                        std::cout << "The bucket data is not correct: " << BN_bn2dec(bucketDataBN[j]) << " with index: " << j << std::endl;
-                                    }
-                                    assert(BN_cmp(bucketDataBN[j], bn_one) == 0 && "[Server] The bucket data is not correct");
-                                }
-                                // free the memory
-                                for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
-                                    BN_free(bucketDataBN[j]);
-                                }
-                                for (size_t ii = 0; ii < 2; ++ii) {
-                                    for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
-                                        BN_free(bucketCiphertextsBN_test[ii][j]);
-                                    }
-                                }
-                                BN_free(bn_one);
+                    // Test the elements are equal to 1 or not in the evictCipherPathsDataBNComplete
+                    for (int i = 0; i < 2 * (PathConfig::HEIGHT - 1) + 1; ++i) {
+                        BIGNUM* bn_one = BN_new();
+                        BN_one(bn_one);
+                        std::vector<char> bucketCiphertextsDataChar(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                        std::memcpy(bucketCiphertextsDataChar.data(), this->evictCipherPathsDataBNComplete.data() + i * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                                    ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                        std::vector<std::vector<BIGNUM*>> bucketCiphertextsBN_test(2);
+                        for (size_t ii = 0; ii < 2; ++ii) {
+                            bucketCiphertextsBN_test[ii].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+                            for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
+                                bucketCiphertextsBN_test[ii][j] = BN_new();
                             }
-                        #endif
+                        }
+                        this->elgamal.ConvertVecCharCipher2VecBN(bucketCiphertextsDataChar, bucketCiphertextsBN_test);
+                        std::vector<BIGNUM*> bucketDataBN(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+                        for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
+                            bucketDataBN[j] = BN_new();
+                        }
+                        this->elgamal.ParallelDecrypt(bucketCiphertextsBN_test[0], bucketCiphertextsBN_test[1], bucketDataBN);
+                        std::cout << "Bucket ID: " << i << std::endl;
+                        for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
+                            if (BN_cmp(bucketDataBN[j], bn_one) != 0) {
+                                std::cout << "The bucket data is not correct: " << BN_bn2dec(bucketDataBN[j]) << " with index: " << j << std::endl;
+                            }
+                            assert(BN_cmp(bucketDataBN[j], bn_one) == 0 && "[Server] The bucket data is not correct");
+                        }
+                        // free the memory
+                        for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
+                            BN_free(bucketDataBN[j]);
+                        }
+                        for (size_t ii = 0; ii < 2; ++ii) {
+                            for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
+                                BN_free(bucketCiphertextsBN_test[ii][j]);
+                            }
+                        }
+                        BN_free(bn_one);
+                    }
+                #endif
                 auto end = std::chrono::high_resolution_clock::now();
                 auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "DiskIOLoadBucketCiphertextsFromDiskBN: " << elapsed_ns.count() << " ns\n";
@@ -700,7 +700,7 @@ void Server::handleClient(int clientSockfd) {
                 start = std::chrono::high_resolution_clock::now();
                 this->communicator.sendData(clientSockfd,
                                             this->evictCipherPathsDataBNComplete.data(),
-                                            ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                                            ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS); 
                 this->communicator.receiveCommand(clientSockfd, this->cmd1);
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
@@ -709,6 +709,36 @@ void Server::handleClient(int clientSockfd) {
                                                 this->evictCipherPathsDataBNComplete.data(),
                                                 ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
+                #if UNIT_TEST_OPENSSL
+                    std::vector<std::vector<BIGNUM*>> rootBucketCiphertextsBN(2);
+                    rootBucketCiphertextsBN[0].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+                    rootBucketCiphertextsBN[1].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        rootBucketCiphertextsBN[0][i] = BN_new();
+                        rootBucketCiphertextsBN[1][i] = BN_new();
+                    }
+                    this->elgamal.ConvertVecCharCipher2VecBN(this->evictCipherPathsDataBNComplete,
+                                                            rootBucketCiphertextsBN);
+                    std::vector<BIGNUM*> rootBucketDataBN(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        rootBucketDataBN[i] = BN_new();
+                    }
+                    this->elgamal.ParallelDecrypt(rootBucketCiphertextsBN[0], rootBucketCiphertextsBN[1], rootBucketDataBN);
+                    BIGNUM* bn_one = BN_new();
+                    BN_one(bn_one);
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        assert(BN_cmp(rootBucketDataBN[i], bn_one) == 0 && "[Server] The root bucket data is not correct");
+                    }
+                    // free the memory
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        BN_free(rootBucketDataBN[i]);
+                    }
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        BN_free(rootBucketCiphertextsBN[0][i]);
+                        BN_free(rootBucketCiphertextsBN[1][i]);
+                    }
+                    BN_free(bn_one);
+                #endif
                 this->communicator.receiveData(clientSockfd,
                                                 this->tripletBucketCiphertextsSerializedDataSgx.data(),
                                                 this->triplet_evict_perm_size * 2);
@@ -725,6 +755,25 @@ void Server::handleClient(int clientSockfd) {
                             this->evictCipherPathsDataBNComplete.data(),
                             this->tripletBucketCiphertextsSerializedDataSgxSize);
                 this->elgamal.ConvertVecCharCipher2VecBN(this->tripletBucketCiphertextsSerializedDataSgx, this->tripletBucketCiphertextsBNSgx);
+                #if UNIT_TEST_OPENSSL
+                    bn_one = BN_new();
+                    BN_one(bn_one);
+                    // check the elements in the m_tripletBucketsCiphertextsBN
+                    std::vector<BIGNUM*> tripletBucketsDataBN(3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        tripletBucketsDataBN[i] = BN_new();
+                    }
+                    this->elgamal.ParallelDecrypt(tripletBucketCiphertextsBNSgx[0], tripletBucketCiphertextsBNSgx[1], tripletBucketsDataBN);
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        assert(BN_cmp(tripletBucketsDataBN[i], bn_one) == 0 && "[Server] The triplet bucket data is not correct");
+                    }
+                    // free the memory
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        BN_free(tripletBucketsDataBN[i]);
+                    }
+                    BN_free(bn_one);
+                #endif
+                
                 start = std::chrono::high_resolution_clock::now();
                 this->elgamal.ParallelRerandomize(this->tripletBucketCiphertextsBNSgx[0], this->tripletBucketCiphertextsBNSgx[1]);
                 end = std::chrono::high_resolution_clock::now();
@@ -738,7 +787,56 @@ void Server::handleClient(int clientSockfd) {
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "ServerComputationApplyPermutation: " << elapsed_ns.count() << " ns\n";
+                #if UNIT_TEST_OPENSSL
+                    bn_one = BN_new();
+                    BN_one(bn_one);
+                    // check the elements in the m_tripletBucketsCiphertextsBN
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        tripletBucketsDataBN[i] = BN_new();
+                    }
+                    this->elgamal.ParallelDecrypt(tripletBucketCiphertextsBNSgx[0], tripletBucketCiphertextsBNSgx[1], tripletBucketsDataBN);
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        assert(BN_cmp(tripletBucketsDataBN[i], bn_one) == 0 && "[Server] The triplet bucket data is not correct");
+                    }
+                    // free the memory
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        BN_free(tripletBucketsDataBN[i]);
+                    }
+                    BN_free(bn_one);
+                #endif
                 this->elgamal.ConvertVecBNCipher2VecChar(this->tripletBucketCiphertextsBNSgx[0], this->tripletBucketCiphertextsBNSgx[1], this->tripletBucketCiphertextsSerializedDataSgx);
+                #if UNIT_TEST_OPENSSL
+                    bn_one = BN_new();
+                    BN_one(bn_one);
+                    // check the elements in the this->tripletBucketCiphertextsSerializedDataSgx
+                    std::vector<std::vector<BIGNUM*>> triplet_evict_bucketCiphertextsBN(2);
+                    triplet_evict_bucketCiphertextsBN[0].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3);
+                    triplet_evict_bucketCiphertextsBN[1].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3);
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3; ++i) {
+                        triplet_evict_bucketCiphertextsBN[0][i] = BN_new();
+                        triplet_evict_bucketCiphertextsBN[1][i] = BN_new();
+                    }
+                    std::vector<BIGNUM*> triplet_evict_bucketCiphertextsDataBN(ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3);
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3; ++i) {
+                        triplet_evict_bucketCiphertextsDataBN[i] = BN_new();
+                    }
+                    this->elgamal.ConvertVecCharCipher2VecBN(this->tripletBucketCiphertextsSerializedDataSgx,
+                                                            triplet_evict_bucketCiphertextsBN);
+                    this->elgamal.ParallelDecrypt(triplet_evict_bucketCiphertextsBN[0], triplet_evict_bucketCiphertextsBN[1], triplet_evict_bucketCiphertextsDataBN);
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3; ++i) {
+                        assert(BN_cmp(triplet_evict_bucketCiphertextsDataBN[i], bn_one) == 0 && "[Server] The triplet bucket data is not correct before helper processes");
+                    }
+                    // free the memory
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3; ++i) {
+                        BN_free(triplet_evict_bucketCiphertextsDataBN[i]);
+                    }
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3; ++i) {
+                        triplet_evict_bucketCiphertextsBN[0][i] = BN_new();
+                        triplet_evict_bucketCiphertextsBN[1][i] = BN_new();
+                    }
+                    BN_free(bn_one);
+                
+                #endif
                 flag_shared_sgx_evict2[2] = 1;
                 flag_shared_sgx_evict2[3] = 1;
                 start = std::chrono::high_resolution_clock::now();
@@ -753,6 +851,39 @@ void Server::handleClient(int clientSockfd) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
+                #if UNIT_TEST_OPENSSL
+                    bn_one = BN_new();
+                    BN_one(bn_one);
+                    // check the elements in the this->tripletBucketCiphertextsSerializedDataSgx
+                    // std::vector<std::vector<BIGNUM*>> triplet_evict_bucketCiphertextsBN(2);
+                    triplet_evict_bucketCiphertextsBN[0].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3);
+                    triplet_evict_bucketCiphertextsBN[1].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3);
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3; ++i) {
+                        triplet_evict_bucketCiphertextsBN[0][i] = BN_new();
+                        triplet_evict_bucketCiphertextsBN[1][i] = BN_new();
+                    }
+                    // std::vector<BIGNUM*> triplet_evict_bucketCiphertextsDataBN(ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3);
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3; ++i) {
+                        triplet_evict_bucketCiphertextsDataBN[i] = BN_new();
+                    }
+                    this->elgamal.ConvertVecCharCipher2VecBN(this->tripletBucketCiphertextsSerializedDataSgx,
+                                                            triplet_evict_bucketCiphertextsBN);
+                    this->elgamal.ParallelDecrypt(triplet_evict_bucketCiphertextsBN[0], triplet_evict_bucketCiphertextsBN[1], triplet_evict_bucketCiphertextsDataBN);
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3; ++i) {
+                        assert(BN_cmp(triplet_evict_bucketCiphertextsDataBN[i], bn_one) == 0 && "[Server] The triplet bucket data is not correct after helper processes");
+                    }
+                    // free the memory
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3; ++i) {
+                        BN_free(triplet_evict_bucketCiphertextsDataBN[i]);
+                    }
+                    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE * 3; ++i) {
+                        triplet_evict_bucketCiphertextsBN[0][i] = BN_new();
+                        triplet_evict_bucketCiphertextsBN[1][i] = BN_new();
+                    }
+                    BN_free(bn_one);
+                
+                #endif
+                
                 // copy the data from this->tripletBucketCiphertextsSerializedDataSgx
                 // to the this->evictCipherPathsDataBNComplete
                 std::memcpy(this->evictCipherPathsDataBNComplete.data(),
@@ -761,22 +892,6 @@ void Server::handleClient(int clientSockfd) {
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
           
                 for (PathConfig::TYPE_PATH_SIZE i = 1; i < TreeConfig::HEIGHT - 1; ++i) {
-                    this->triplet_evict_bucketCiphertexts_flat.clear();
-                    for (BucketConfig::TYPE_SMALL_INDEX_U ii = 0; ii < 3; ++ii) {
-                        if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 1) {
-                            std::memcpy(this->tripletBucketCiphertextsSerializedDataSgx.data(),
-                                        this->evictCipherPathsDataBNComplete.data() + (2 * (i - 1)) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
-                                        ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                        } else if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 0) {
-                            std::memcpy(this->tripletBucketCiphertextsSerializedDataSgx.data(),
-                                        this->evictCipherPathsDataBNComplete.data() + (2 * i - 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
-                                        ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                        } else {
-                            std::memcpy(this->tripletBucketCiphertextsSerializedDataSgx.data() + (ii - 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
-                                        this->evictCipherPathsDataBNComplete.data() + (2 * i + ii - 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
-                                        ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                        }
-                    }
                 // receive the permutation from the client
                 this->communicator.receiveData(clientSockfd,
                     this->tripletBucketCiphertextsSerializedDataSgx.data(),
@@ -790,8 +905,40 @@ void Server::handleClient(int clientSockfd) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
+                for (BucketConfig::TYPE_SMALL_INDEX_U ii = 0; ii < 3; ++ii) {
+                    if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 1) {
+                        std::memcpy(this->tripletBucketCiphertextsSerializedDataSgx.data(),
+                                    this->evictCipherPathsDataBNComplete.data() + (2 * (i - 1)) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                                    ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                    } else if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 0) {
+                        std::memcpy(this->tripletBucketCiphertextsSerializedDataSgx.data(),
+                                    this->evictCipherPathsDataBNComplete.data() + (2 * i - 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                                    ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                    } else {
+                        std::memcpy(this->tripletBucketCiphertextsSerializedDataSgx.data() + ii * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                                    this->evictCipherPathsDataBNComplete.data() + (2 * i + ii - 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                                    ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                    }
+                }
                 
                 this->elgamal.ConvertVecCharCipher2VecBN(this->tripletBucketCiphertextsSerializedDataSgx, this->tripletBucketCiphertextsBNSgx);
+                #if UNIT_TEST_OPENSSL
+                    bn_one = BN_new();
+                    BN_one(bn_one);
+                    // check the elements in the m_tripletBucketsCiphertextsBN
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        tripletBucketsDataBN[i] = BN_new();
+                    }
+                    this->elgamal.ParallelDecrypt(tripletBucketCiphertextsBNSgx[0], tripletBucketCiphertextsBNSgx[1], tripletBucketsDataBN);
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        assert(BN_cmp(tripletBucketsDataBN[i], bn_one) == 0 && "[Server] The triplet bucket data is not correct after convert the ciphertext to BN");
+                    }
+                    // free the memory
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        BN_free(tripletBucketsDataBN[i]);
+                    }
+                    BN_free(bn_one);
+                #endif
                 start = std::chrono::high_resolution_clock::now();
                 this->elgamal.ParallelRerandomize(this->tripletBucketCiphertextsBNSgx[0], this->tripletBucketCiphertextsBNSgx[1]);
                 end = std::chrono::high_resolution_clock::now();
@@ -806,6 +953,23 @@ void Server::handleClient(int clientSockfd) {
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "ServerComputationApplyPermutation: " << elapsed_ns.count() << " ns\n";
+                #if UNIT_TEST_OPENSSL
+                    bn_one = BN_new();
+                    BN_one(bn_one);
+                    // check the elements in the m_tripletBucketsCiphertextsBN
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        tripletBucketsDataBN[i] = BN_new();
+                    }
+                    this->elgamal.ParallelDecrypt(tripletBucketCiphertextsBNSgx[0], tripletBucketCiphertextsBNSgx[1], tripletBucketsDataBN);
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        assert(BN_cmp(tripletBucketsDataBN[i], bn_one) == 0 && "[Server] The triplet bucket data is not correct inside the for loop");
+                    }
+                    // free the memory
+                    for (size_t i = 0; i < 3 * ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++i) {
+                        BN_free(tripletBucketsDataBN[i]);
+                    }
+                    BN_free(bn_one);
+                #endif
                 this->elgamal.ConvertVecBNCipher2VecChar(this->tripletBucketCiphertextsBNSgx[0], this->tripletBucketCiphertextsBNSgx[1], this->tripletBucketCiphertextsSerializedDataSgx);
                 flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 2] = 1;
                 flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 3] = 1;
@@ -827,16 +991,16 @@ void Server::handleClient(int clientSockfd) {
                     // Deserialize the triplet_evict_bucketCiphertextsSerializedData into this->path_evict_bucketCiphertexts_complete
                     for (BucketConfig::TYPE_SMALL_INDEX_U ii = 0; ii < 3; ++ii) {
                         if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 1) {
-                            std::memcpy(this->evictCipherPathsDataBNComplete.data() + (2 * (i - 1)) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                            std::memcpy(this->evictCipherPathsDataBNComplete.data() + (2 * (i - 1)) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
                                         this->tripletBucketCiphertextsSerializedDataSgx.data(),
                                         ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                         } else if (ii == 0 && this->evictPathBucketIDsComplete[i] % 2 == 0) {
-                            std::memcpy(this->evictCipherPathsDataBNComplete.data() + (2 * i - 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                            std::memcpy(this->evictCipherPathsDataBNComplete.data() + (2 * i - 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
                                         this->tripletBucketCiphertextsSerializedDataSgx.data(),
                                         ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                         } else {
-                            std::memcpy(this->evictCipherPathsDataBNComplete.data() + (2 * i + ii - 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
-                                        this->tripletBucketCiphertextsSerializedDataSgx.data() + (ii - 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                            std::memcpy(this->evictCipherPathsDataBNComplete.data() + (2 * i + ii - 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS + ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                                        this->tripletBucketCiphertextsSerializedDataSgx.data() + (ii) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
                                         ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                             
                         }

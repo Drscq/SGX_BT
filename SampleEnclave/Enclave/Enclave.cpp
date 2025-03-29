@@ -308,7 +308,16 @@ std::vector<std::vector<BIGNUM*>> BucketCiphertexts(2, std::vector<BIGNUM*>(BNCo
 // The enclave functions for the second scheme
 void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
     std::vector<TYPE_SLOT_ID_SGX> perm1EarlyReshuffleComplete_sgx(BUCKET_SIZE_SGX, 1);
-    std::vector<std::vector<BIGNUM*>> BucketCiphertexts(2, std::vector<BIGNUM*>(BNConfig::BUCKET_CHUNK_SIZE_SGX, BN_new()));
+    // std::vector<std::vector<BIGNUM*>> BucketCiphertexts(2, std::vector<BIGNUM*>(BNConfig::BUCKET_CHUNK_SIZE_SGX, BN_new()));
+    std::vector<std::vector<BIGNUM*>> BucketCiphertexts(2);
+    BucketCiphertexts.resize(2);
+    BucketCiphertexts[0].resize(BNConfig::BUCKET_CHUNK_SIZE_SGX);
+    BucketCiphertexts[1].resize(BNConfig::BUCKET_CHUNK_SIZE_SGX);
+    for (size_t i = 0; i < 2; ++i) {
+        for (size_t j = 0; j < BNConfig::BUCKET_CHUNK_SIZE_SGX; ++j) {
+            BucketCiphertexts[i][j] = BN_new();
+        }
+    }
     BNConfig::InitMGHC();
     flags[0] = 1;
     while (flags[1] == 0) {
@@ -351,7 +360,15 @@ void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
 
 void ecall_evict_2(char* buffer, uint8_t* flags) {
     std::vector<TYPE_SLOT_ID_SGX> perm1TripletBucketsEviction2(BUCKET_SIZE_SGX * 3, 1);
-    std::vector<std::vector<BIGNUM*>> perm1TripletCiphertextsEviction2(2, std::vector<BIGNUM*>(BNConfig::BUCKET_CHUNK_SIZE_SGX * 3, BN_new()));
+    std::vector<std::vector<BIGNUM*>> perm1TripletCiphertextsEviction2;
+    perm1TripletCiphertextsEviction2.resize(2);
+    perm1TripletCiphertextsEviction2[0].resize(BNConfig::BUCKET_CHUNK_SIZE_SGX * 3);
+    perm1TripletCiphertextsEviction2[1].resize(BNConfig::BUCKET_CHUNK_SIZE_SGX * 3);
+    for (size_t i = 0; i < 2; ++i) {
+        for (size_t j = 0; j < BNConfig::BUCKET_CHUNK_SIZE_SGX * 3; ++j) {
+            perm1TripletCiphertextsEviction2[i][j] = BN_new();
+        }
+    }
     BNConfig::InitMGHC();
     while (!flags[0]) {
         // Wait for the buffer to be ready
@@ -367,6 +384,17 @@ void ecall_evict_2(char* buffer, uint8_t* flags) {
         __asm__ __volatile__("pause");
     }
     BNConfig::ConvertVecCharCipher2VecBN(buffer, perm1TripletCiphertextsEviction2);
+    #if UNIT_TEST_OPENSSL
+        BIGNUM* bn_one = BN_new();
+        BN_set_word(bn_one, 1);
+        std::vector<BIGNUM*> tripletBucketsDataBN(BNConfig::BUCKET_CHUNK_SIZE_SGX * 3, BN_new());
+        BNConfig::ParallelDecrypt(perm1TripletCiphertextsEviction2[0], perm1TripletCiphertextsEviction2[1], tripletBucketsDataBN);
+        for (size_t i = 0; i < tripletBucketsDataBN.size(); ++i) {
+            if (BN_cmp(tripletBucketsDataBN[i], bn_one) != 0) {
+                printf("The value of tripletBucketsDataBN[%d] is not equal to 1\n", i);
+            }
+        }
+    #endif
     while (!flags[3]) {
         __asm__ __volatile__("pause");
     }

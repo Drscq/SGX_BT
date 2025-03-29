@@ -9,6 +9,7 @@
 #define MODULUS_SGX_STR "127584585272019464248550689001494335089005706365070593228774866021859296684878671063534087601345701705074143342155398610282864933991154081845709883272032834902599526248307926892808776816768645411849000298403789217318224840138553553706229104932113309533452119580791708821809060741851733422802747352257459692961"
 #define G_POW_K_SGX_STR "40083997855862118923937149344645589792674528038057978735481375139222151232361106251704467686182942665522560614084897132392533394398852097840465776782001027075746728893709508786343499198273674380907212414800497498145397548260423112481243950738720675694427946192983487310949830082117540629404300848853885591847"
 #define H_POW_K_SGX_STR "29618508524561166517497136886316688555076983847870737959949097739501240636104977753252594986224341925077749351500447866214294446970585478997054852466103612436615858995071186029084625705788845743453097498903225997726460262018803024684635745186667474696683522206632417563612057972685348857762605895901004828228"
+#define X_STR "482799682945489710324915308594656721837549104706481546815960313315968546587473138105505672417597287418151889032693215803732661915256252364292438852312505745941248448648212718844897260941397054789545253695961462139914464984331999185806358791857634150244873041344597091874398496549135753301137525998831856724"
 #include <openssl/bn.h>
 #include <pthread.h>  // or <pthread.h> if aliased by the SGX environment
 typedef long long TYPE_BLOCK_ID_SGX;
@@ -42,9 +43,10 @@ namespace BNConfig {
     inline void ApplyPermutation(std::vector<std::vector<BIGNUM*>>& bucketCiphertextsBN, int numChunks, int numBlocks, std::vector<TYPE_SLOT_ID_SGX>& perm) {
         std::vector<BIGNUM*> newCiphertexts0(numChunks);
         std::vector<BIGNUM*> newCiphertexts1(numChunks);
+        int oldStart, newStart;
         for (int i = 0; i < numBlocks; ++i) {
-            int oldStart = i * BLOCK_CHUNK_SIZE_SGX;
-            int newStart = perm[i] * BLOCK_CHUNK_SIZE_SGX;
+            oldStart = i * BLOCK_CHUNK_SIZE_SGX;
+            newStart = perm[i] * BLOCK_CHUNK_SIZE_SGX;
             for (int j = 0; j < BLOCK_CHUNK_SIZE_SGX; ++j) {
                 newCiphertexts0[newStart + j] = bucketCiphertextsBN[0][oldStart + j];
                 newCiphertexts1[newStart + j] = bucketCiphertextsBN[1][oldStart + j];
@@ -74,34 +76,32 @@ namespace BNConfig {
     }
     inline void ConvertVecCharCipher2VecBN(const char* data, std::vector<std::vector<BIGNUM*>>& ciphertexts) {
         auto it = data;
-        for (int ii = 0; ii < ciphertexts[0].size(); ++ii) {
-            BN_bin2bn(reinterpret_cast<const unsigned char*>(&(*it)), PER_CIPHERTEXT_SIZE_SGX, ciphertexts[0][ii]);
-            if (ii != ciphertexts[0].size() - 1) {
-                it += PER_CIPHERTEXT_SIZE_SGX;
-            }
-            BN_bin2bn(reinterpret_cast<const unsigned char*>(&(*it)), PER_CIPHERTEXT_SIZE_SGX, ciphertexts[1][ii]);
-            if (ii != ciphertexts[0].size() - 1) {
-                it += PER_CIPHERTEXT_SIZE_SGX;
-            }
-        }
-    }
-    inline void ConvertVecBNCipher2VecChar(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2, char* data){
-        auto it = data;
-        for (int i = 0; i < c1.size(); ++i) {
-            BN_bn2binpad(c1[i], reinterpret_cast<unsigned char*>(&(*it)), PER_CIPHERTEXT_SIZE_SGX);
-            if (i != c1.size() - 1) {
-                it += PER_CIPHERTEXT_SIZE_SGX;
-            }
-            BN_bn2binpad(c2[i], reinterpret_cast<unsigned char*>(&(*it)), PER_CIPHERTEXT_SIZE_SGX);
-            if (i != c1.size() - 1) {
+        for (size_t ii = 0, size = ciphertexts[0].size(); ii < size; ++ii) {
+            BN_bin2bn(reinterpret_cast<const unsigned char*>(it), PER_CIPHERTEXT_SIZE_SGX, ciphertexts[0][ii]);
+            it += PER_CIPHERTEXT_SIZE_SGX;
+            BN_bin2bn(reinterpret_cast<const unsigned char*>(it), PER_CIPHERTEXT_SIZE_SGX, ciphertexts[1][ii]);
+            if (ii != size - 1) {
                 it += PER_CIPHERTEXT_SIZE_SGX;
             }
         }
     }
+    inline void ConvertVecBNCipher2VecChar(const std::vector<BIGNUM*>& c1, const std::vector<BIGNUM*>& c2, char* data) {
+        auto it = reinterpret_cast<unsigned char*>(data);
+        for (size_t i = 0, size = c1.size(); i < size; ++i) {
+            BN_bn2binpad(c1[i], it, PER_CIPHERTEXT_SIZE_SGX);
+            it += PER_CIPHERTEXT_SIZE_SGX;
+            BN_bn2binpad(c2[i], it, PER_CIPHERTEXT_SIZE_SGX);
+            if (i != size - 1) {
+                it += PER_CIPHERTEXT_SIZE_SGX;
+            }
+        }
+    }
+    
     inline const int num_threads = 4;
     inline BIGNUM* MODULUS_SGX_BN = nullptr;
     inline BIGNUM* G_POW_K_SGX_BN = nullptr;
     inline BIGNUM* H_POW_K_SGX_BN = nullptr;
+    inline BIGNUM* X_SGX_BN = nullptr;
     inline BN_CTX* CTX_SGX = nullptr;
     inline std::vector<BN_CTX*> m_ctx_vec_sgx(4);
     inline pthread_t threads[num_threads];
@@ -112,6 +112,8 @@ namespace BNConfig {
         BN_dec2bn(&G_POW_K_SGX_BN, G_POW_K_SGX_STR);
         H_POW_K_SGX_BN = BN_new();
         BN_dec2bn(&H_POW_K_SGX_BN, H_POW_K_SGX_STR);
+        X_SGX_BN = BN_new();
+        BN_dec2bn(&X_SGX_BN, X_STR);
         CTX_SGX = BN_CTX_new();
         for (int i = 0; i < 4; ++i) {
             m_ctx_vec_sgx[i] = BN_CTX_new();
@@ -121,6 +123,7 @@ namespace BNConfig {
         BN_free(MODULUS_SGX_BN);
         BN_free(G_POW_K_SGX_BN);
         BN_free(H_POW_K_SGX_BN);
+        BN_free(X_SGX_BN);
         BN_CTX_free(CTX_SGX);
         for (int i = 0; i < 4; ++i) {
             BN_CTX_free(m_ctx_vec_sgx[i]);
@@ -129,6 +132,16 @@ namespace BNConfig {
     inline void ReRandomizeChunk(BIGNUM* c1, BIGNUM* c2) {
         BN_mod_mul(c1, c1, G_POW_K_SGX_BN, MODULUS_SGX_BN, CTX_SGX);
         BN_mod_mul(c2, c2, H_POW_K_SGX_BN, MODULUS_SGX_BN, CTX_SGX);
+    }
+    inline void ParallelDecrypt(const std::vector<BIGNUM*>& c1, const std::vector<BIGNUM*>& c2, std::vector<BIGNUM*>& data) {
+        assert(c1.size() == c2.size() && c1.size() == data.size());
+        BIGNUM* m_g_pow_k_x_inv_bn_sgx = BN_new();
+        for (int i = 0; i < c1.size(); ++i) {
+            BN_mod_exp(m_g_pow_k_x_inv_bn_sgx, c1[i], X_SGX_BN, MODULUS_SGX_BN, CTX_SGX);
+            BN_mod_inverse(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_x_inv_bn_sgx, MODULUS_SGX_BN, CTX_SGX);
+            BN_mod_mul(data[i], c2[i], m_g_pow_k_x_inv_bn_sgx, MODULUS_SGX_BN, CTX_SGX);
+        }
+        BN_free(m_g_pow_k_x_inv_bn_sgx);
     }
     inline int threadChunkSizeBN,currentIdxBN, actualThreads, startIdxBN, endIdxBN;
     inline std::vector<ThreadBNData> thread_bn_data(num_threads);

@@ -87,7 +87,7 @@ void InitializeElGamalParams() {
     // Generate private key X and convert to X_p
     ElGamalNTLConfig::X = RandomLen_ZZ(ElGamalNTLConfig::RANDOM_SIZE);
     ElGamalNTLConfig::X_p = conv<ZZ_p>(ElGamalNTLConfig::X);
-//     std::cout << "X_p: " << ElGamalNTLConfig::X_p << std::endl;
+    // std::cout << "X_p: " << ElGamalNTLConfig::X_p << std::endl;
     
     // Calculate public key Y and convert to Y_p
     ElGamalNTLConfig::Y = PowerMod(ElGamalNTLConfig::G, ElGamalNTLConfig::X, ElGamalNTLConfig::P);
