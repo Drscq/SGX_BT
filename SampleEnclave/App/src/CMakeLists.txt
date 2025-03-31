@@ -144,3 +144,29 @@ set_property(TARGET test_generate_evict_path PROPERTY CXX_STANDARD 17)
 set_target_properties(test_generate_evict_path PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY ${TEST_OUTPUT_DIR}
 )
+
+add_executable(test_path
+    Test/test_path.cpp
+    ElGamal_parallel_ntl.cpp
+    ElGamal_parallel_ntl.h
+    config.h
+    DurationLogger.cpp
+    DurationLogger.h
+    Path.cpp
+    Path.h
+    Bucket.cpp
+    Bucket.h
+    Block.cpp
+    Block.h
+)
+target_link_libraries(test_path
+    OpenSSL::Crypto
+    ${LOCAL_PREFIX}/lib/libntl.a
+    ${LOCAL_PREFIX}/lib/libgmp.a
+    pthread
+)
+set_property(TARGET test_path PROPERTY CXX_STANDARD 17)
+# Set the output directory for the test executable
+set_target_properties(test_path PROPERTIES
+    RUNTIME_OUTPUT_DIRECTORY ${TEST_OUTPUT_DIR}
+)
