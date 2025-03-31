@@ -122,13 +122,6 @@ void Client::EnsureConnection() {
     if (!this->communicator.isConnected()) {
         this->InitConnection();
     }
-    #if !LOG_READ_PATH_TOTAL_DELAY
-        if (!this->communicator2ThirdParty.isConnected()) {
-            // this->communicator2ThirdParty.connectToServer(ThirdPartyConfig::HOST,
-                                                            // ThirdPartyConfig::PORT_THIRD_PARTY);
-            this->communicator2ThirdParty.connectToServer(this->host, ThirdPartyConfig::PORT_THIRD_PARTY);
-        }
-    #endif
 }
 
 void Client::InitReadPath(PathConfig::TYPE_PATH_ID path_id) {
