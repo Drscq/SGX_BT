@@ -100,6 +100,24 @@ Client::Client(ClientConfig::TYPE_HOST host,
         // triplet_evict_perm_size
         this->tripletPermIntermediateCompleteBothSize = 2 * this->evictPermSize;
         this->tripletPermIntermediateCompleteBoth.resize(this->tripletPermIntermediateCompleteBothSize);
+
+        this->opensslTargetBlockCiphertextsBN.resize(2);
+        this->opensslTargetBlockCiphertextsBN[0].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+        this->opensslTargetBlockCiphertextsBN[1].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+        this->opensslTargetBlockDataBN.resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+        for (size_t i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+            this->opensslTargetBlockCiphertextsBN[0][i] = BN_new();
+            this->opensslTargetBlockCiphertextsBN[1][i] = BN_new();
+            this->opensslTargetBlockDataBN[i] = BN_new();
+        }
+        this->opensslRootBucketCiphertextsBN.resize(2);
+        this->opensslRootBucketCiphertextsBN[0].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+        this->opensslRootBucketCiphertextsBN[1].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+        for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
+            this->opensslRootBucketCiphertextsBN[0][i] = BN_new();
+            this->opensslRootBucketCiphertextsBN[1][i] = BN_new();
+        }
+        
 }
 Client::~Client() {
     for (int i = 0; i < this->bucketCiphertextsBNSgxSize; i++) {
@@ -110,6 +128,30 @@ Client::~Client() {
         if (this->bucketCiphertextsBNSgx[1][i] != nullptr) {
             BN_free(this->bucketCiphertextsBNSgx[1][i]);
             this->bucketCiphertextsBNSgx[1][i] = nullptr;
+        }
+    }
+    for (size_t i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        if (this->opensslTargetBlockCiphertextsBN[0][i] != nullptr) {
+            BN_free(this->opensslTargetBlockCiphertextsBN[0][i]);
+            this->opensslTargetBlockCiphertextsBN[0][i] = nullptr;
+        }
+        if (this->opensslTargetBlockCiphertextsBN[1][i] != nullptr) {
+            BN_free(this->opensslTargetBlockCiphertextsBN[1][i]);
+            this->opensslTargetBlockCiphertextsBN[1][i] = nullptr;
+        }
+        if (this->opensslTargetBlockDataBN[i] != nullptr) {
+            BN_free(this->opensslTargetBlockDataBN[i]);
+            this->opensslTargetBlockDataBN[i] = nullptr;
+        }
+    }
+    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
+        if (this->opensslRootBucketCiphertextsBN[0][i] != nullptr) {
+            BN_free(this->opensslRootBucketCiphertextsBN[0][i]);
+            this->opensslRootBucketCiphertextsBN[0][i] = nullptr;
+        }
+        if (this->opensslRootBucketCiphertextsBN[1][i] != nullptr) {
+            BN_free(this->opensslRootBucketCiphertextsBN[1][i]);
+            this->opensslRootBucketCiphertextsBN[1][i] = nullptr;
         }
     }
 }
@@ -346,9 +388,6 @@ void Client::ReadPathComplete(BlockConfig::TYPE_BLOCK_ID block_id) {
     for (const auto& bucketID : this->bucketIDOffsets) {
         this->treeMetaDatas[bucketID].LogAccess();
         if (this->treeMetaDatas[bucketID].ContainsBlockID(block_id)) {
-            // std::cout << "The meta data of the bucket " << bucketID << " before the read operation: " << std::endl;
-            // this->treeMetaDatas[bucketID].print();
-            // std::cout << std::endl;
             #if USE_ASSERT
             bool flag = false;
             #endif
@@ -357,10 +396,9 @@ void Client::ReadPathComplete(BlockConfig::TYPE_BLOCK_ID block_id) {
                     #if USE_COUT
                     std::cout << "Block ID: " << block_id << " is found in the bucket " << bucketID << std::endl;
                     #endif
-                    // std::cout << "The offset is: " << this->treeMetaDatas[bucketID].offsets[j] << std::endl;
                     this->offsets[this->counter] = this->treeMetaDatas[bucketID].offsets[j];
                     this->treeMetaDatas[bucketID].valids[this->treeMetaDatas[bucketID].offsets[j]] = false;
-                    this->treeMetaDatas[bucketID].leaves[j] = this->PositionMap[block_id];
+                    // this->treeMetaDatas[bucketID].leaves[j] = this->PositionMap[block_id];
                     this->treeMetaDatas[bucketID].addrs[j] = -1;
                     this->treeMetaDatas[bucketID].leaves[j] = -1;
                     #if USE_ASSERT
@@ -375,12 +413,7 @@ void Client::ReadPathComplete(BlockConfig::TYPE_BLOCK_ID block_id) {
             }
             #endif
             this->treeMetaDatas[bucketID].DeleteBlockID(block_id);
-            this->treeMetaDatas[bucketID].OrganizeRealBlocksIDs();
-            // std::cout << "The bucket ID: " << bucketID << " with the nextRealIndex: " << this->treeMetaDatas[bucketID].nextRealIndex << std::endl;
-            // std::cout << "The meta data of the bucket " << bucketID << " after the read operation: " << std::endl;
-            // this->treeMetaDatas[bucketID].print();
-            // std::cout << std::endl;
-            
+            this->treeMetaDatas[bucketID].OrganizeRealBlocksIDs(); 
         } else {
             if (this->treeMetaDatas[bucketID].valids[this->treeMetaDatas[bucketID].offsets[this->treeMetaDatas[bucketID].nextDummyIndex - 1]]) {
                 this->offsets[this->counter] = this->treeMetaDatas[bucketID].offsets[this->treeMetaDatas[bucketID].nextDummyIndex - 1];
@@ -416,35 +449,55 @@ void Client::ReadPathComplete(BlockConfig::TYPE_BLOCK_ID block_id) {
     // this->elgamal.DeserializeCiphertexts(this->targetBlockCiphertextsSerializedData, this->targetBlockCiphertexts);
     // this->elgamal.ParallelDecrypt(this->targetBlockCiphertexts, this->targetBlockData);
     if (this->blockDataStash.find(block_id) == this->blockDataStash.end()) {
-        #if LOG_BREAKDOWN_COST_READ_PATH_FURTHER
-        logger.startTiming(LogReadPathDeserialize);
-        #endif
-        this->elgamal.DeserializeCiphertexts(this->targetBlockCiphertextsSerializedData, this->targetBlockCiphertexts);
-        #if LOG_BREAKDOWN_COST_READ_PATH_FURTHER
-        logger.stopTiming(LogReadPathDeserialize);
-        logger.writeToFile();
-        logger.startTiming(LogReadPathDecrypt);
-        #endif
-         #if LOG_BREAKDOWN_COST
+        this->elgamal.ConvertVecCharCipher2VecBN(
+            this->targetBlockCiphertextsSerializedData,
+            this->opensslTargetBlockCiphertextsBN
+        );
+        #if LOG_BREAKDOWN_COST
         this->logger.startTiming(this->LogReadPathDecryptTargetBlockScheme2);
         #endif
-        this->elgamal.ParallelDecrypt(this->targetBlockCiphertexts, this->targetBlockData);
+        this->elgamal.ParallelDecrypt(this->opensslTargetBlockCiphertextsBN[0], 
+            this->opensslTargetBlockCiphertextsBN[1],
+            this->opensslTargetBlockDataBN
+        );
         #if LOG_BREAKDOWN_COST
         this->logger.stopTiming(this->LogReadPathDecryptTargetBlockScheme2);
         this->logger.writeToFile();
         #endif 
-        #if LOG_BREAKDOWN_COST_READ_PATH_FURTHER
-        logger.stopTiming(LogReadPathDecrypt);
-        logger.writeToFile();
+        #if UNIT_TEST_OPENSSL_FINAL_CHECK
+            BIGNUM* targetBlockIDBN = BN_new();
+            BN_set_word(targetBlockIDBN, block_id);
+            for (size_t i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+                assert(
+                    BN_cmp(this->opensslTargetBlockDataBN[i], targetBlockIDBN) == 0 && 
+                    "The block ID is not correct!"
+                );
+                std::cout << "The block ID: " << BN_get_word(this->opensslTargetBlockDataBN[i]) << std::endl;
+            }
+            BN_free(targetBlockIDBN);
         #endif
-        #if USE_PRINT_TARGET_BLOCK
-            BlockConfig::TYPE_BLOCK_ID blockID;
-            std::memcpy(&blockID, this->targetBlockData.data(), sizeof(BlockConfig::TYPE_BLOCK_ID));
-            std::cout << "Block ID: " << blockID << std::endl;
-            assert(blockID == block_id && "The block ID is not correct!");
-        #endif 
-        this->blockDataStash[block_id].first = std::move(this->targetBlockCiphertexts);
-        this->blockDataStash[block_id].second = std::move(this->targetBlockData);
+        
+        
+        this->elgamal.ConvertVecBN2VecChar(
+            this->opensslTargetBlockDataBN,
+            this->targetBlockData,
+            ElGamalNTLConfig::CHUNK_SIZE
+        );
+
+        this->blockDataStash[block_id].second = this->targetBlockData;
+        this->blockDataStash[block_id].first.resize(2);
+        this->blockDataStash[block_id].first[0].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+        this->blockDataStash[block_id].first[1].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+        for (size_t i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+            this->blockDataStash[block_id].first[0][i] = BN_new();
+            this->blockDataStash[block_id].first[1][i] = BN_new();
+        }
+        // this->blockDataStash[block_id].first = std::move(this->opensslTargetBlockCiphertextsBN);
+        for (size_t i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+            BN_copy(this->blockDataStash[block_id].first[0][i], this->opensslTargetBlockCiphertextsBN[0][i]);
+            BN_copy(this->blockDataStash[block_id].first[1][i], this->opensslTargetBlockCiphertextsBN[1][i]);
+        }
+        
     } else {
         #if USE_PRINT_TARGET_BLOCK
             std::cout << "The block ID: " << block_id << " is already in the stash!" << std::endl;
@@ -502,8 +555,12 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
         if (this->treeMetaDatas[rootBucketIDComplete].nextRealIndex < BucketConfig::BUCKET_REAL_BLOCK_CAPACITY) {
             this->treeMetaDatas[rootBucketIDComplete].AddRealBlock(block.first, this->PositionMap[block.first]);
             this->blockIDsDeletedFromStash.emplace_back(block.first);
-            this->rootBucketCiphertextsEvictComplete[this->treeMetaDatas[rootBucketIDComplete].offsets[
-                this->treeMetaDatas[rootBucketIDComplete].nextRealIndex - 1]] = std::move(block.second.first);
+            for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; ++i) {
+                int base_index = this->treeMetaDatas[rootBucketIDComplete].offsets[
+                    this->treeMetaDatas[rootBucketIDComplete].nextRealIndex - 1] * ElGamalNTLConfig::BLOCK_CHUNK_SIZE;
+                BN_copy(this->opensslRootBucketCiphertextsBN[0][base_index + i], block.second.first[0][i]);
+                BN_copy(this->opensslRootBucketCiphertextsBN[1][base_index + i], block.second.first[1][i]);
+            }
         }
     }
     this->treeMetaDatas[rootBucketIDComplete].SimpleReset();

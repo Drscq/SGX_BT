@@ -132,7 +132,7 @@ public:
     std::vector<BucketConfig::TYPE_SLOT_ID> perm1Complete, perm2Complete;
       // Variables for the readPath
     // std::vector<bool> isInStash;
-    std::unordered_map<BlockConfig::TYPE_BLOCK_ID, std::pair<std::vector<std::pair<ZZ_p, ZZ_p>>, std::vector<char>>> blockDataStash;
+    std::unordered_map<BlockConfig::TYPE_BLOCK_ID, std::pair<std::vector<std::vector<BIGNUM*>>, std::vector<char>>> blockDataStash;
 
     // Variables for the eviction complete
     std::vector<char> rootBucketDataEvictComplete;
@@ -181,5 +181,8 @@ public:
     // Open SSL variables
     std::vector<std::vector<BIGNUM*>> bucketCiphertextsBNSgx;
     int bucketCiphertextsBNSgxSize;
+    std::vector<std::vector<BIGNUM*>> opensslTargetBlockCiphertextsBN;
+    std::vector<BIGNUM*> opensslTargetBlockDataBN;
+    std::vector<std::vector<BIGNUM*>> opensslRootBucketCiphertextsBN;
 };
 #endif // CLIENT_H

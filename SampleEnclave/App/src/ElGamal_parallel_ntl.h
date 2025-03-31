@@ -61,6 +61,7 @@ public:
     void ParallelEncrypt(const std::vector<BIGNUM*>& data, std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2);
     void ParallelEncrypt(const std::vector<char>& data, std::vector<std::vector<BIGNUM*>>& ciphertexts);
     void ConvertVecBNCipher2VecChar(std::vector<BIGNUM*>& c1, std::vector<BIGNUM*>& c2, std::vector<char>& data);
+    void ConvertVecBN2VecChar(const std::vector<BIGNUM*>& data_bn, std::vector<char>& data, int chunk_size);
     // Function to decrypt data in parallel
     void ParallelDecrypt(const std::vector<std::pair<ZZ, ZZ>>& ciphertexts, std::vector<char>& data);
     void ParallelDecrypt(const std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts, std::vector<char>& data);

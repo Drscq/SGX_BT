@@ -24,6 +24,7 @@ using namespace NTL;
 #include <pthread.h> // For setting CPU affinity 
 
 // Macros
+#define UNIT_TEST_OPENSSL_FINAL_CHECK 1
 #define USE_PERM_TO_GEN_INTERMEDIATE_PERM 0
 #define USE_ASSERT 0
 #define USE_COUT 0

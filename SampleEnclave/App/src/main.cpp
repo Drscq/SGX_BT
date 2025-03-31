@@ -75,8 +75,8 @@ int main(int argc, char* argv[]) {
                 std::cout << "Iteration " << ii << "for warm up" << std::endl;
                 Client client(ClientConfig::HOST, ClientConfig::PORT);
                 client.InitReadPath(ClientConfig::PATH_ID);
-                // client.ReadPath(ClientConfig::TARGET_BLOCK_ID, ClientConfig::PATH_ID);
-                // client.blockDataStash.erase(0);
+                client.ReadPath(ClientConfig::TARGET_BLOCK_ID, ClientConfig::PATH_ID);
+                client.blockDataStash.erase(0);
           }
           for (int i = 0; i < 0; i++) {
                 #if LOG_READ_PATH_TOTAL_DELAY

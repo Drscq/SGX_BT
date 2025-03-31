@@ -590,7 +590,19 @@ void ElGamal_parallel_ntl::ConvertVecBNCipher2VecChar(std::vector<BIGNUM*>& c1, 
         }
     }
 }
-
+// Convert vector of BIGNUMs to vector of chars
+void ElGamal_parallel_ntl::ConvertVecBN2VecChar(const std::vector<BIGNUM*>& data_bn, std::vector<char>& data, int chunk_size) {
+    auto it = reinterpret_cast<unsigned char*>(data.data());
+    for (int i = 0; i < data_bn.size(); ++i) {
+        if ((i + 1) % ElGamalNTLConfig::BLOCK_CHUNK_SIZE == 0 && i != 0) {
+            BN_bn2binpad(data_bn[i], it, BlockConfig::BLOCK_SIZE - (ElGamalNTLConfig::BLOCK_CHUNK_SIZE - 1) * chunk_size);
+            it += (BlockConfig::BLOCK_SIZE - (ElGamalNTLConfig::BLOCK_CHUNK_SIZE - 1) * chunk_size);
+        } else {
+            BN_bn2binpad(data_bn[i], it, chunk_size);
+            it += chunk_size;
+        }
+    }
+}
 void ElGamal_parallel_ntl::ConvertVecCharCipher2VecBN(const std::vector<char>& data, std::vector<std::vector<BIGNUM*>>& ciphertexts) {
     auto it = data.begin();
     for (int ii = 0; ii < ciphertexts[0].size(); ++ii) {
