@@ -769,6 +769,58 @@ namespace BucketConfig {
             nextDummyIndex = 0;
             block_ids.clear();
         }
+        META_DATA& operator=(const META_DATA &other) {
+            if (this != &other) {
+                count = other.count;
+                for (size_t i = 0; i < BUCKET_SIZE; i++) {
+                    valids[i] = other.valids[i];
+                }
+                block_ids = other.block_ids;
+                for (size_t i = 0; i < BUCKET_REAL_BLOCK_CAPACITY; i++) {
+                    addrs[i] = other.addrs[i];
+                    leaves[i] = other.leaves[i];
+                }
+                for (size_t i = 0; i < BUCKET_SIZE; i++) {
+                    offsets[i] = other.offsets[i];
+                    offsetsGuidence[i] = other.offsetsGuidence[i];
+                    offsetsInv[i] = other.offsetsInv[i];
+                }
+                nextDummyIndex = other.nextDummyIndex;
+                nextRealIndex = other.nextRealIndex;
+                block_ids_size = other.block_ids_size;
+                id_serialized = other.id_serialized;
+            }
+            return *this;
+        }
+        META_DATA& operator=(META_DATA&& other) noexcept {
+            if (this != &other) {
+                count = other.count;
+                for (size_t i = 0; i < BUCKET_SIZE; i++) {
+                    valids[i] = other.valids[i];
+                }
+                block_ids = std::move(other.block_ids);
+                for (size_t i = 0; i < BUCKET_REAL_BLOCK_CAPACITY; i++) {
+                    addrs[i] = other.addrs[i];
+                    leaves[i] = other.leaves[i];
+                }
+                for (size_t i = 0; i < BUCKET_SIZE; i++) {
+                    offsets[i] = other.offsets[i];
+                    offsetsGuidence[i] = other.offsetsGuidence[i];
+                    offsetsInv[i] = other.offsetsInv[i];
+                }
+                nextDummyIndex = other.nextDummyIndex;
+                nextRealIndex = other.nextRealIndex;
+                block_ids_size = other.block_ids_size;
+                id_serialized = other.id_serialized;
+            }
+            return *this;
+        }
+        META_DATA(const META_DATA &other) {
+            *this = other;
+        }
+        META_DATA(META_DATA &&other) noexcept {
+            *this = std::move(other);
+        }
     };
     inline void GenIntermediatePerm(std::vector<TYPE_SLOT_ID>& permCur,
                                     std::vector<TYPE_SLOT_ID>& permTarget,
