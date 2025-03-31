@@ -102,8 +102,6 @@ Client::Client(ClientConfig::TYPE_HOST host,
         this->tripletPermIntermediateCompleteBoth.resize(this->tripletPermIntermediateCompleteBothSize);
 }
 Client::~Client() {
-    this->communicator.~SocketCommunicator();
-    this->communicator2ThirdParty.~SocketCommunicator();
     for (int i = 0; i < this->bucketCiphertextsBNSgxSize; i++) {
         if (this->bucketCiphertextsBNSgx[0][i] != nullptr) {
             BN_free(this->bucketCiphertextsBNSgx[0][i]);
@@ -118,11 +116,6 @@ Client::~Client() {
 void Client::InitConnection() {
     this->communicator.connectToServer(this->host, this->port);
     std::cout << "Connected to the server at " << this->host << ":" << this->port << std::endl;
-    // this->communicator2ThirdParty.connectToServer(ThirdPartyConfig::HOST, ThirdPartyConfig::PORT_THIRD_PARTY);
-    #if !LOG_READ_PATH_TOTAL_DELAY
-    this->communicator2ThirdParty.connectToServer(this->host, ThirdPartyConfig::PORT_THIRD_PARTY);
-    std::cout << "Connected to the third party server at " << this->host << ":" << ThirdPartyConfig::PORT_THIRD_PARTY << std::endl;
-    #endif
 }
 
 void Client::EnsureConnection() {
