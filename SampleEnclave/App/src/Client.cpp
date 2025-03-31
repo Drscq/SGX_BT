@@ -149,10 +149,13 @@ void Client::InitReadPath(PathConfig::TYPE_PATH_ID path_id) {
     path.GenPath(PathConfig::REAL_BLOCK_NUM, this->mds, true);
     #endif
     // this->tree.GenTree(this->treeMetaDatas, true);
-    this->tree.GenPathMDs(this->treeMetaDatas, path_id);
+    // this->tree.GenPathMDs(this->treeMetaDatas, path_id);
+    Path path(path_id, PathConfig::HEIGHT);
+    path.GenPathMetaDatas(this->treeMetaDatas);
     for (size_t i = 0; i < TreeConfig::REAL_BLOCK_NUM; i++) {
         this->PositionMap[i] = i % TreeConfig::TOTAL_NUM_LEAF_BUCKETS;
     }
+    this->PositionMap[ClientConfig::TARGET_BLOCK_ID] = path_id;
     this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
 }
 

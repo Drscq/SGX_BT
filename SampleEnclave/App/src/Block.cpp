@@ -13,10 +13,11 @@ void Block::GenData(const BlockConfig::TYPE_BLOCK_SIZE data_size, const bool is_
             data = ElGamalConfig::generate_one_data(data_size);
         #endif
     } else {
-        // Generate random data
-        data = ElGamalConfig::generate_binary_data(data_size);
-        // memcpy the id to the data
-        std::memcpy(data.data(), &id, sizeof(id));
-        // std::cout << "Block ID: " << id << std::endl;
+        // // Generate random data
+        // data = ElGamalConfig::generate_binary_data(data_size);
+        // // memcpy the id to the data
+        // std::memcpy(data.data(), &id, sizeof(id));
+        // // std::cout << "Block ID: " << id << std::endl;
+        data = ElGamalConfig::generate_binary_data(data_size, id);
     }
 }

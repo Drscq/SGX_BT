@@ -207,7 +207,7 @@ namespace ClientConfig {
     inline TYPE_HOST HOST = "198.82.162.120";
     inline TYPE_PORT PORT = 2000;
     inline PathConfig::TYPE_PATH_ID PATH_ID = 0;
-    inline BlockConfig::TYPE_BLOCK_ID TARGET_BLOCK_ID = 0;
+    inline BlockConfig::TYPE_BLOCK_ID TARGET_BLOCK_ID = 3;
     inline void SerializeBlockStash(const BlockConfig::TYPE_BLOCK_ID& block_id, 
                             const PathConfig::TYPE_PATH_ID& path_id,
                             const std::vector<char>& block_data,
@@ -949,6 +949,22 @@ namespace ElGamalConfig {
         }
         return data;
     }
+
+    inline std::vector<char> generate_binary_data(int block_size, BlockConfig::TYPE_BLOCK_ID block_id) {
+        std::vector<char> data(block_size, 0);
+        BIGNUM* bn_block_id = BN_new();
+        BN_set_word(bn_block_id, block_id);
+        for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; ++i) {
+            if (i == ElGamalNTLConfig::BLOCK_CHUNK_SIZE - 1) {
+                BN_bn2binpad(bn_block_id, (unsigned char*)data.data() + i * ElGamalNTLConfig::CHUNK_SIZE, block_size - i * ElGamalNTLConfig::CHUNK_SIZE);
+            } else {
+                BN_bn2binpad(bn_block_id, (unsigned char*)data.data() + i * ElGamalNTLConfig::CHUNK_SIZE, ElGamalNTLConfig::CHUNK_SIZE);
+            }
+        }
+        BN_free(bn_block_id);
+        return data;
+    }
+    
     inline std::vector<char> generate_zero_data(size_t size) {
         // fill the vector with zeros
         std::vector<char> data(size, 0);

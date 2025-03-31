@@ -172,6 +172,7 @@ ElGamal_parallel_ntl& ElGamal_parallel_ntl::operator=(const ElGamal_parallel_ntl
             this->m_ctx_vec_sgx[i] = BN_CTX_new();
         }
     }
+    return *this; // Ensure the function returns the current object
 }
 
 
@@ -795,7 +796,7 @@ void ElGamal_parallel_ntl::ParallelDecrypt(const std::vector<std::pair<ZZ, ZZ>>&
 //     // Retrieve the remaining futures
 //     for (auto& future : futures) {
 //         std::vector<char> result = future.get();
-//         data.insert(data.end(), result.begin(), result.end());
+//         data.insert(result.begin(), result.end());
 //     }
 //     // std::cout << "Parallel decryption completed" << std::endl;
 // }

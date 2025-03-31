@@ -74,8 +74,8 @@ void Path::GenPath(PathConfig::TYPE_PATH_SIZE realBlockNum,
             #else
                 if (i == height - 1) {
                     std::vector<char> blockData;
-                    this->block.GenData(BlockConfig::BLOCK_SIZE, true, 0, blockData);
-                    bucket.AddRealBlock(0, 0, blockData);
+                    this->block.GenData(BlockConfig::BLOCK_SIZE, true, ClientConfig::TARGET_BLOCK_ID, blockData);
+                    bucket.AddRealBlock(ClientConfig::TARGET_BLOCK_ID, ClientConfig::PATH_ID, blockData);
                 }
             #endif
 
@@ -89,6 +89,21 @@ void Path::GenPath(PathConfig::TYPE_PATH_SIZE realBlockNum,
         }
     }
 
+}
+
+/*
+* @brief Generate the meta data for the buckets along the target path
+*/
+
+void Path::GenPathMetaDatas(std::unordered_map<BucketConfig::TYPE_BUCKET_ID, BucketConfig::META_DATA>& metaDatas) {
+    for (int i = 0; i < this->height; ++i) {
+        BucketConfig::META_DATA md;
+        if (i == this->height - 1) {
+            md.AddRealBlock(ClientConfig::TARGET_BLOCK_ID, ClientConfig::PATH_ID);
+        }
+        md.shiftNextDummyIndex2End();
+        metaDatas[this->bIDs[i]] = md;
+    }
 }
 
 

@@ -22,6 +22,7 @@ public:
 
     // methods
     void GenPath(PathConfig::TYPE_PATH_SIZE realBlockNum, std::vector<BucketConfig::META_DATA>& metaDatas, bool isClient = false);
+    void GenPathMetaDatas(std::unordered_map<BucketConfig::TYPE_BUCKET_ID, BucketConfig::META_DATA>& metaDatas);
     void ConvertPID2BIDs(PathConfig::TYPE_PATH_ID pid, PathConfig::TYPE_PATH_SIZE height, std::vector<BucketConfig::TYPE_BUCKET_ID>& bIDs);
     void GenRootBucket(BucketConfig::TYPE_BUCKET_ID rootBucketID, BucketConfig::META_DATA& rootBucketMD, BucketConfig::TYPE_BUCKET_SIZE realBlockNum, bool isClient = false);
     void GenTripletBuckets(std::vector<BucketConfig::TYPE_BUCKET_ID>& tripletBukcetIDs, std::vector<BucketConfig::META_DATA>& tripletBukcetMDs, BucketConfig::TYPE_BUCKET_SIZE realBlockNum, bool isClient = false);

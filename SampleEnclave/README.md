@@ -1,5 +1,19 @@
 # SampleEnclave Project
 
+## TODO
+- [ ] Update the read path function for the second scheme
+                  
+   * [ ] Fix the initialization phrase to generate the correct path
+
+      1. [ X ] Update the generation of metadata by: path.GenPathMetaDatas(this->treeMetaDatas);
+
+      2. [  ] Update the server side to create the path buckets.
+
+   * [ ] Update the Check operations in the read path 
+
+- [ ] Check each of the operation to make it work well
+
+
 ## Purpose of SampleEnclave
 
 The project demonstrates several fundamental usages of Intel(R) Software Guard Extensions (Intel(R) SGX) SDK:
