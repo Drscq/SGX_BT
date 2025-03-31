@@ -166,7 +166,7 @@ namespace ServerConfig {
 namespace PathConfig {
     typedef long long TYPE_PATH_ID;
     typedef size_t TYPE_PATH_SIZE;
-    inline constexpr TYPE_PATH_SIZE HEIGHT = 4;
+    inline constexpr TYPE_PATH_SIZE HEIGHT = 3;
     inline TYPE_PATH_SIZE REAL_BLOCK_NUM = 2 * HEIGHT;
     inline TYPE_PATH_ID GenPathID() {
         std::random_device rd;
@@ -181,7 +181,7 @@ namespace PathConfig {
 namespace BlockConfig {
     typedef long long TYPE_BLOCK_ID;
     typedef unsigned long long TYPE_BLOCK_SIZE;
-    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 1024;
+    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 256;
 }
 
 namespace AESConfig {
@@ -259,8 +259,8 @@ namespace BucketConfig {
     typedef short TYPE_SLOT_ID_S;
     typedef size_t TYPE_BUCKET_ID;
     typedef size_t TYPE_THREAD_NUM;
-    const TYPE_BUCKET_SIZE BUCKET_REAL_BLOCK_CAPACITY = 30;
-    const TYPE_BUCKET_SIZE BUCKET_DUMMY_BLOCK_CAPACITY = 43;
+    const TYPE_BUCKET_SIZE BUCKET_REAL_BLOCK_CAPACITY = 3;
+    const TYPE_BUCKET_SIZE BUCKET_DUMMY_BLOCK_CAPACITY = 1;
     const TYPE_BUCKET_SIZE BUCKET_SIZE = BUCKET_REAL_BLOCK_CAPACITY + BUCKET_DUMMY_BLOCK_CAPACITY;
     inline void ApplyPerm(std::vector<std::vector<std::pair<ZZ, ZZ>>>& bucketCiphertexts, const std::vector<TYPE_SLOT_ID>& perm) {
             TYPE_BUCKET_SIZE n = bucketCiphertexts.size();
@@ -285,28 +285,6 @@ namespace BucketConfig {
                 
             }
         }
-    // inline void ApplyPerm(std::vector<std::vector<std::pair<ZZ_p, ZZ_p>>>& bucketCipherTexts, const std::vector<TYPE_SLOT_ID>& perm) {
-    //     TYPE_BUCKET_SIZE n = bucketCipherTexts.size();
-    //     std::vector<bool> visited(n, false);
-    //     for (TYPE_BUCKET_SIZE i = 0; i < n; i++) {
-    //         if (visited[i]) continue;
-    //         TYPE_BUCKET_SIZE current = i;
-    //         std::vector<std::pair<ZZ_p, ZZ_p>> currentCiphertexts = std::move(bucketCipherTexts[current]);
-    //         // Follow the cycle of the permutation
-    //         while (!visited[current]) {
-    //             visited[current] = true;
-    //             TYPE_BUCKET_SIZE next = perm[current];
-    //             if (visited[next]) {
-    //                 // Place the originally held element in its final position
-    //                 bucketCipherTexts[current] = std::move(currentCiphertexts);
-    //                 break;
-    //             }
-    //             // Move the element at 'next' to 'current'
-    //             bucketCipherTexts[current] = std::move(bucketCipherTexts[next]);
-    //             current = next;
-    //         }
-    //     }
-    // }
     inline void ApplyPermInPlace(std::vector<std::vector<std::pair<ZZ_p, ZZ_p>>>& bucketCipherTexts, std::vector<TYPE_SLOT_ID>& perm) {
     // TYPE_BUCKET_SIZE n = bucketCipherTexts.size();
     #if USE_ASSERT
@@ -829,7 +807,7 @@ namespace TreeConfig {
     inline TYPE_BUCKET_NUM TOTAL_NUM_NON_LEAF_BUCKETS = (1 << (HEIGHT - 1)) - 1;
     inline TYPE_BUCKET_NUM TOTAL_NUM_LEAF_BUCKETS = (1 << (HEIGHT - 1));
     inline TYPE_BUCKET_NUM REAL_BLOCK_NUM = 2 * TOTAL_NUM_LEAF_BUCKETS;
-    inline BucketConfig::TYPE_BUCKET_SIZE EVICTION_FREQUENCY = 43;
+    inline BucketConfig::TYPE_BUCKET_SIZE EVICTION_FREQUENCY = 1;
     typedef BucketConfig::TYPE_BUCKET_SIZE TYPE_ACCESS_COUNT;
     inline TYPE_ACCESS_COUNT ACCESS_COUNT_EVICTION_COMPLETE = 0;
     inline PathConfig::TYPE_PATH_ID EVICTION_PATH_ID = 0;

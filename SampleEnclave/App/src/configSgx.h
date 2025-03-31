@@ -31,7 +31,7 @@ typedef long unsigned int TYPE_BUCKET_SIZE_SGX;
 typedef unsigned long long TYPE_BLOCK_SIZE_SGX;
 typedef uint_fast16_t TYPE_SMALL_INDEX_U_SGX;
 typedef size_t TYPE_PATH_SIZE_SGX;
-inline TYPE_BLOCK_SIZE_SGX BLOCK_SIZE_SGX = 1024;
+inline TYPE_BLOCK_SIZE_SGX BLOCK_SIZE_SGX = 256;
 typedef size_t TYPE_PATH_SIZE_SGX;
 namespace BNConfig {
     inline int CHUNK_SIZE_SGX = 127;
@@ -586,7 +586,7 @@ struct META_DATA_SGX {
 };
 
 namespace TreeConfigSgx {
-    inline constexpr TYPE_PATH_SIZE_SGX HEIGHT = 4;
+    inline constexpr TYPE_PATH_SIZE_SGX HEIGHT = 3;
     inline bool CanBlockGoThroughBucket(TYPE_PATH_ID_SGX pathID,
                                         TYPE_PATH_SIZE_SGX height,
                                         TYPE_BUCKET_ID_SGX bucketID,
