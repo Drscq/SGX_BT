@@ -154,6 +154,14 @@ Client::~Client() {
             this->opensslRootBucketCiphertextsBN[1][i] = nullptr;
         }
     }
+    for (auto& block : this->blockDataStash) {
+        for (auto& ciphertext : block.second.first[0]) {
+            BN_free(ciphertext);
+        }
+        for (auto& ciphertext : block.second.first[1]) {
+            BN_free(ciphertext);
+        }
+    }
 }
 void Client::InitConnection() {
     this->communicator.connectToServer(this->host, this->port);
