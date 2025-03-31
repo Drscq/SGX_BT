@@ -28,9 +28,9 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     std::vector<char> blockData;
     block.GenData(BlockConfig::BLOCK_SIZE, false, -1, blockData);
     this->elgamal = ElGamal_parallel_ntl(ServerConfig::num_threads, BlockConfig::BLOCK_SIZE);
-    this->elgamal.ParallelEncrypt(blockData, this->targetBlockCiphertexts);
-    this->originalTargetBlockCiphertexts = this->targetBlockCiphertexts;
-    this->resultCiphertexts.reserve(this->targetBlockCiphertexts.size());
+    // this->elgamal.ParallelEncrypt(blockData, this->targetBlockCiphertexts);
+    // this->originalTargetBlockCiphertexts = this->targetBlockCiphertexts;
+    // this->resultCiphertexts.reserve(this->targetBlockCiphertexts.size());
     this->permDataSize = BucketConfig::BUCKET_SIZE * sizeof(BucketConfig::TYPE_SLOT_ID);
     this->permData2.resize(this->permDataSize);
     this->perm2.resize(BucketConfig::BUCKET_SIZE);
@@ -147,6 +147,33 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
         this->tripletBucketCiphertextsBNSgx[1][i] = BN_new();
     }
     this->flagIdxEvict2 = 6;
+    this->targetBlockCiphertexts.resize(2);
+    this->targetBlockCiphertexts[0].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    this->targetBlockCiphertexts[1].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    m_dummyBlockCiphertexts.resize(2);
+    m_dummyBlockCiphertexts[0].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    m_dummyBlockCiphertexts[1].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    this->opensslTempBlockCiphertextsData.resize(2);
+    this->opensslTempBlockCiphertextsData[0].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    this->opensslTempBlockCiphertextsData[1].resize(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    std::vector<BIGNUM*> dummyBlockDataBN(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        m_dummyBlockCiphertexts[0][i] = BN_new();
+        m_dummyBlockCiphertexts[1][i] = BN_new();
+        dummyBlockDataBN[i] = BN_new();
+        this->targetBlockCiphertexts[0][i] = BN_new();
+        this->targetBlockCiphertexts[1][i] = BN_new();
+        this->opensslTempBlockCiphertextsData[0][i] = BN_new();
+        this->opensslTempBlockCiphertextsData[1][i] = BN_new();
+    }
+    this->elgamal.ConvertVecChar2VecBN(blockData, dummyBlockDataBN);
+    this->elgamal.ParallelEncrypt(dummyBlockDataBN, m_dummyBlockCiphertexts[0], m_dummyBlockCiphertexts[1]);
+    // free the memory
+    for (size_t i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; ++i) {
+        BN_free(dummyBlockDataBN[i]);
+    }
+    this->opensslBlockCiphertextsData.resize(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+
 }
 Server::Server(ServerConfig::TYPE_PORT_NUM port, sgx_enclave_id_t eid) : Server(port) {
     this->eidSgx = eid;
@@ -160,6 +187,18 @@ Server::~Server() {
     for (int i = 0; i < this->tripletBucketCiphertextsBNSgxSize; i++) {
         BN_free(this->tripletBucketCiphertextsBNSgx[0][i]);
         BN_free(this->tripletBucketCiphertextsBNSgx[1][i]);
+    }
+    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        BN_free(this->m_dummyBlockCiphertexts[0][i]);
+        BN_free(this->m_dummyBlockCiphertexts[1][i]);
+    }
+    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        BN_free(this->targetBlockCiphertexts[0][i]);
+        BN_free(this->targetBlockCiphertexts[1][i]);
+    }
+    for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+        BN_free(this->opensslTempBlockCiphertextsData[0][i]);
+        BN_free(this->opensslTempBlockCiphertextsData[1][i]);
     }
 }
 
@@ -211,85 +250,6 @@ void Server::handleClient(int clientSockfd) {
                 Path path(this->pathID, PathConfig::HEIGHT);
                 path.GenPath(PathConfig::REAL_BLOCK_NUM, metaDatas, false);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-            } else if (this->command == ServerConfig::CMD_READ_PATH) {
-                this->communicator.receiveData(clientSockfd, reinterpret_cast<char*>(&this->pathID), sizeof(this->pathID));
-                this->communicator.receiveData(clientSockfd,
-                                              this->offsets.data(),
-                                                this->offsetsCharsSize);
-                #if USE_COUT
-                    std::cout << "Offset elements: ";
-                    for (auto& offset : this->offsets) {
-                        std::cout << offset << " ";
-                    }
-                    std::cout << std::endl;
-                #endif
-                // this->targetBlockCiphertexts = this->originalTargetBlockCiphertexts;
-                // std::vector<char> blockData;
-                // this->elgamal.ParallelDecrypt(this->targetBlockCiphertexts, blockData);
-                // BlockConfig::TYPE_BLOCK_ID blockID;
-                // std::memcpy(&blockID, blockData.data(), sizeof(BlockConfig::TYPE_BLOCK_ID));
-                // std::cout << "Block ID: " << blockID << std::endl;
-                // The following codes is without the multi-threading technique
-                // for (PathConfig::TYPE_PATH_SIZE i = 0; i < PathConfig::HEIGHT; i++) {
-                //     std::vector<std::pair<ZZ_p, ZZ_p>> blockCiphertexts;
-                //     // Hoestly this part can be accelerated by the multi-threading technique
-                //     bucket.LoadSingleBlockFromDisk(BucketConfig::DATADIR,
-                //                                     BucketConfig::BUCKETPREFIX + std::to_string(this->path.bIDs[i]),
-                //                                     this->offsets[i],
-                //                                     blockCiphertexts);
-                //     // std::vector<char> blockData;
-                //     // this->elgamal.ParallelDecrypt(blockCiphertexts, blockData);
-                //     // BlockConfig::TYPE_BLOCK_ID blockID;
-                //     // std::memcpy(&blockID, blockData.data(), sizeof(blockID));
-                //     // std::cout << "Block ID: " << blockID << std::endl;
-                //     elgamal.ParallelMultiplyCiphertexts(blockCiphertexts, this->targetBlockCiphertexts, resultCiphertexts);
-                //     this->targetBlockCiphertexts = std::move(resultCiphertexts);
-                //     // this->elgamal.SerializeCiphertexts(this->targetBlockCiphertexts, this->targetBlockCiphertextsSerializedData);
-                //     // std::vector<char> blockData;
-                //     // this->elgamal.ParallelDecrypt(this->targetBlockCiphertexts, blockData);
-                //     // BlockConfig::TYPE_BLOCK_ID blockID;
-                //     // std::memcpy(&blockID, blockData.data(), sizeof(BlockConfig::TYPE_BLOCK_ID));
-                //     // std::cout << "Block ID: " << blockID << std::endl;
-                // }
-                // The following codes is with the multi-threading technique
-                this->targetBlockCiphertexts = this->originalTargetBlockCiphertexts;
-                std::vector<std::future<std::vector<std::pair<ZZ_p, ZZ_p>>>> futures;
-                for (PathConfig::TYPE_PATH_SIZE i = 0; i < PathConfig::HEIGHT; i++) {
-                    // Launch async task for each block load, returning blockCiphertexts
-                    futures.push_back(
-                        std::async(
-                            std::launch::async, [&, i]() -> std::vector<std::pair<ZZ_p, ZZ_p>> {
-                                ZZ_p::init(ElGamalNTLConfig::P);  // Initialize ZZ_p
-                                // std::vector<std::pair<ZZ, ZZ>> blockCiphertexts;
-                                std::vector<std::pair<ZZ_p, ZZ_p>> blockCiphertexts;
-                                bucket.LoadSingleBlockFromDisk(BucketConfig::DATADIR,
-                                                                BucketConfig::BUCKETPREFIX + std::to_string(this->path.bIDs[i]),
-                                                                this->offsets[i],
-                                                                blockCiphertexts);
-                                return blockCiphertexts;
-                            }
-                        )
-                    );
-
-                    // Ensure the number of futures does not exceed the number of threads in ServerConfig::num_threads
-                    if (futures.size() >= ServerConfig::num_threads) {
-                        auto blockCiphertexts = futures.front().get();
-                        elgamal.ParallelMultiplyCiphertexts(blockCiphertexts, this->targetBlockCiphertexts, resultCiphertexts);
-                        this->targetBlockCiphertexts = std::move(resultCiphertexts);
-                        futures.erase(futures.begin());
-                    }
-                }
-
-                // Process any remaining futures
-                for (auto& future : futures) {
-                    auto blockCiphertexts = future.get();
-                    elgamal.ParallelMultiplyCiphertexts(blockCiphertexts, this->targetBlockCiphertexts, resultCiphertexts);
-                    this->targetBlockCiphertexts = std::move(resultCiphertexts);
-                }
-                this->elgamal.SerializeCiphertexts(this->targetBlockCiphertexts, this->targetBlockCiphertextsSerializedData);
-                // this->communicator.sendDataWithoutKnownSize(clientSockfd, this->targetBlockCiphertextsSerializedData);
-                this->communicator.sendData(clientSockfd, this->targetBlockCiphertextsSerializedData.data(), this->targetBlockCiphertextsSerializedData.size());
-
             } else if (this->command == ServerConfig::CMD_EARLY_RESHUFFLE_INIT) {
                 std::cout << "Received command: CMD_EARLY_RESHUFFLE_INIT" << std::endl;
                 this->path.GenRootBucket(0, this->rootBucketMD, BucketConfig::BUCKET_REAL_BLOCK_CAPACITY - 1, false);
@@ -465,63 +425,33 @@ void Server::handleClient(int clientSockfd) {
                                                 this->pathCompleteOffsets.data(),
                                                 this->pathCompleteOffsetsSize);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                // #if LOG_BREAKDOWN_COST
-                // start = std::chrono::high_resolution_clock::now();
-                // #endif
-                this->targetBlockCiphertexts = this->originalTargetBlockCiphertexts;
-                #if MULTI_THREAD_SWITCH 
-                std::vector<std::future<std::vector<std::pair<ZZ_p, ZZ_p>>>> futures;
-                for (PathConfig::TYPE_PATH_SIZE i = 0; i < TreeConfig::HEIGHT; i++) {
-                    // Launch async task for each block load, returning blockCiphertexts
-                    futures.push_back(
-                        std::async(
-                            std::launch::async, [&, i]() -> std::vector<std::pair<ZZ_p, ZZ_p>> {
-                                ZZ_p::init(ElGamalNTLConfig::P);  // Initialize ZZ_p
-                                std::vector<std::pair<ZZ_p, ZZ_p>> blockCiphertexts;
-                                bucket.LoadSingleBlockFromDiskWithUpdate(BucketConfig::DATADIR,
-                                                                BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDOffsets[i]),
-                                                                this->pathCompleteOffsets[i],
-                                                                blockCiphertexts);
-                                return blockCiphertexts;
-                            }
-                        )
-                    );
-
-                    // Ensure the number of futures does not exceed the number of threads in ServerConfig::num_threads
-                    if (futures.size() >= ServerConfig::num_threads) {
-                        auto blockCiphertexts = futures.front().get();
-                        elgamal.ParallelMultiplyCiphertexts(blockCiphertexts, this->targetBlockCiphertexts, resultCiphertexts);
-                        this->targetBlockCiphertexts = std::move(resultCiphertexts);
-                        futures.erase(futures.begin());
-                    }
+                for (size_t i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+                    BN_copy(this->targetBlockCiphertexts[0][i], m_dummyBlockCiphertexts[0][i]);
+                    BN_copy(this->targetBlockCiphertexts[1][i], m_dummyBlockCiphertexts[1][i]);
                 }
-
-                // Process any remaining futures
-                for (auto& future : futures) {
-                    auto blockCiphertexts = future.get();
-                    elgamal.ParallelMultiplyCiphertexts(blockCiphertexts, this->targetBlockCiphertexts, resultCiphertexts);
-                    this->targetBlockCiphertexts = std::move(resultCiphertexts);
-                }
-                #else
                 for (PathConfig::TYPE_PATH_SIZE i = 0; i < TreeConfig::HEIGHT; ++i) {
                     // std::vector<std::pair<ZZ_p, ZZ_p>> blockCiphertexts;
-                    bucket.LoadSingleBlockFromDiskWithUpdate(BucketConfig::DATADIR,
-                                                            BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDOffsets[i]),
-                                                            this->pathCompleteOffsets[i],
-                                                            this->blockCiphertextsScheme2);
-                    #if LOG_BREAKDOWN_COST
-                    this->logger.startTiming(this->LogReadPathMultiplyCiphertextsScheme2);
-                    #endif
-                    elgamal.ParallelMultiplyCiphertexts(this->blockCiphertextsScheme2, this->targetBlockCiphertexts, resultCiphertexts);
-                    #if LOG_BREAKDOWN_COST
-                    this->logger.stopTiming(this->LogReadPathMultiplyCiphertextsScheme2);
-                    this->logger.writeToFile();
-                    #endif
-                    this->targetBlockCiphertexts = std::move(resultCiphertexts);
+                    this->bucket.LoadSingleBlockCiphertextFromDisk(BucketConfig::DATADIR,
+                        BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDOffsets[i]),
+                        this->pathCompleteOffsets[i],
+                        this->opensslBlockCiphertextsData);
+                    this->elgamal.ConvertVecCharCipher2VecBN(this->opensslBlockCiphertextsData,
+                        this->opensslTempBlockCiphertextsData);
+                    this->elgamal.ParallelMultiplyCiphertexts(this->targetBlockCiphertexts,
+                        this->opensslTempBlockCiphertextsData,
+                        this->targetBlockCiphertexts);
+                    this->elgamal.ParallelRerandomize(m_dummyBlockCiphertexts[0], m_dummyBlockCiphertexts[1]);
+                    this->elgamal.ConvertVecBNCipher2VecChar(m_dummyBlockCiphertexts[0],
+                                                                m_dummyBlockCiphertexts[1],                    
+                                                                this->opensslBlockCiphertextsData);
+                    this->bucket.UpdateSingleBlockCiphertextToDisk(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDOffsets[i]),
+                                                                    this->pathCompleteOffsets[i],
+                                                                    this->opensslBlockCiphertextsData);
                 }
-                #endif
                
-                this->elgamal.SerializeCiphertexts(this->targetBlockCiphertexts, this->targetBlockCiphertextsSerializedData);
+                this->elgamal.ConvertVecBNCipher2VecChar(this->targetBlockCiphertexts[0],
+                    this->targetBlockCiphertexts[1],                    
+                    this->targetBlockCiphertextsSerializedData);
                 #if LOG_BREAKDOWN_COST
                 this->logger.startTiming(this->LogReadPathSendCiphertextScheme2);
                 #endif

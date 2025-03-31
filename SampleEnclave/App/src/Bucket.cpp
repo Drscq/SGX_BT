@@ -380,3 +380,29 @@ void Bucket::LoadSingleBlockFromDiskWithUpdate(const std::string& dirPath,
     #endif
     bucketFile.close();
 }
+
+void Bucket::LoadSingleBlockCiphertextFromDisk(const std::string& dirPath,
+    const std::string& fileName,
+    const BucketConfig::TYPE_SLOT_ID& blockIndex,
+    std::vector<char>& blockCiphertexts) {
+    std::ifstream bucketFile(dirPath + fileName, std::ios::binary);
+    bucketFile.seekg(blockIndex * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+    #if UNIT_TEST_OPENSSL
+    assert(blockCiphertexts.size() == ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS && "[Bucket]Error: blockCiphertexts size mismatch");
+    #endif
+    bucketFile.read(blockCiphertexts.data(), ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+    bucketFile.close();
+}
+
+void Bucket::UpdateSingleBlockCiphertextToDisk(const std::string& filePath,
+    const BucketConfig::TYPE_SLOT_ID& offset,
+    std::vector<char>& blockCiphertexts) {
+    std::fstream bucketFile(filePath, std::ios::in | std::ios::out | std::ios::binary);
+    std::streampos blockPos = offset * ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS;
+    bucketFile.seekg(blockPos);
+    #if UNIT_TEST_OPENSSL
+    assert(blockCiphertexts.size() == ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS && "[Bucket]Error: blockCiphertexts size mismatch");
+    #endif
+    bucketFile.write(blockCiphertexts.data(), ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+    bucketFile.close();
+}

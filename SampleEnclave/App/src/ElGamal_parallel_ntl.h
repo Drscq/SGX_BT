@@ -78,6 +78,7 @@ public:
     // Function to multiply two sets of ciphertexts in parallel
     void ParallelMultiplyCiphertexts(const std::vector<std::pair<ZZ, ZZ>>& ciphertexts1, const std::vector<std::pair<ZZ, ZZ>>& ciphertexts2, std::vector<std::pair<ZZ, ZZ>>& result);
     void ParallelMultiplyCiphertexts(const std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts1, const std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts2, std::vector<std::pair<ZZ_p, ZZ_p>>& result);
+    void ParallelMultiplyCiphertexts(const std::vector<std::vector<BIGNUM*>>& ciphertexts1, const std::vector<std::vector<BIGNUM*>>& ciphertexts2, std::vector<std::vector<BIGNUM*>>& result);
     // Function to serialize ciphertexts to a vector of chars
     void SerializeCiphertexts(const std::vector<std::pair<ZZ, ZZ>>& ciphertexts, std::vector<char>& serializedData);
     void SerializeCiphertexts(const std::vector<std::pair<ZZ_p, ZZ_p>>& ciphertexts, std::vector<char>& serializedData);

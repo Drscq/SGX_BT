@@ -66,6 +66,14 @@ public:
 
     void PrintBlockIDs();
 
+    void LoadSingleBlockCiphertextFromDisk(const std::string& dirPath,
+        const std::string& fileName,
+        const BucketConfig::TYPE_SLOT_ID& blockIndex,
+        std::vector<char>& blockCiphertexts);
+    void UpdateSingleBlockCiphertextToDisk(const std::string& filePath,
+                        const BucketConfig::TYPE_SLOT_ID& offset,
+                        std::vector<char>& blockCiphertexts);
+
     // Properties
     BucketConfig::TYPE_BUCKET_ID id;
     BucketConfig::META_DATA md;

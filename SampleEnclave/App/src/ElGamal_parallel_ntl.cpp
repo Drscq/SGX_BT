@@ -1168,6 +1168,17 @@ void ElGamal_parallel_ntl::ParallelRerandomize(std::vector<std::pair<ZZ_p, ZZ_p>
 }
 #endif
 
+void ElGamal_parallel_ntl::ParallelMultiplyCiphertexts(const std::vector<std::vector<BIGNUM*>>& ciphertexts1, const std::vector<std::vector<BIGNUM*>>& ciphertexts2, std::vector<std::vector<BIGNUM*>>& result) {
+    // Parallel multiplication of ciphertexts
+    #if UNIT_TEST_OPENSSL
+    assert(ciphertexts1[0].size() == ciphertexts2[0].size() && ciphertexts1[0].size() == result[0].size());
+    assert(ciphertexts1[1].size() == ciphertexts2[1].size() && ciphertexts1[1].size() == result[1].size());
+    #endif
+    for (int i = 0; i < ciphertexts1[0].size(); ++i) {
+        BN_mod_mul(result[0][i], ciphertexts1[0][i], ciphertexts2[0][i], m_modulus_sgx, m_ctx_sgx);
+        BN_mod_mul(result[1][i], ciphertexts1[1][i], ciphertexts2[1][i], m_modulus_sgx, m_ctx_sgx);
+    }
+}
 
 std::pair<ZZ, ZZ> ElGamal_parallel_ntl::MultiplyCiphertexts(const std::pair<ZZ, ZZ> &ciphertext1, const std::pair<ZZ, ZZ> &ciphertext2) {
     ZZ c1_new, c2_new;

@@ -40,7 +40,6 @@ public:
     Path path;
     ElGamal_parallel_ntl elgamal;
     // std::vector<std::pair<ZZ, ZZ>> targetBlockCiphertexts;
-    std::vector<std::pair<ZZ_p, ZZ_p>> targetBlockCiphertexts;
     // std::vector<std::pair<ZZ, ZZ>> originalTargetBlockCiphertexts;
     std::vector<std::pair<ZZ_p, ZZ_p>> originalTargetBlockCiphertexts;
     std::vector<char> targetBlockCiphertextsSerializedData;
@@ -225,6 +224,12 @@ public:
         std::vector<char> tripletBucketCiphertextsSerializedDataSgx;
         int tripletBucketCiphertextsSerializedDataSgxSize;
         int flagIdxEvict2;
+
+    // openssl 
+    std::vector<std::vector<BIGNUM*>> m_dummyBlockCiphertexts;
+    std::vector<std::vector<BIGNUM*>> targetBlockCiphertexts;
+    std::vector<std::vector<BIGNUM*>> opensslTempBlockCiphertextsData;
+    std::vector<char> opensslBlockCiphertextsData;
 };
 
 
