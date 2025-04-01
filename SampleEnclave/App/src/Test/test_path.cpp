@@ -75,11 +75,18 @@ int main() {
     // Initialize ElGamal parameters
     InitializeElGamalParams();
     Path path(ClientConfig::PATH_ID, PathConfig::HEIGHT);
+    path.GenEvictPath(ClientConfig::PATH_ID, PathConfig::HEIGHT);
+    // check the bIDs in the path
+    std::cout << "The bIDs in the path: ";
     for (auto & bID : path.bIDs) {
-        std::string bucket_path = "../../../" + BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bID);
-        std::cout << "Bucket path: " << bucket_path << std::endl;
-        decrypt_print_bucket(bucket_path);
+        std::cout << bID << " ";
     }
+    std::cout << std::endl;
+    // for (auto & bID : path.bIDs) {
+    //     std::string bucket_path = "../../../" + BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(bID);
+    //     std::cout << "Bucket path: " << bucket_path << std::endl;
+    //     decrypt_print_bucket(bucket_path);
+    // }
     
     
 }

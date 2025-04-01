@@ -643,10 +643,10 @@ void ElGamal_parallel_ntl::ParallelDecrypt(const std::vector<std::vector<BIGNUM*
 void ElGamal_parallel_ntl::ParallelDecrypt(const std::vector<BIGNUM*>& c1, const std::vector<BIGNUM*>& c2, std::vector<BIGNUM*>& data) {
     assert(c1.size() == c2.size() && c1.size() == data.size());
     for (int i = 0; i < c1.size(); ++i) {
-        if (i % ElGamalNTLConfig::BLOCK_CHUNK_SIZE == 0) {
+        // if (i % ElGamalNTLConfig::BLOCK_CHUNK_SIZE == 0) {
             BN_mod_exp(m_g_pow_k_x_inv_bn_sgx, c1[i], m_x_bn_sgx, m_modulus_sgx, m_ctx_sgx);
             BN_mod_inverse(m_g_pow_k_x_inv_bn_sgx, m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
-        }
+        // }
         BN_mod_mul(data[i], c2[i], m_g_pow_k_x_inv_bn_sgx, m_modulus_sgx, m_ctx_sgx);
     }
 }

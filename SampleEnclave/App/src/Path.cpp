@@ -197,17 +197,6 @@ void Path::GenTripletBuckets(std::vector<BucketConfig::TYPE_BUCKET_ID>& tripletB
 }
 
 void Path::GenEvictPath(PathConfig::TYPE_PATH_ID path_id, PathConfig::TYPE_PATH_SIZE height) {
-    // for (const auto& bID : this->bIDs) {
-    //     Bucket bucket(bID, BucketConfig::BUCKET_SIZE,
-    //                   BucketConfig::BUCKET_REAL_BLOCK_CAPACITY,
-    //                   BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY,
-    //                   BlockConfig::BLOCK_SIZE, ServerConfig::num_threads);
-    //     while (bucket.md.nextDummyIndex < BucketConfig::BUCKET_SIZE) {
-    //         this->block.GenData(BlockConfig::BLOCK_SIZE, false, -1, this->blockDataEviction);
-    //         bucket.AddDummyBlock(this->blockDataEviction);
-    //     }
-    //     bucket.SaveData2Disk(BucketConfig::DATADIR, BucketConfig::BUCKETPREFIX + std::to_string(bID));
-    // }
     std::cout << "Generating Evict Path" << std::endl;
     BucketConfig::TYPE_BUCKET_ID bID = 0;
     Bucket bucket_0(bID, BucketConfig::BUCKET_SIZE,

@@ -301,7 +301,8 @@ void Server::handleClient(int clientSockfd) {
                 ifs.read(this->rootBucketData.data(), ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                 ifs.close();
                 #else
-                this->path.GenEvictPath(0, PathConfig::HEIGHT);
+                Path path(0, PathConfig::HEIGHT);
+                path.GenEvictPath(0, PathConfig::HEIGHT);
                  // read the root bucket data to the rootBucketDataEvictComplete
                 std::ifstream ifs(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0), std::ios::binary);
                 ifs.read(this->rootBucketDataEvictComplete.data(), ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
@@ -604,9 +605,9 @@ void Server::handleClient(int clientSockfd) {
                             bucketDataBN[j] = BN_new();
                         }
                         this->elgamal.ParallelDecrypt(bucketCiphertextsBN_test[0], bucketCiphertextsBN_test[1], bucketDataBN);
-                        std::cout << "Bucket ID: " << i << std::endl;
                         for (size_t j = 0; j < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; ++j) {
                             if (BN_cmp(bucketDataBN[j], bn_one) != 0) {
+                                std::cout << "The bucket ID is: " << i << std::endl;
                                 std::cout << "The bucket data is not correct: " << BN_bn2dec(bucketDataBN[j]) << " with index: " << j << std::endl;
                             }
                             assert(BN_cmp(bucketDataBN[j], bn_one) == 0 && "[Server] The bucket data is not correct");
