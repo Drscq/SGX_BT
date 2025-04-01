@@ -925,7 +925,6 @@ void ElGamal_parallel_ntl::ReRandomizeChunk(BIGNUM* c1, BIGNUM* c2) {
 */
 static void* WorkerFunction(void* arg) {
     BNConfig::ThreadBNData* thread_data = reinterpret_cast<BNConfig::ThreadBNData*>(arg);
-    auto start_time = std::chrono::high_resolution_clock::now();
     for (int i = thread_data->startIdx; i < thread_data->endIdx; ++i) {
         BN_mod_mul((*thread_data->c1)[i], (*thread_data->c1)[i], thread_data->g_pow_k_sgx, thread_data->modulus_sgx, thread_data->ctx_sgx);
         BN_mod_mul((*thread_data->c2)[i], (*thread_data->c2)[i], thread_data->h_pow_k_sgx, thread_data->modulus_sgx, thread_data->ctx_sgx);

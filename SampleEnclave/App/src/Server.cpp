@@ -494,9 +494,9 @@ void Server::handleClient(int clientSockfd) {
                 std::memcpy(&this->bucketIDEarlyReshuffleComplete,
                             this->bufferSgx.data() + this->permDataSize * 2,
                             sizeof(this->bucketIDEarlyReshuffleComplete));
-                #if defined(UNIT_TEST_SGX)
+                // #if defined(UNIT_TEST_SGX)
                 std::cout << "Received bucketIDEarlyReshuffleComplete: " << this->bucketIDEarlyReshuffleComplete << std::endl;
-                #endif
+                // #endif
                 // Alternative way to load the data from disk
                 auto start = std::chrono::high_resolution_clock::now();
                 this->bucket.LoadBucketCiphertextsFromDiskBN(BucketConfig::DATADIR + "/" + BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDEarlyReshuffleComplete),
