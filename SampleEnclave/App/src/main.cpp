@@ -156,16 +156,6 @@ int main(int argc, char* argv[]) {
             BlockConfig::TYPE_BLOCK_ID blockID = distribution(g);
             blockID = 0;
             
-            // The EarlyReshuffle Operation
-            PathConfig::TYPE_PATH_ID pathID = client.PositionMap[blockID];
-            client.pathComplete.ConvertPID2BIDs(
-                pathID, TreeConfig::HEIGHT, client.bucketIDOffsets);
-            for (const auto& bucketID : client.bucketIDOffsets) {
-                if (client.treeMetaDatas[bucketID].count == BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY) {
-                    // DEBUG_PRINT("Early Reshuffle for bucketID: " << bucketID);
-                    client.EarlyReshuffleComplete(bucketID);
-                }
-            }
             // Read Path
             client.ReadPathComplete(blockID);
             // Eviction Operation
@@ -175,6 +165,17 @@ int main(int argc, char* argv[]) {
                 client.EvictComplete(TreeConfig::EVICTION_PATH_ID);
                 TreeConfig::EVICTION_PATH_ID = (TreeConfig::EVICTION_PATH_ID + 1) % TreeConfig::TOTAL_NUM_LEAF_BUCKETS;
             }
+
+             // The EarlyReshuffle Operation
+             PathConfig::TYPE_PATH_ID pathID = client.PositionMap[blockID];
+             client.pathComplete.ConvertPID2BIDs(
+                 pathID, TreeConfig::HEIGHT, client.bucketIDOffsets);
+             for (const auto& bucketID : client.bucketIDOffsets) {
+                 if (client.treeMetaDatas[bucketID].count == BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY) {
+                     // DEBUG_PRINT("Early Reshuffle for bucketID: " << bucketID);
+                     client.EarlyReshuffleComplete(bucketID);
+                 }
+             }
             
         } 
     } else if (argv[1] == std::string("client_access_scheme_1")) {
