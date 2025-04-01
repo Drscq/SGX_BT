@@ -484,13 +484,13 @@ void Server::handleClient(int clientSockfd) {
                 std::memcpy(this->perm2EarlyReshuffleComplete.data(),
                             this->bufferSgx.data() + this->permDataSize,
                             this->permDataSize);
-                #if defined(UNIT_TEST_SGX)
+                // #if defined(UNIT_TEST_SGX)
                 // Check the values in the perm2EarlyReshuffleComplete
                 for (auto& p : this->perm2EarlyReshuffleComplete) {
                     std::cout << p << " ";
                 }
-                std::cout << std::endl;
-                #endif
+                // std::cout << std::endl;
+                // #endif
                 std::memcpy(&this->bucketIDEarlyReshuffleComplete,
                             this->bufferSgx.data() + this->permDataSize * 2,
                             sizeof(this->bucketIDEarlyReshuffleComplete));
