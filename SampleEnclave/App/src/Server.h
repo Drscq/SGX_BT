@@ -178,6 +178,7 @@ public:
     void SgxEarlyReshuffleScheme1(sgx_enclave_id_t eid, BucketConfig::TYPE_BUCKET_ID bucketID = 0);
     // void SgxEnclaveThreadFunc(void* arg);
     pthread_t enclaveThread;
+    pthread_t enclaveThreadEarlyreshuffle2;
 
     // EarlyReshuffleScheme1 variables
     BucketConfig::TYPE_BUCKET_ID bucketIDEarlyReshuffle1;

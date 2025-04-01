@@ -469,7 +469,7 @@ void Server::handleClient(int clientSockfd) {
                 EnclaveThreadParams* params = new EnclaveThreadParams;
                 params->eid = this->eidSgx;
                 params->buffer = this->bufferSgx.data();
-                pthread_create(&this->enclaveThread, NULL, &SgxEnclaveThreadFuncEarlyReshuffleScheme2, params);
+                pthread_create(&this->enclaveThreadEarlyreshuffle2, NULL, &SgxEnclaveThreadFuncEarlyReshuffleScheme2, params);
                 while (flag_shared_sgx[0] == 0) {
                     // Wait for the enclave to finish the set up
                     __asm__ __volatile__("pause");
@@ -551,7 +551,7 @@ void Server::handleClient(int clientSockfd) {
                 ofs_early_reshuffle.close();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "DiskIOWriteBucketCiphertextsToDisk: " << elapsed_ns.count() << " ns\n";
-                pthread_join(this->enclaveThread, NULL);
+                pthread_join(this->enclaveThreadEarlyreshuffle2, NULL);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
                 std::cout << "The early reshuffle is done!" << std::endl;
             } else if (this->command == ServerConfig::CMD_COMPLETE_EVICT_CLIENT_TO_SERVER) {
