@@ -566,8 +566,8 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
             for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; ++i) {
                 int base_index = this->treeMetaDatas[rootBucketIDComplete].offsets[
                     this->treeMetaDatas[rootBucketIDComplete].nextRealIndex - 1] * ElGamalNTLConfig::BLOCK_CHUNK_SIZE;
-                BN_copy(this->opensslRootBucketCiphertextsBN[0][base_index + i], block.second.first[0][i]);
-                BN_copy(this->opensslRootBucketCiphertextsBN[1][base_index + i], block.second.first[1][i]);
+                BN_copy(this->bucketCiphertextsBNSgx[0][base_index + i], block.second.first[0][i]);
+                BN_copy(this->bucketCiphertextsBNSgx[1][base_index + i], block.second.first[1][i]);
             }
         }
     }
