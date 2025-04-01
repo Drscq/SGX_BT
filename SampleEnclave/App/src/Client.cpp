@@ -561,7 +561,6 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
     this->blockIDsDeletedFromStash.clear();
     for (auto& block : this->blockDataStash) {
         if (this->treeMetaDatas[rootBucketIDComplete].nextRealIndex < BucketConfig::BUCKET_REAL_BLOCK_CAPACITY) {
-            std::cout << "The block ID: " << block.first << " will be added to the root bucket!" << std::endl;
             this->treeMetaDatas[rootBucketIDComplete].AddRealBlock(block.first, this->PositionMap[block.first]);
             this->blockIDsDeletedFromStash.emplace_back(block.first);
             for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; ++i) {
@@ -588,6 +587,20 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
     std::cout << "ClientComputationUpdateMetaData:" << elapsed_ns.count() << " ns" << std::endl;
     start = std::chrono::high_resolution_clock::now();
     this->elgamal.ParallelRerandomize(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1]);
+    // Check the values of the bucketCiphertextsBNSgx[0] and bucketCiphertextsBNSgx[1]
+    std::vector<BIGNUM*> bucketPlaintextsBN(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
+        bucketPlaintextsBN[i] = BN_new();
+    }
+    this->elgamal.ParallelDecrypt(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], bucketPlaintextsBN);
+    std::cout << "The bucketPlaintextsBN: ";
+    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
+        std::cout << BN_get_word(bucketPlaintextsBN[i]) << " ";
+    }
+    std::cout << std::endl;
+    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
+        BN_free(bucketPlaintextsBN[i]);
+    }
     end = std::chrono::high_resolution_clock::now();
     elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
     std::cout << "ClientComputationRerandomization: " << elapsed_ns.count() << " ns" << std::endl;
