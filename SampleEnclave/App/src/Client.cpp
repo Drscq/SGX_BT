@@ -546,6 +546,7 @@ void Client::EarlyReshuffleComplete(BucketConfig::TYPE_BUCKET_ID bucket_id) {
     this->logger.stopTiming(this->LogEarlyReshuffleSendPermToServerScheme2);
     this->logger.writeToFile();
     #endif
+    this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
 }
 
 void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
