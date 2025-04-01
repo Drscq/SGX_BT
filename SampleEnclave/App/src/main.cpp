@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
             std::mt19937 g(rd());
             std::uniform_int_distribution<BlockConfig::TYPE_BLOCK_ID> distribution(0, TreeConfig::REAL_BLOCK_NUM - 1);
             BlockConfig::TYPE_BLOCK_ID blockID = distribution(g);
-            blockID = 0;
+            blockID = i % TreeConfig::REAL_BLOCK_NUM;
             
             // Read Path
             client.ReadPathComplete(blockID);
