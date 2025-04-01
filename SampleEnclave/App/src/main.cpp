@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
         client.InitCreateBinaryTree();
         
         // Randomly access the blocks
-        size_t accessCount = 30;
+        size_t accessCount = 100;
         for (size_t i = 0; i < accessCount; ++i) {
             std::cout << "Iteration " << i << std::endl;
             // DEBUG_PRINT("Iteration " << i);
@@ -154,7 +154,7 @@ int main(int argc, char* argv[]) {
             std::mt19937 g(rd());
             std::uniform_int_distribution<BlockConfig::TYPE_BLOCK_ID> distribution(0, TreeConfig::REAL_BLOCK_NUM - 1);
             BlockConfig::TYPE_BLOCK_ID blockID = distribution(g);
-            blockID = i % TreeConfig::REAL_BLOCK_NUM;
+            blockID = 0;
             
             // The EarlyReshuffle Operation
             PathConfig::TYPE_PATH_ID pathID = client.PositionMap[blockID];
