@@ -155,16 +155,6 @@ int main(int argc, char* argv[]) {
             std::uniform_int_distribution<BlockConfig::TYPE_BLOCK_ID> distribution(0, TreeConfig::REAL_BLOCK_NUM - 1);
             BlockConfig::TYPE_BLOCK_ID blockID = distribution(g);
             blockID = i % TreeConfig::REAL_BLOCK_NUM;
-            
-            // Read Path
-            client.ReadPathComplete(blockID);
-            // Eviction Operation
-            ++TreeConfig::ACCESS_COUNT_EVICTION_COMPLETE;
-            TreeConfig::ACCESS_COUNT_EVICTION_COMPLETE %= TreeConfig::EVICTION_FREQUENCY;
-            if (TreeConfig::ACCESS_COUNT_EVICTION_COMPLETE == 0) {
-                client.EvictComplete(TreeConfig::EVICTION_PATH_ID);
-                TreeConfig::EVICTION_PATH_ID = (TreeConfig::EVICTION_PATH_ID + 1) % TreeConfig::TOTAL_NUM_LEAF_BUCKETS;
-            }
 
              // The EarlyReshuffle Operation
              PathConfig::TYPE_PATH_ID pathID = client.PositionMap[blockID];
@@ -176,6 +166,16 @@ int main(int argc, char* argv[]) {
                      client.EarlyReshuffleComplete(bucketID);
                  }
              }
+            
+            // Read Path
+            client.ReadPathComplete(blockID);
+            // Eviction Operation
+            ++TreeConfig::ACCESS_COUNT_EVICTION_COMPLETE;
+            TreeConfig::ACCESS_COUNT_EVICTION_COMPLETE %= TreeConfig::EVICTION_FREQUENCY;
+            if (TreeConfig::ACCESS_COUNT_EVICTION_COMPLETE == 0) {
+                client.EvictComplete(TreeConfig::EVICTION_PATH_ID);
+                TreeConfig::EVICTION_PATH_ID = (TreeConfig::EVICTION_PATH_ID + 1) % TreeConfig::TOTAL_NUM_LEAF_BUCKETS;
+            }
             
         } 
     } else if (argv[1] == std::string("client_access_scheme_1")) {
