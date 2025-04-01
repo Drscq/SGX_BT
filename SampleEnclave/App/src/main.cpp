@@ -122,9 +122,9 @@ int main(int argc, char* argv[]) {
             DurationLogger logger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
             #endif 
             // warm up
-            for (int i = 0; i < 1; i++) {
+            Client client(ClientConfig::HOST, ClientConfig::PORT);
+            for (int i = 0; i < 2; i++) {
                 std::cout << "Iteration " << i << "for warm up" << std::endl;
-                Client client(ClientConfig::HOST, ClientConfig::PORT);
                 client.InitEviction();
                 client.EvictComplete(ClientConfig::PATH_ID);
             }
