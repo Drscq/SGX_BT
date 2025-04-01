@@ -476,11 +476,11 @@ void Client::ReadPathComplete(BlockConfig::TYPE_BLOCK_ID block_id) {
             BIGNUM* targetBlockIDBN = BN_new();
             BN_set_word(targetBlockIDBN, block_id);
             for (size_t i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; i++) {
+                std::cout << "The block ID: " << BN_get_word(this->opensslTargetBlockDataBN[i]) << std::endl;
                 assert(
                     BN_cmp(this->opensslTargetBlockDataBN[i], targetBlockIDBN) == 0 && 
                     "The block ID is not correct!"
                 );
-                std::cout << "The block ID: " << BN_get_word(this->opensslTargetBlockDataBN[i]) << std::endl;
             }
             BN_free(targetBlockIDBN);
         #endif
