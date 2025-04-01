@@ -830,6 +830,12 @@ void Server::handleClient(int clientSockfd) {
                 std::memcpy(this->tripletEvictPermComplete.data(),
                             this->tripletBucketCiphertextsSerializedDataSgx.data() + this->triplet_evict_perm_size,
                             this->triplet_evict_perm_size);
+                std::cout << "The tripletEvictPermComplete is: " << std::endl;
+                for (auto& p : this->tripletEvictPermComplete) {
+                    std::cout << p << " ";
+                }
+                std::cout << std::endl;
+
                 while (flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 1] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");

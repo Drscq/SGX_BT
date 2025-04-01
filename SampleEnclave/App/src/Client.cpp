@@ -708,16 +708,16 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
         end = std::chrono::high_resolution_clock::now();
         elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
         std::cout << "ClientComputationGenTripletEvictPerms: " << elapsed_ns.count() << " ns" << std::endl;
-        // std::cout << "The tripletPermIntermediateCompleteThirdParty: ";
-        // for (const auto& p : this->tripletPermIntermediateCompleteThirdParty) {
-        //     std::cout << p << " ";
-        // }
-        // std::cout << std::endl;
-        // std::cout << "The tripletPermIntermediateCompleteServer: ";
-        // for (const auto& p : this->tripletPermIntermediateCompleteServer) {
-        //     std::cout << p << " ";
-        // }
-        // std::cout << std::endl;
+        std::cout << "The tripletPermIntermediateCompleteThirdParty: ";
+        for (const auto& p : this->tripletPermIntermediateCompleteThirdParty) {
+            std::cout << p << " ";
+        }
+        std::cout << std::endl;
+        std::cout << "The tripletPermIntermediateCompleteServer: ";
+        for (const auto& p : this->tripletPermIntermediateCompleteServer) {
+            std::cout << p << " ";
+        }
+        std::cout << std::endl;
         // this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(),
         //                                          ServerConfig::CMD_COMPLETE_EVICT_CLIENT_TO_THIRD_PARTY);
       
