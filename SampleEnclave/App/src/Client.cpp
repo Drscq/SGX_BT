@@ -561,6 +561,7 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
     this->blockIDsDeletedFromStash.clear();
     for (auto& block : this->blockDataStash) {
         if (this->treeMetaDatas[rootBucketIDComplete].nextRealIndex < BucketConfig::BUCKET_REAL_BLOCK_CAPACITY) {
+            std::cout << "The block ID: " << block.first << " will be added to the root bucket!" << std::endl;
             this->treeMetaDatas[rootBucketIDComplete].AddRealBlock(block.first, this->PositionMap[block.first]);
             this->blockIDsDeletedFromStash.emplace_back(block.first);
             for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; ++i) {
