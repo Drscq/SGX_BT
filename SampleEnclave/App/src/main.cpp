@@ -167,7 +167,7 @@ int main(int argc, char* argv[]) {
             //      }
             //  }
 
-             client.EarlyReshuffleComplete(3);
+            //  client.EarlyReshuffleComplete(3);
             
             // Read Path
             client.ReadPathComplete(blockID);
