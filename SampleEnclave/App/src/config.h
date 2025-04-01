@@ -261,7 +261,7 @@ namespace BucketConfig {
     typedef size_t TYPE_BUCKET_ID;
     typedef size_t TYPE_THREAD_NUM;
     const TYPE_BUCKET_SIZE BUCKET_REAL_BLOCK_CAPACITY = 3;
-    const TYPE_BUCKET_SIZE BUCKET_DUMMY_BLOCK_CAPACITY = 5;
+    const TYPE_BUCKET_SIZE BUCKET_DUMMY_BLOCK_CAPACITY = 1;
     const TYPE_BUCKET_SIZE BUCKET_SIZE = BUCKET_REAL_BLOCK_CAPACITY + BUCKET_DUMMY_BLOCK_CAPACITY;
     inline void ApplyPerm(std::vector<std::vector<std::pair<ZZ, ZZ>>>& bucketCiphertexts, const std::vector<TYPE_SLOT_ID>& perm) {
             TYPE_BUCKET_SIZE n = bucketCiphertexts.size();
