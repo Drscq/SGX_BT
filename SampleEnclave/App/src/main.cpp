@@ -160,12 +160,12 @@ int main(int argc, char* argv[]) {
              PathConfig::TYPE_PATH_ID pathID = client.PositionMap[blockID];
              client.pathComplete.ConvertPID2BIDs(
                  pathID, TreeConfig::HEIGHT, client.bucketIDOffsets);
-             for (const auto& bucketID : client.bucketIDOffsets) {
-                 if (client.treeMetaDatas[bucketID].count == BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY) {
-                     // DEBUG_PRINT("Early Reshuffle for bucketID: " << bucketID);
-                     client.EarlyReshuffleComplete(bucketID);
-                 }
-             }
+            //  for (const auto& bucketID : client.bucketIDOffsets) {
+            //      if (client.treeMetaDatas[bucketID].count == BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY) {
+            //          // DEBUG_PRINT("Early Reshuffle for bucketID: " << bucketID);
+            //          client.EarlyReshuffleComplete(bucketID);
+            //      }
+            //  }
 
              client.EarlyReshuffleComplete(3);
             
