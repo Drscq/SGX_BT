@@ -575,9 +575,7 @@ void Server::handleClient(int clientSockfd) {
                     this->bucket.LoadBucketCiphertextsFromDiskBN(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(2 * this->evictPathBucketIDsComplete[i] + 1),
                                                                 it, ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                 
-                    // if (i != TreeConfig::HEIGHT - 2) {
-                        it += ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;
-                    // }
+                    it += ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;
                     this->bucket.LoadBucketCiphertextsFromDiskBN(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(2 * this->evictPathBucketIDsComplete[i] + 2),
                                                                 it, ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                     if (i != TreeConfig::HEIGHT - 2) {

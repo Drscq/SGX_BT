@@ -573,7 +573,14 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
     }
     this->treeMetaDatas[rootBucketIDComplete].SimpleReset();
     for (const auto& blockID : this->blockIDsDeletedFromStash) {
-        this->blockDataStash.erase(blockID);
+        auto it = this->blockDataStash.find(blockID);
+        if (it != this->blockDataStash.end()) {
+            for (int i = 0; i < ElGamalNTLConfig::BLOCK_CHUNK_SIZE; ++i) {
+                BN_free(it->second.first[0][i]);
+                BN_free(it->second.first[1][i]);
+            }
+            this->blockDataStash.erase(it);
+        }
     }
     auto end = std::chrono::high_resolution_clock::now();
     auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
