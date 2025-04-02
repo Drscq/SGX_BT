@@ -504,32 +504,27 @@ void Client::EarlyReshuffleComplete(BucketConfig::TYPE_BUCKET_ID bucket_id) {
     buffer_sgx.resize(this->permDataSize * 2 + sizeof(bucket_id));
     this->communicator.sendCommand(this->communicator.getSockfd(),
                                    ServerConfig::CMD_COMPLETE_EARLY_RESHUFFLE);
-    #if LOG_BREAKDOWN_COST
-    this->logger.startTiming(this->LogEarlyReshuffleGenPermsScheme2);
-    #endif
+    auto start = std::chrono::high_resolution_clock::now();
     this->treeMetaDatas[bucket_id].reset(this->originalPermComplete);
     this->treeMetaDatas[bucket_id].DividePerm(this->originalPermComplete, 
                                                 this->perm1Complete,
                                                 this->perm2Complete);
-    #if LOG_BREAKDOWN_COST
-    this->logger.stopTiming(this->LogEarlyReshuffleGenPermsScheme2);
-    this->logger.writeToFile();
-    #endif
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "ClientComputationGenPerms: " << elapsed_ns.count() << " ns" << std::endl;
     auto it = buffer_sgx.begin();
     std::memcpy(&(*it), this->perm1Complete.data(), this->permDataSize);
     it += this->permDataSize;
     std::memcpy(&(*it), this->perm2Complete.data(), this->permDataSize);
     it += this->permDataSize;
     std::memcpy(&(*it), &bucket_id, sizeof(bucket_id));
-    #if LOG_BREAKDOWN_COST
-    this->logger.startTiming(this->LogEarlyReshuffleSendPermToServerScheme2);
-    #endif
+
+    start = std::chrono::high_resolution_clock::now();
     this->communicator.sendData(this->communicator.getSockfd(), buffer_sgx.data(), buffer_sgx.size());
     this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
-    #if LOG_BREAKDOWN_COST
-    this->logger.stopTiming(this->LogEarlyReshuffleSendPermToServerScheme2);
-    this->logger.writeToFile();
-    #endif
+    end = std::chrono::high_resolution_clock::now();
+    elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "ClientComputationSendPerm: " << elapsed_ns.count() << " ns" << std::endl;
     this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
 }
 
