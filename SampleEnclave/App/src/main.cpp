@@ -167,8 +167,6 @@ int main(int argc, char* argv[]) {
                     //  client.EarlyReshuffleComplete(bucketID);
                  }
              }
-
-             client.EarlyReshuffleComplete(3);
             
             // Read Path
             client.ReadPathComplete(blockID);
@@ -179,6 +177,7 @@ int main(int argc, char* argv[]) {
                 client.EvictComplete(TreeConfig::EVICTION_PATH_ID);
                 TreeConfig::EVICTION_PATH_ID = (TreeConfig::EVICTION_PATH_ID + 1) % TreeConfig::TOTAL_NUM_LEAF_BUCKETS;
             }
+            client.EarlyReshuffleComplete(3);
             
         } 
     } else if (argv[1] == std::string("client_access_scheme_1")) {
