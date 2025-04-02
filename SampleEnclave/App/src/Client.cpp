@@ -364,33 +364,26 @@ void Client::ReadPathComplete(BlockConfig::TYPE_BLOCK_ID block_id) {
     // Get the path ID of the block with block_id
     this->pathIDComplete = this->PositionMap[block_id];
     // std::cout << "The current path ID of the block " << block_id << " is: " << this->pathIDComplete << std::endl;
-    #if LOG_BREAKDOWN_COST
-    this->logger.startTiming(this->LogReadPathSendPathIDScheme2);
-    #endif
+    auto start = std::chrono::high_resolution_clock::now();
     this->communicator.sendData(this->communicator.getSockfd(),
                                 reinterpret_cast<char*>(&this->pathIDComplete),
                                 sizeof(this->pathIDComplete));
     this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
-    #if LOG_BREAKDOWN_COST
-    this->logger.stopTiming(this->LogReadPathSendPathIDScheme2);
-    this->logger.writeToFile();
+    auto end = std::chrono::high_resolution_clock::now();
+    auto dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    std::cout << this->LogReadPathSendPathIDScheme2 << ": " << dur_ns << std::endl;
     #endif
     // Update the the this->PositionMap[block_id] to the new path ID
-    #if LOG_BREAKDOWN_COST
-    this->logger.startTiming(this->LogReadPathUpdatePathIDScheme2);
-    #endif
+    start = std::chrono::high_resolution_clock::now();
     this->PositionMap[block_id] = PathConfig::GenPathID();
-    #if LOG_BREAKDOWN_COST
-    this->logger.stopTiming(this->LogReadPathUpdatePathIDScheme2);
-    this->logger.writeToFile();
-    #endif
+    end = std::chrono::high_resolution_clock::now();
+    dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    std::cout << this->LogReadPathUpdatePathIDScheme2 << ": " << dur_ns << std::endl;
     #if USE_ASSERT
         assert(this->PositionMap[block_id] >= 0 && this->PositionMap[block_id] < TreeConfig::TOTAL_NUM_LEAF_BUCKETS);
     #endif
     // Collect the corresponding offsets
-    #if LOG_BREAKDOWN_COST
-    this->logger.startTiming(this->LogReadPathGenOffsetsScheme2);
-    #endif
+    start = std::chrono::high_resolution_clock::now();
     this->pathComplete.ConvertPID2BIDs(this->pathIDComplete, TreeConfig::HEIGHT, this->bucketIDOffsets);
     this->counter = 0;
     for (const auto& bucketID : this->bucketIDOffsets) {
@@ -434,21 +427,19 @@ void Client::ReadPathComplete(BlockConfig::TYPE_BLOCK_ID block_id) {
         }
         this->counter++;
     }
-    #if LOG_BREAKDOWN_COST
-    this->logger.stopTiming(this->LogReadPathGenOffsetsScheme2);
-    this->logger.writeToFile();
-    #endif
-    #if LOG_BREAKDOWN_COST
-    this->logger.startTiming(this->LogReadPathSendOffsetsScheme2);
-    #endif
+    end = std::chrono::high_resolution_clock::now();
+    dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    std::cout << this->LogReadPathGenOffsetsScheme2 << ": " << dur_ns << std::endl;
+    
+    start = std::chrono::high_resolution_clock::now();
     this->communicator.sendData(this->communicator.getSockfd(), 
                                 this->offsets.data(),
                                 this->offsetsCharsSize);
     this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
-    #if LOG_BREAKDOWN_COST
-    this->logger.stopTiming(this->LogReadPathSendOffsetsScheme2);
-    this->logger.writeToFile();
-    #endif
+    end = std::chrono::high_resolution_clock::now();
+    dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+    std::cout << this->LogReadPathSendOffsetsScheme2 << ": " << dur_ns << std::endl;
+    
     this->communicator.receiveData(this->communicator.getSockfd(),
                                   this->targetBlockCiphertextsSerializedData,
                                   ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
@@ -458,17 +449,14 @@ void Client::ReadPathComplete(BlockConfig::TYPE_BLOCK_ID block_id) {
             this->targetBlockCiphertextsSerializedData,
             this->opensslTargetBlockCiphertextsBN
         );
-        #if LOG_BREAKDOWN_COST
-        this->logger.startTiming(this->LogReadPathDecryptTargetBlockScheme2);
-        #endif
+        start = std::chrono::high_resolution_clock::now();
         this->elgamal.ParallelDecrypt(this->opensslTargetBlockCiphertextsBN[0], 
             this->opensslTargetBlockCiphertextsBN[1],
             this->opensslTargetBlockDataBN
         );
-        #if LOG_BREAKDOWN_COST
-        this->logger.stopTiming(this->LogReadPathDecryptTargetBlockScheme2);
-        this->logger.writeToFile();
-        #endif 
+        end = std::chrono::high_resolution_clock::now();
+        dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+        std::cout << this->LogReadPathDecryptTargetBlockScheme2 << ": " << dur_ns << std::endl;
         #if UNIT_TEST_OPENSSL_FINAL_CHECK
             BIGNUM* targetBlockIDBN = BN_new();
             BN_set_word(targetBlockIDBN, block_id);

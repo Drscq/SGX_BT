@@ -44,8 +44,8 @@ public:
     std::string LogReadPathGenBIDsScheme1 = "ClientComputationReadPathGenBIDs";
     std::string LogReadPathUpdatePathIDScheme1 = "ClientComputationReadPathUpdatePathID";
     std::string LogReadPathGenOffsetsScheme1 = "ClientComputationReadPathGenOffsets";
-    std::string LogReadPathSendOffsetsSchme1 = "ClientServerBandwidthReadPathSendOffsets";
-    std::string LogReadPathSendPathMDsScheme1 = "ClientServerBandwidthReadPathSendPathMDs";
+    std::string LogReadPathSendOffsetsSchme1 = "ClientServerCommunicationReadPathSendOffsets";
+    std::string LogReadPathSendPathMDsScheme1 = "ClientServerCommunicationReadPathSendPathMDs";
     std::string LogReadPathGenDummyXORScheme1 = "ClientComputationReadPathGenDummyXOR";
     std::string LogReadPathDecryptTargetBlockScheme1 = "ClientComputationReadPathDecryptTargetBlock";
     std::string LogReadPathStoreAccessedBlock2StashScheme1 = "ClientComputationReadPathStoreAccessedBlock2Stash";
@@ -54,21 +54,21 @@ public:
 
     // For the second scheme:
     // 1. ReadPath operation
-    std::string LogReadPathSendPathIDScheme2 = "ClientServerBandwidthReadPathSendPathID";
+    std::string LogReadPathSendPathIDScheme2 = "ClientServerCommunicationReadPathSendPathID";
     std::string LogReadPathUpdatePathIDScheme2 = "ClientComputationReadPathUpdatePathID";
     std::string LogReadPathGenOffsetsScheme2 = "ClientComputationReadPathGenOffsets";
-    std::string LogReadPathSendOffsetsScheme2 = "ClientServerBandwidthReadPathSendOffsets";
+    std::string LogReadPathSendOffsetsScheme2 = "ClientServerCommunicationReadPathSendOffsets";
     std::string LogReadPathDecryptTargetBlockScheme2 = "ClientComputationReadPathDecryptTargetBlock";
     // 2. EarlyReshuffle operation
     std::string LogEarlyReshuffleGenPermsScheme2 = "ClientComputationEarlyReshuffleGenPerms";
     std::string LogEarlyReshuffleSendPermToThirdPartyScheme2 = "ClientThirdPartyBandwidthEarlyReshuffleSendPermToThirdParty";
-    std::string LogEarlyReshuffleSendPermToServerScheme2 = "ClientServerBandwidthEarlyReshuffleSendPermToServer";
+    std::string LogEarlyReshuffleSendPermToServerScheme2 = "ClientServerCommunicationEarlyReshuffleSendPermToServer";
     // 3. Eviction operation
     std::string LogEvictProcessRootBucketScheme2 = "ClientComputationEvictProcessRootBucket";
-    std::string LogEvictSendRootBucketToServerScheme2 = "ClientServerBandwidthEvictSendRootBucketToServer";
+    std::string LogEvictSendRootBucketToServerScheme2 = "ClientServerCommunicationEvictSendRootBucketToServer";
     std::string LogEvictGenTripletEvictPermsScheme2 = "ClientComputationEvictGenTripletEvictPerms";
     std::string LogEvictSendTripletEvictPermsToThirdPartyScheme2 = "ClientThirdPartyBandwidthEvictSendTripletEvictPermsToThirdParty";
-    std::string LogEvictSendTripletEvictPermsToServerScheme2 = "ClientServerBandwidthEvictSendTripletEvictPermsToServer";
+    std::string LogEvictSendTripletEvictPermsToServerScheme2 = "ClientServerCommunicationEvictSendTripletEvictPermsToServer";
     std::string LogEvictGenBucketIDsScheme2 = "ClientComputationEvictGenBucketIDs";
     // Properties
     ClientConfig::TYPE_HOST host;
