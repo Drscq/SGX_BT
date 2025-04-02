@@ -372,7 +372,6 @@ void Client::ReadPathComplete(BlockConfig::TYPE_BLOCK_ID block_id) {
     auto end = std::chrono::high_resolution_clock::now();
     auto dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
     std::cout << this->LogReadPathSendPathIDScheme2 << ": " << dur_ns << std::endl;
-    #endif
     // Update the the this->PositionMap[block_id] to the new path ID
     start = std::chrono::high_resolution_clock::now();
     this->PositionMap[block_id] = PathConfig::GenPathID();
