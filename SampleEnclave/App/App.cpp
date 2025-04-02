@@ -279,7 +279,7 @@ int SGX_CDECL main(int argc, char *argv[])
         if (strcmp(argv[1], "earlyReshuffle1") == 0) {
             Server server(ServerConfig::PORT);
             server.SgxEarlyReshuffleScheme1Init(0);
-            // server.SgxEarlyReshuffleScheme1(global_eid, 0);
+            server.SgxEarlyReshuffleScheme1(global_eid, 0);
         } else if (strcmp(argv[1], "eviction1") == 0) {
             Server server(ServerConfig::PORT);
             // Initialize the path

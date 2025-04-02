@@ -468,7 +468,6 @@ void Server::handleClient(int clientSockfd) {
             } else if (this->command == ServerConfig::CMD_COMPLETE_EARLY_RESHUFFLE) {
                 EnclaveThreadParams* params = new EnclaveThreadParams;
                 params->eid = this->eidSgx;
-                std::cout << "The value of the eidSgx is: " << this->eidSgx << std::endl;
                 params->buffer = this->bufferSgx.data();
                 pthread_create(&this->enclaveThreadEarlyreshuffle2, NULL, &SgxEnclaveThreadFuncEarlyReshuffleScheme2, params);
                 while (flag_shared_sgx[0] == 0) {
@@ -514,6 +513,11 @@ void Server::handleClient(int clientSockfd) {
                 std::cout << "The size of the bucketCiphertextsBNSgx[1]: " << this->bucketCiphertextsBNSgx[1].size() << std::endl;
                 #endif
                 start = std::chrono::high_resolution_clock::now();
+                this->elgamal.ParallelRerandomize(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1]);
+                end = std::chrono::high_resolution_clock::now();
+                elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+                std::cout << "ServerComputationParallelRerandomize: " << elapsed_ns.count() << " ns\n";
+                start = std::chrono::high_resolution_clock::now();
                 BNConfig::ApplyPermutation(this->bucketCiphertextsBNSgx, 
                     this->bucketCiphertextsBNSgxSize,
                     BucketConfig::BUCKET_SIZE,
@@ -521,11 +525,7 @@ void Server::handleClient(int clientSockfd) {
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "ServerComputationApplyPermutation: " << elapsed_ns.count() << " ns\n";
-                start = std::chrono::high_resolution_clock::now();
-                this->elgamal.ParallelRerandomize(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1]);
-                end = std::chrono::high_resolution_clock::now();
-                elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "ServerComputationParallelRerandomize: " << elapsed_ns.count() << " ns\n";
+                this->elgamal.ConvertVecBNCipher2VecChar(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], this->bufferSgx);
                 flag_shared_sgx[3] = 1;
                 while (flag_shared_sgx[4] == 0) {
                     // Wait for the enclave to finish the early reshuffle
@@ -544,7 +544,6 @@ void Server::handleClient(int clientSockfd) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
-                this->elgamal.ConvertVecBNCipher2VecChar(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], this->bufferSgx);
                 ofs_early_reshuffle.open(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDEarlyReshuffleComplete), std::ios::binary);
                 start = std::chrono::high_resolution_clock::now();
                 ofs_early_reshuffle.write(this->bufferSgx.data(), ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
