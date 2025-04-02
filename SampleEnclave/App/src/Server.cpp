@@ -226,7 +226,7 @@ struct EnclaveThreadParams {
 static std::vector<uint8_t> flag_shared_sgx(8, 0);
 static std::vector<uint8_t> flag_shared_sgx_earlyReshufffle2(8, 0);
 static void* SgxEnclaveThreadFuncEarlyReshuffleScheme2(void* arg) {
-    std::fill(flag_shared_sgx_earlyReshufffle2.begin(), flag_shared_sgx_earlyReshufffle2.end(), 0);
+    // std::fill(flag_shared_sgx_earlyReshufffle2.begin(), flag_shared_sgx_earlyReshufffle2.end(), 0);
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
     ecall_early_reshuffle_2(params->eid, params->buffer, flag_shared_sgx_earlyReshufffle2.data()); 
     return nullptr;
@@ -468,12 +468,10 @@ void Server::handleClient(int clientSockfd) {
                 
             } else if (this->command == ServerConfig::CMD_COMPLETE_EARLY_RESHUFFLE) {
                 std::fill(flag_shared_sgx_earlyReshufffle2.begin(), flag_shared_sgx_earlyReshufffle2.end(), 0);
-                std::cout << "flag_shared_sgx_earlyReshufffle2[0]: " << (int)flag_shared_sgx_earlyReshufffle2[0] << std::endl;
                 EnclaveThreadParams* params = new EnclaveThreadParams;
                 params->eid = this->eidSgx;
                 params->buffer = this->bufferSgx.data();
                 pthread_create(&this->enclaveThreadEarlyreshuffle2, NULL, &SgxEnclaveThreadFuncEarlyReshuffleScheme2, params);
-                std::cout << "Launching the SGX thread for early reshuffle" << std::endl;
                 while (flag_shared_sgx_earlyReshufffle2[0] == 0) {
                     // Wait for the enclave to finish the set up
                     __asm__ __volatile__("pause");
@@ -488,19 +486,19 @@ void Server::handleClient(int clientSockfd) {
                 std::memcpy(this->perm2EarlyReshuffleComplete.data(),
                             this->bufferSgx.data() + this->permDataSize,
                             this->permDataSize);
-                // #if defined(UNIT_TEST_SGX)
-                // Check the values in the perm2EarlyReshuffleComplete
-                for (auto& p : this->perm2EarlyReshuffleComplete) {
-                    std::cout << p << " ";
-                }
-                // std::cout << std::endl;
-                // #endif
+                #if defined(UNIT_TEST_SGX)
+                    // Check the values in the perm2EarlyReshuffleComplete
+                    for (auto& p : this->perm2EarlyReshuffleComplete) {
+                        std::cout << p << " ";
+                    }
+                    // std::cout << std::endl;
+                #endif
                 std::memcpy(&this->bucketIDEarlyReshuffleComplete,
                             this->bufferSgx.data() + this->permDataSize * 2,
                             sizeof(this->bucketIDEarlyReshuffleComplete));
-                // #if defined(UNIT_TEST_SGX)
-                std::cout << "Received bucketIDEarlyReshuffleComplete: " << this->bucketIDEarlyReshuffleComplete << std::endl;
-                // #endif
+                #if defined(UNIT_TEST_SGX)
+                    std::cout << "Received bucketIDEarlyReshuffleComplete: " << this->bucketIDEarlyReshuffleComplete << std::endl;
+                #endif
                 // Alternative way to load the data from disk
                 auto start = std::chrono::high_resolution_clock::now();
                 this->bucket.LoadBucketCiphertextsFromDiskBN(BucketConfig::DATADIR + "/" + BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDEarlyReshuffleComplete),
@@ -510,17 +508,17 @@ void Server::handleClient(int clientSockfd) {
                 std::cout << "DiskIOLoadBucketCiphertextsFromDiskBN: " << elapsed_ns.count() << " ns\n";
                 this->elgamal.ConvertVecCharCipher2VecBN(this->rootBucketData, this->bucketCiphertextsBNSgx);
                 #if defined(UNIT_TEST_SGX)
-                std::cout << "The val of the BLOCK_CHUNK_SIZE is: " << ElGamalNTLConfig::BLOCK_CHUNK_SIZE << std::endl;
-                std::cout << "The val of the this->bucketCiphertextsBNSgxSize: " << this->bucketCiphertextsBNSgxSize << std::endl;
-                std::cout << "The size of the bucketCiphertextsBNSgx: " << this->bucketCiphertextsBNSgx.size() << std::endl;
-                std::cout << "The size of the bucketCiphertextsBNSgx[0]: " << this->bucketCiphertextsBNSgx[0].size() << std::endl;
-                std::cout << "The size of the bucketCiphertextsBNSgx[1]: " << this->bucketCiphertextsBNSgx[1].size() << std::endl;
+                    std::cout << "The val of the BLOCK_CHUNK_SIZE is: " << ElGamalNTLConfig::BLOCK_CHUNK_SIZE << std::endl;
+                    std::cout << "The val of the this->bucketCiphertextsBNSgxSize: " << this->bucketCiphertextsBNSgxSize << std::endl;
+                    std::cout << "The size of the bucketCiphertextsBNSgx: " << this->bucketCiphertextsBNSgx.size() << std::endl;
+                    std::cout << "The size of the bucketCiphertextsBNSgx[0]: " << this->bucketCiphertextsBNSgx[0].size() << std::endl;
+                    std::cout << "The size of the bucketCiphertextsBNSgx[1]: " << this->bucketCiphertextsBNSgx[1].size() << std::endl;
                 #endif
                 start = std::chrono::high_resolution_clock::now();
                 this->elgamal.ParallelRerandomize(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1]);
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "ServerComputationParallelRerandomize: " << elapsed_ns.count() << " ns\n";
+                std::cout << "ServerComputationParallelRerandomizeBucket: " << elapsed_ns.count() << " ns\n";
                 start = std::chrono::high_resolution_clock::now();
                 BNConfig::ApplyPermutation(this->bucketCiphertextsBNSgx, 
                     this->bucketCiphertextsBNSgxSize,
@@ -528,7 +526,7 @@ void Server::handleClient(int clientSockfd) {
                     this->perm2EarlyReshuffleComplete);
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "ServerComputationApplyPermutation: " << elapsed_ns.count() << " ns\n";
+                std::cout << "ServerComputationApplyPermutationBucket: " << elapsed_ns.count() << " ns\n";
                 this->elgamal.ConvertVecBNCipher2VecChar(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], this->bufferSgx);
                 flag_shared_sgx_earlyReshufffle2[3] = 1;
                 while (flag_shared_sgx_earlyReshufffle2[4] == 0) {
@@ -536,14 +534,14 @@ void Server::handleClient(int clientSockfd) {
                     __asm__ __volatile__("pause");
                 }
                 flag_shared_sgx_earlyReshufffle2[5] = 1;
-                start = std::chrono::high_resolution_clock::now();
+                // start = std::chrono::high_resolution_clock::now();
                 while (flag_shared_sgx_earlyReshufffle2[6] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
-                end = std::chrono::high_resolution_clock::now();
-                elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
+                // end = std::chrono::high_resolution_clock::now();
+                // elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+                // std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
                 while (flag_shared_sgx_earlyReshufffle2[7] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
@@ -557,7 +555,6 @@ void Server::handleClient(int clientSockfd) {
                 std::cout << "DiskIOWriteBucketCiphertextsToDisk: " << elapsed_ns.count() << " ns\n";
                 pthread_join(this->enclaveThreadEarlyreshuffle2, NULL);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                std::cout << "The early reshuffle is done!" << std::endl;
             } else if (this->command == ServerConfig::CMD_COMPLETE_EVICT_CLIENT_TO_SERVER) {
                 EnclaveThreadParams* params = new EnclaveThreadParams;
                 params->eid = this->eidSgx;
@@ -587,7 +584,7 @@ void Server::handleClient(int clientSockfd) {
                         it += ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;
                     }
                 }
-                // #if UNIT_TEST_OPENSSL
+                #if UNIT_TEST_OPENSSL
                     // Test the elements are equal to 1 or not in the evictCipherPathsDataBNComplete
                     for (int i = 0; i < 2 * (PathConfig::HEIGHT - 1) + 1; ++i) {
                         BIGNUM* bn_one = BN_new();
@@ -626,7 +623,7 @@ void Server::handleClient(int clientSockfd) {
                         }
                         BN_free(bn_one);
                     }
-                // #endif
+                #endif
                 auto end = std::chrono::high_resolution_clock::now();
                 auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "DiskIOLoadBucketCiphertextsFromDiskBN: " << elapsed_ns.count() << " ns\n";
@@ -638,12 +635,12 @@ void Server::handleClient(int clientSockfd) {
                 this->communicator.receiveCommand(clientSockfd, this->cmd1);
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "ServerCommunicationSendData: " << elapsed_ns.count() << " ns\n";
+                std::cout << "ClientServerCommunicationSendRootBucketData: " << elapsed_ns.count() << " ns\n";
                 this->communicator.receiveData(clientSockfd,
                                                 this->evictCipherPathsDataBNComplete.data(),
                                                 ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                // #if UNIT_TEST_OPENSSL
+                #if UNIT_TEST_OPENSSL
                     std::vector<std::vector<BIGNUM*>> rootBucketCiphertextsBN(2);
                     rootBucketCiphertextsBN[0].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
                     rootBucketCiphertextsBN[1].resize(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
@@ -673,7 +670,7 @@ void Server::handleClient(int clientSockfd) {
                         BN_free(rootBucketCiphertextsBN[1][i]);
                     }
                     BN_free(bn_one);
-                // #endif
+                #endif
                 this->communicator.receiveData(clientSockfd,
                                                 this->tripletBucketCiphertextsSerializedDataSgx.data(),
                                                 this->triplet_evict_perm_size * 2);
@@ -690,7 +687,7 @@ void Server::handleClient(int clientSockfd) {
                             this->evictCipherPathsDataBNComplete.data(),
                             this->tripletBucketCiphertextsSerializedDataSgxSize);
                 this->elgamal.ConvertVecCharCipher2VecBN(this->tripletBucketCiphertextsSerializedDataSgx, this->tripletBucketCiphertextsBNSgx);
-                // #if UNIT_TEST_OPENSSL
+                #if UNIT_TEST_OPENSSL
                     bn_one = BN_new();
                     BN_one(bn_one);
                     // check the elements in the m_tripletBucketsCiphertextsBN
@@ -708,13 +705,13 @@ void Server::handleClient(int clientSockfd) {
                         BN_free(tripletBucketsDataBN[i]);
                     }
                     BN_free(bn_one);
-                // #endif
+                #endif
                 
                 start = std::chrono::high_resolution_clock::now();
                 this->elgamal.ParallelRerandomize(this->tripletBucketCiphertextsBNSgx[0], this->tripletBucketCiphertextsBNSgx[1]);
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "ServerComputationParallelRerandomize: " << elapsed_ns.count() << " ns\n";
+                std::cout << "ServerComputationParallelRerandomizeTripletBuckets: " << elapsed_ns.count() << " ns\n";
                 start = std::chrono::high_resolution_clock::now();
                 BNConfig::ApplyPermutation(this->tripletBucketCiphertextsBNSgx,
                     this->bucketCiphertextsBNSgxSize * 3,
@@ -722,7 +719,7 @@ void Server::handleClient(int clientSockfd) {
                     this->tripletEvictPermComplete);
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "ServerComputationApplyPermutation: " << elapsed_ns.count() << " ns\n";
+                std::cout << "ServerComputationApplyPermutationTripletBucket: " << elapsed_ns.count() << " ns\n";
                 #if UNIT_TEST_OPENSSL
                     bn_one = BN_new();
                     BN_one(bn_one);
@@ -743,7 +740,7 @@ void Server::handleClient(int clientSockfd) {
                     BN_free(bn_one);
                 #endif
                 this->elgamal.ConvertVecBNCipher2VecChar(this->tripletBucketCiphertextsBNSgx[0], this->tripletBucketCiphertextsBNSgx[1], this->tripletBucketCiphertextsSerializedDataSgx);
-                // #if UNIT_TEST_OPENSSL
+                #if UNIT_TEST_OPENSSL
                     bn_one = BN_new();
                     BN_one(bn_one);
                     // check the elements in the this->tripletBucketCiphertextsSerializedDataSgx
@@ -775,22 +772,22 @@ void Server::handleClient(int clientSockfd) {
                     }
                     BN_free(bn_one);
                 
-                // #endif
+                #endif
                 flag_shared_sgx_evict2[2] = 1;
                 flag_shared_sgx_evict2[3] = 1;
-                start = std::chrono::high_resolution_clock::now();
+                // start = std::chrono::high_resolution_clock::now();
                 while (flag_shared_sgx_evict2[4] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
-                end = std::chrono::high_resolution_clock::now();
-                elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
+                // end = std::chrono::high_resolution_clock::now();
+                // elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+                // std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
                 while (flag_shared_sgx_evict2[5] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
-                // #if UNIT_TEST_OPENSSL
+                #if UNIT_TEST_OPENSSL
                     bn_one = BN_new();
                     BN_one(bn_one);
                     // check the elements in the this->tripletBucketCiphertextsSerializedDataSgx
@@ -823,7 +820,7 @@ void Server::handleClient(int clientSockfd) {
                     }
                     BN_free(bn_one);
                 
-                // #endif
+                #endif
                 
                 // copy the data from this->tripletBucketCiphertextsSerializedDataSgx
                 // to the this->evictCipherPathsDataBNComplete
@@ -842,11 +839,13 @@ void Server::handleClient(int clientSockfd) {
                 std::memcpy(this->tripletEvictPermComplete.data(),
                             this->tripletBucketCiphertextsSerializedDataSgx.data() + this->triplet_evict_perm_size,
                             this->triplet_evict_perm_size);
-                std::cout << "The tripletEvictPermComplete is: " << std::endl;
-                for (auto& p : this->tripletEvictPermComplete) {
-                    std::cout << p << " ";
-                }
-                std::cout << std::endl;
+                #if UNIT_TEST_OPENSSL
+                    std::cout << "The tripletEvictPermComplete is: " << std::endl;
+                    for (auto& p : this->tripletEvictPermComplete) {
+                        std::cout << p << " ";
+                    }
+                    std::cout << std::endl;
+                #endif
 
                 while (flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 1] == 0) {
                     // Wait for the enclave to finish the early reshuffle
@@ -869,7 +868,7 @@ void Server::handleClient(int clientSockfd) {
                 }
                 
                 this->elgamal.ConvertVecCharCipher2VecBN(this->tripletBucketCiphertextsSerializedDataSgx, this->tripletBucketCiphertextsBNSgx);
-                // #if UNIT_TEST_OPENSSL
+                #if UNIT_TEST_OPENSSL
                     bn_one = BN_new();
                     BN_one(bn_one);
                     // check the elements in the m_tripletBucketsCiphertextsBN
@@ -888,12 +887,12 @@ void Server::handleClient(int clientSockfd) {
                         BN_free(tripletBucketsDataBN[i]);
                     }
                     BN_free(bn_one);
-                // #endif
+                #endif
                 start = std::chrono::high_resolution_clock::now();
                 this->elgamal.ParallelRerandomize(this->tripletBucketCiphertextsBNSgx[0], this->tripletBucketCiphertextsBNSgx[1]);
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "ServerComputationParallelRerandomize: " << elapsed_ns.count() << " ns\n";
+                std::cout << "ServerComputationParallelRerandomizeTripletBuckets: " << elapsed_ns.count() << " ns\n";
 
                 start = std::chrono::high_resolution_clock::now();
                 BNConfig::ApplyPermutation(this->tripletBucketCiphertextsBNSgx,
@@ -902,7 +901,7 @@ void Server::handleClient(int clientSockfd) {
                     this->tripletEvictPermComplete);
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "ServerComputationApplyPermutation: " << elapsed_ns.count() << " ns\n";
+                std::cout << "ServerComputationApplyPermutationTripletBuckets: " << elapsed_ns.count() << " ns\n";
                 #if UNIT_TEST_OPENSSL
                     bn_one = BN_new();
                     BN_one(bn_one);
@@ -923,21 +922,19 @@ void Server::handleClient(int clientSockfd) {
                 this->elgamal.ConvertVecBNCipher2VecChar(this->tripletBucketCiphertextsBNSgx[0], this->tripletBucketCiphertextsBNSgx[1], this->tripletBucketCiphertextsSerializedDataSgx);
                 flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 2] = 1;
                 flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 3] = 1;
-                start = std::chrono::high_resolution_clock::now();
+                // start = std::chrono::high_resolution_clock::now();
                 while (flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 4] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
-                end = std::chrono::high_resolution_clock::now();
-                elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
+                // end = std::chrono::high_resolution_clock::now();
+                // elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+                // std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
                 while (flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 5] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
-                // copy the data from this->tripletBucketCiphertextsSerializedDataSgx
-                // to the this->evictCipherPathsDataBNComplete
-                // #if UNIT_TEST_OPENSSL
+                #if UNIT_TEST_OPENSSL
                     bn_one = BN_new();
                     BN_one(bn_one);
                     // check the elements in the this->tripletBucketCiphertextsSerializedDataSgx
@@ -969,7 +966,7 @@ void Server::handleClient(int clientSockfd) {
                         triplet_evict_bucketCiphertextsBN[1][i] = BN_new();
                     }
                     BN_free(bn_one);
-                // #endif
+                #endif
   
                     // Deserialize the triplet_evict_bucketCiphertextsSerializedData into this->path_evict_bucketCiphertexts_complete
                     for (BucketConfig::TYPE_SMALL_INDEX_U ii = 0; ii < 3; ++ii) {
@@ -992,31 +989,31 @@ void Server::handleClient(int clientSockfd) {
                 }
                 // Write the this->path_evict_bucketCiphertexts_complete to the disk
                 start = std::chrono::high_resolution_clock::now();
-                this->ofs_evict.open(
-                    BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0),
-                    std::ios::binary
-                );
-                this->ofs_evict.write(this->evictCipherPathsDataBNComplete.data(),
-                    ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS
-                );
-                this->ofs_evict.close();
-                for (PathConfig::TYPE_PATH_SIZE i = 0; i < TreeConfig::HEIGHT - 1; ++i) {
                     this->ofs_evict.open(
-                        BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 1),
+                        BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(0),
                         std::ios::binary
                     );
-                    this->ofs_evict.write(this->evictCipherPathsDataBNComplete.data() + (i * 2 + 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
-                                        ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                     this->ofs_evict.close();
+                    this->ofs_evict.write(this->evictCipherPathsDataBNComplete.data(),
+                        ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS
+                    );
+                    this->ofs_evict.close();
+                    for (PathConfig::TYPE_PATH_SIZE i = 0; i < TreeConfig::HEIGHT - 1; ++i) {
+                        this->ofs_evict.open(
+                            BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 1),
+                            std::ios::binary
+                        );
+                        this->ofs_evict.write(this->evictCipherPathsDataBNComplete.data() + (i * 2 + 1) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                                            ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                        this->ofs_evict.close();
 
-                     this->ofs_evict.open(
-                        BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 2),
-                        std::ios::binary
-                    );
-                    this->ofs_evict.write(this->evictCipherPathsDataBNComplete.data() + (i * 2 + 2) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
-                                        ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-                     this->ofs_evict.close();
-                }
+                        this->ofs_evict.open(
+                            BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->evictPathBucketIDsComplete[i] * 2 + 2),
+                            std::ios::binary
+                        );
+                        this->ofs_evict.write(this->evictCipherPathsDataBNComplete.data() + (i * 2 + 2) * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS,
+                                            ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+                        this->ofs_evict.close();
+                    }
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "DiskIOWriteBucketCiphertextsToDisk: " << elapsed_ns.count() << " ns\n"; 
