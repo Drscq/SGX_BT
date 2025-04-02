@@ -224,10 +224,11 @@ struct EnclaveThreadParams {
 };
 // static uint8_t flag_shared_sgx = 0;
 static std::vector<uint8_t> flag_shared_sgx(8, 0);
+static std::vector<uint8_t> flag_shared_sgx_earlyReshufffle2(8, 0);
 static void* SgxEnclaveThreadFuncEarlyReshuffleScheme2(void* arg) {
-    std::fill(flag_shared_sgx.begin(), flag_shared_sgx.end(), 0);
+    std::fill(flag_shared_sgx_earlyReshufffle2.begin(), flag_shared_sgx_earlyReshufffle2.end(), 0);
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
-    ecall_early_reshuffle_2(params->eid, params->buffer, flag_shared_sgx.data()); 
+    ecall_early_reshuffle_2(params->eid, params->buffer, flag_shared_sgx_earlyReshufffle2.data()); 
     return nullptr;
 }
 static std::vector<uint8_t> flag_shared_sgx_evict2(6 * PathConfig::HEIGHT, 0);
@@ -470,14 +471,14 @@ void Server::handleClient(int clientSockfd) {
                 params->eid = this->eidSgx;
                 params->buffer = this->bufferSgx.data();
                 pthread_create(&this->enclaveThreadEarlyreshuffle2, NULL, &SgxEnclaveThreadFuncEarlyReshuffleScheme2, params);
-                while (flag_shared_sgx[0] == 0) {
+                while (flag_shared_sgx_earlyReshufffle2[0] == 0) {
                     // Wait for the enclave to finish the set up
                     __asm__ __volatile__("pause");
                 }
                 this->communicator.receiveData(clientSockfd, this->bufferSgx.data(), this->permsAddIdSizeEarlyReshuffleSgx);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                flag_shared_sgx[1] = 1;
-                while (flag_shared_sgx[2] == 0) {
+                flag_shared_sgx_earlyReshufffle2[1] = 1;
+                while (flag_shared_sgx_earlyReshufffle2[2] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
@@ -526,21 +527,21 @@ void Server::handleClient(int clientSockfd) {
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "ServerComputationApplyPermutation: " << elapsed_ns.count() << " ns\n";
                 this->elgamal.ConvertVecBNCipher2VecChar(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], this->bufferSgx);
-                flag_shared_sgx[3] = 1;
-                while (flag_shared_sgx[4] == 0) {
+                flag_shared_sgx_earlyReshufffle2[3] = 1;
+                while (flag_shared_sgx_earlyReshufffle2[4] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
-                flag_shared_sgx[5] = 1;
+                flag_shared_sgx_earlyReshufffle2[5] = 1;
                 start = std::chrono::high_resolution_clock::now();
-                while (flag_shared_sgx[6] == 0) {
+                while (flag_shared_sgx_earlyReshufffle2[6] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
                 std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
-                while (flag_shared_sgx[7] == 0) {
+                while (flag_shared_sgx_earlyReshufffle2[7] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
