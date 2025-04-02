@@ -1019,7 +1019,6 @@ void Server::handleClient(int clientSockfd) {
                 std::cout << "DiskIOWriteBucketCiphertextsToDisk: " << elapsed_ns.count() << " ns\n"; 
                 pthread_join(enclaveThread, NULL);
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                std::cout << "The evict operation has finished." << std::endl;
             } else if (this->command == ServerConfig::CMD_INIT_BINARY_TREE_SCHEME1_CLIENT_TO_SERVER) {
                 std::cout << "Received command: CMD_INIT_BINARY_TREE_SCHEME1_CLIENT_TO_SERVER" << std::endl;
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
