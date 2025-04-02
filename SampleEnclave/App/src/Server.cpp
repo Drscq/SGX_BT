@@ -468,6 +468,7 @@ void Server::handleClient(int clientSockfd) {
             } else if (this->command == ServerConfig::CMD_COMPLETE_EARLY_RESHUFFLE) {
                 EnclaveThreadParams* params = new EnclaveThreadParams;
                 params->eid = this->eidSgx;
+                std::cout << "The value of the eidSgx is: " << this->eidSgx << std::endl;
                 params->buffer = this->bufferSgx.data();
                 pthread_create(&this->enclaveThreadEarlyreshuffle2, NULL, &SgxEnclaveThreadFuncEarlyReshuffleScheme2, params);
                 while (flag_shared_sgx[0] == 0) {

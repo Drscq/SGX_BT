@@ -167,7 +167,7 @@ namespace ServerConfig {
 namespace PathConfig {
     typedef long long TYPE_PATH_ID;
     typedef size_t TYPE_PATH_SIZE;
-    inline constexpr TYPE_PATH_SIZE HEIGHT = 8;
+    inline constexpr TYPE_PATH_SIZE HEIGHT = 3;
     inline TYPE_PATH_SIZE REAL_BLOCK_NUM = 2 * HEIGHT;
     inline TYPE_PATH_ID GenPathID() {
         std::random_device rd;
@@ -261,7 +261,7 @@ namespace BucketConfig {
     typedef size_t TYPE_BUCKET_ID;
     typedef size_t TYPE_THREAD_NUM;
     const TYPE_BUCKET_SIZE BUCKET_REAL_BLOCK_CAPACITY = 3;
-    const TYPE_BUCKET_SIZE BUCKET_DUMMY_BLOCK_CAPACITY = 10;
+    const TYPE_BUCKET_SIZE BUCKET_DUMMY_BLOCK_CAPACITY = 1;
     const TYPE_BUCKET_SIZE BUCKET_SIZE = BUCKET_REAL_BLOCK_CAPACITY + BUCKET_DUMMY_BLOCK_CAPACITY;
     inline void ApplyPerm(std::vector<std::vector<std::pair<ZZ, ZZ>>>& bucketCiphertexts, const std::vector<TYPE_SLOT_ID>& perm) {
             TYPE_BUCKET_SIZE n = bucketCiphertexts.size();

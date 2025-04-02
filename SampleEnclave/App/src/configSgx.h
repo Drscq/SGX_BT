@@ -18,7 +18,7 @@ typedef long long TYPE_PATH_ID_SGX;
 typedef unsigned short TYPE_SLOT_ID_SGX;
 typedef short TYPE_SLOT_ID_S_SGX;
 const TYPE_UNSIGNED_SIZE_SGX BUCKET_REAL_BLOCK_CAPACITY_SGX = 3;
-const TYPE_UNSIGNED_SIZE_SGX BUCKET_SIZE_SGX = 13;
+const TYPE_UNSIGNED_SIZE_SGX BUCKET_SIZE_SGX = 4;
 inline TYPE_UNSIGNED_SIZE_SGX META_DATA_SIZE_SGX = sizeof(size_t) + BUCKET_SIZE_SGX * (sizeof(bool)) +
                                             sizeof(size_t) + BUCKET_REAL_BLOCK_CAPACITY_SGX * sizeof(TYPE_BLOCK_ID_SGX) +
                                             BUCKET_REAL_BLOCK_CAPACITY_SGX * sizeof(TYPE_BLOCK_ID_SGX) +
@@ -586,7 +586,7 @@ struct META_DATA_SGX {
 };
 
 namespace TreeConfigSgx {
-    inline constexpr TYPE_PATH_SIZE_SGX HEIGHT = 8;
+    inline constexpr TYPE_PATH_SIZE_SGX HEIGHT = 3;
     inline bool CanBlockGoThroughBucket(TYPE_PATH_ID_SGX pathID,
                                         TYPE_PATH_SIZE_SGX height,
                                         TYPE_BUCKET_ID_SGX bucketID,

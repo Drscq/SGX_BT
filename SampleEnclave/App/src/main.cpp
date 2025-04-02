@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
         client.InitCreateBinaryTree();
         
         // Randomly access the blocks
-        size_t accessCount = 100;
+        size_t accessCount = 2;
         for (size_t i = 0; i < accessCount; ++i) {
             std::cout << "Iteration " << i << std::endl;
             // DEBUG_PRINT("Iteration " << i);
@@ -168,7 +168,7 @@ int main(int argc, char* argv[]) {
                  }
              }
 
-            //  client.EarlyReshuffleComplete(3);
+             client.EarlyReshuffleComplete(3);
             
             // Read Path
             client.ReadPathComplete(blockID);
