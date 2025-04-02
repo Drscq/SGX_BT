@@ -534,14 +534,14 @@ void Server::handleClient(int clientSockfd) {
                     __asm__ __volatile__("pause");
                 }
                 flag_shared_sgx_earlyReshufffle2[5] = 1;
-                // start = std::chrono::high_resolution_clock::now();
+                start = std::chrono::high_resolution_clock::now();
                 while (flag_shared_sgx_earlyReshufffle2[6] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
-                // end = std::chrono::high_resolution_clock::now();
-                // elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                // std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
+                end = std::chrono::high_resolution_clock::now();
+                elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+                std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
                 while (flag_shared_sgx_earlyReshufffle2[7] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
@@ -775,14 +775,14 @@ void Server::handleClient(int clientSockfd) {
                 #endif
                 flag_shared_sgx_evict2[2] = 1;
                 flag_shared_sgx_evict2[3] = 1;
-                // start = std::chrono::high_resolution_clock::now();
+                start = std::chrono::high_resolution_clock::now();
                 while (flag_shared_sgx_evict2[4] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
-                // end = std::chrono::high_resolution_clock::now();
-                // elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                // std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
+                end = std::chrono::high_resolution_clock::now();
+                elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+                std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
                 while (flag_shared_sgx_evict2[5] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
@@ -922,14 +922,14 @@ void Server::handleClient(int clientSockfd) {
                 this->elgamal.ConvertVecBNCipher2VecChar(this->tripletBucketCiphertextsBNSgx[0], this->tripletBucketCiphertextsBNSgx[1], this->tripletBucketCiphertextsSerializedDataSgx);
                 flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 2] = 1;
                 flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 3] = 1;
-                // start = std::chrono::high_resolution_clock::now();
+                start = std::chrono::high_resolution_clock::now();
                 while (flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 4] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");
                 }
-                // end = std::chrono::high_resolution_clock::now();
-                // elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                // std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
+                end = std::chrono::high_resolution_clock::now();
+                elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+                std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
                 while (flag_shared_sgx_evict2[i * this->flagIdxEvict2 + 5] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");

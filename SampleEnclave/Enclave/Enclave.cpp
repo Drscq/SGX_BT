@@ -383,6 +383,7 @@ void ecall_evict_2(char* buffer, uint8_t* flags) {
     while (!flags[2]) {
         __asm__ __volatile__("pause");
     }
+    
     BNConfig::ConvertVecCharCipher2VecBN(buffer, perm1TripletCiphertextsEviction2);
     #if UNIT_TEST_OPENSSL
         BIGNUM* bn_one = BN_new();
