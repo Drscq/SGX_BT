@@ -224,14 +224,14 @@ struct EnclaveThreadParams {
 };
 // static uint8_t flag_shared_sgx = 0;
 static std::vector<uint8_t> flag_shared_sgx(8, 0);
-void* SgxEnclaveThreadFuncEarlyReshuffleScheme2(void* arg) {
+static void* SgxEnclaveThreadFuncEarlyReshuffleScheme2(void* arg) {
     std::fill(flag_shared_sgx.begin(), flag_shared_sgx.end(), 0);
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
     ecall_early_reshuffle_2(params->eid, params->buffer, flag_shared_sgx.data()); 
     return nullptr;
 }
 static std::vector<uint8_t> flag_shared_sgx_evict2(6 * PathConfig::HEIGHT, 0);
-void* SgxEnclaveThreadFuncEvictScheme2(void* arg) {
+static void* SgxEnclaveThreadFuncEvictScheme2(void* arg) {
     std::fill(flag_shared_sgx_evict2.begin(), flag_shared_sgx_evict2.end(), 0);
     EnclaveThreadParams* params = static_cast<EnclaveThreadParams*>(arg);
     ecall_evict_2(params->eid, params->buffer, flag_shared_sgx_evict2.data());

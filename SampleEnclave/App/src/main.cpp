@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
                  if (client.treeMetaDatas[bucketID].count == BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY) {
                      // DEBUG_PRINT("Early Reshuffle for bucketID: " << bucketID);
                      std::cout << "Early Reshuffle for bucketID: " << bucketID << std::endl;
-                    //  client.EarlyReshuffleComplete(bucketID);
+                     client.EarlyReshuffleComplete(bucketID);
                  }
              }
             
@@ -177,7 +177,6 @@ int main(int argc, char* argv[]) {
                 client.EvictComplete(TreeConfig::EVICTION_PATH_ID);
                 TreeConfig::EVICTION_PATH_ID = (TreeConfig::EVICTION_PATH_ID + 1) % TreeConfig::TOTAL_NUM_LEAF_BUCKETS;
             }
-            client.EarlyReshuffleComplete(3);
             
         } 
     } else if (argv[1] == std::string("client_access_scheme_1")) {
