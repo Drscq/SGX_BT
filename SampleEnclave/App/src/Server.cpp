@@ -467,10 +467,13 @@ void Server::handleClient(int clientSockfd) {
                 #endif
                 
             } else if (this->command == ServerConfig::CMD_COMPLETE_EARLY_RESHUFFLE) {
+                std::fill(flag_shared_sgx_earlyReshufffle2.begin(), flag_shared_sgx_earlyReshufffle2.end(), 0);
+                std::cout << "flag_shared_sgx_earlyReshufffle2[0]: " << (int)flag_shared_sgx_earlyReshufffle2[0] << std::endl;
                 EnclaveThreadParams* params = new EnclaveThreadParams;
                 params->eid = this->eidSgx;
                 params->buffer = this->bufferSgx.data();
                 pthread_create(&this->enclaveThreadEarlyreshuffle2, NULL, &SgxEnclaveThreadFuncEarlyReshuffleScheme2, params);
+                std::cout << "Launching the SGX thread for early reshuffle" << std::endl;
                 while (flag_shared_sgx_earlyReshufffle2[0] == 0) {
                     // Wait for the enclave to finish the set up
                     __asm__ __volatile__("pause");

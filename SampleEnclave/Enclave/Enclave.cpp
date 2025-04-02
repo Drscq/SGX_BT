@@ -307,6 +307,7 @@ void ecall_evict_1(char* buffer, uint8_t* flags) {
 // std::vector<std::vector<BIGNUM*>> BucketCiphertexts(2, std::vector<BIGNUM*>(BNConfig::BUCKET_CHUNK_SIZE_SGX, BN_new()));
 // The enclave functions for the second scheme
 void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
+    printf("Start the early reshuffle 2\n");
     std::vector<TYPE_SLOT_ID_SGX> perm1EarlyReshuffleComplete_sgx(BUCKET_SIZE_SGX, 1);
     std::vector<std::vector<BIGNUM*>> BucketCiphertexts;
     BucketCiphertexts.resize(2);
@@ -318,6 +319,7 @@ void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
         }
     }
     BNConfig::InitMGHC();
+    printf("After the initMGHC\n");
     flags[0] = 1;
     while (flags[1] == 0) {
         // Wait for the buffer to be ready
@@ -338,6 +340,7 @@ void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
     while (!flags[3]) {
         __asm__ __volatile__("pause");
     }
+    printf("The content of the buffer\n");
     BNConfig::ConvertVecCharCipher2VecBN(buffer, BucketCiphertexts);
     flags[4] = 1;
     while (!flags[5]) {
