@@ -449,13 +449,10 @@ void Client::ReadPathComplete(BlockConfig::TYPE_BLOCK_ID block_id) {
     this->logger.stopTiming(this->LogReadPathSendOffsetsScheme2);
     this->logger.writeToFile();
     #endif
-    // std::cout << "The size of the offsets: " << this->offsetsCharsSize << std::endl;
     this->communicator.receiveData(this->communicator.getSockfd(),
                                   this->targetBlockCiphertextsSerializedData,
                                   ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
     this->communicator.sendCommand(this->communicator.getSockfd(), ServerConfig::CMD_SUCCESS);
-    // this->elgamal.DeserializeCiphertexts(this->targetBlockCiphertextsSerializedData, this->targetBlockCiphertexts);
-    // this->elgamal.ParallelDecrypt(this->targetBlockCiphertexts, this->targetBlockData);
     if (this->blockDataStash.find(block_id) == this->blockDataStash.end()) {
         this->elgamal.ConvertVecCharCipher2VecBN(
             this->targetBlockCiphertextsSerializedData,
@@ -573,6 +570,9 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
         }
     }
     this->treeMetaDatas[rootBucketIDComplete].SimpleReset();
+    auto end = std::chrono::high_resolution_clock::now();
+    auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
+    std::cout << "ClientComputationUpdateMetaData:" << elapsed_ns.count() << " ns" << std::endl;
     for (const auto& blockID : this->blockIDsDeletedFromStash) {
         auto it = this->blockDataStash.find(blockID);
         if (it != this->blockDataStash.end()) {
@@ -583,28 +583,27 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
             this->blockDataStash.erase(it);
         }
     }
-    auto end = std::chrono::high_resolution_clock::now();
-    auto elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    std::cout << "ClientComputationUpdateMetaData:" << elapsed_ns.count() << " ns" << std::endl;
     start = std::chrono::high_resolution_clock::now();
     this->elgamal.ParallelRerandomize(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1]);
-    // Check the values of the bucketCiphertextsBNSgx[0] and bucketCiphertextsBNSgx[1]
-    std::vector<BIGNUM*> bucketPlaintextsBN(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
-    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
-        bucketPlaintextsBN[i] = BN_new();
-    }
-    this->elgamal.ParallelDecrypt(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], bucketPlaintextsBN);
-    std::cout << "The bucketPlaintextsBN: ";
-    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
-        std::cout << BN_get_word(bucketPlaintextsBN[i]) << " ";
-    }
-    std::cout << std::endl;
-    for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
-        BN_free(bucketPlaintextsBN[i]);
-    }
     end = std::chrono::high_resolution_clock::now();
     elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
     std::cout << "ClientComputationRerandomization: " << elapsed_ns.count() << " ns" << std::endl;
+    // Check the values of the bucketCiphertextsBNSgx[0] and bucketCiphertextsBNSgx[1]
+    #if UNIT_TEST_OPENSSL
+        std::vector<BIGNUM*> bucketPlaintextsBN(ElGamalNTLConfig::BUCKET_CHUNK_SIZE);
+        for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
+            bucketPlaintextsBN[i] = BN_new();
+        }
+        this->elgamal.ParallelDecrypt(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], bucketPlaintextsBN);
+        std::cout << "The bucketPlaintextsBN: ";
+        for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
+            std::cout << BN_get_word(bucketPlaintextsBN[i]) << " ";
+        }
+        std::cout << std::endl;
+        for (size_t i = 0; i < ElGamalNTLConfig::BUCKET_CHUNK_SIZE; i++) {
+            BN_free(bucketPlaintextsBN[i]);
+        }
+    #endif
     // Serialize the blockCiphertexts in the rootBucketCiphertextsEvictComplete into the rootBucketDataEvictComplete
     this->elgamal.ConvertVecBNCipher2VecChar(this->bucketCiphertextsBNSgx[0], this->bucketCiphertextsBNSgx[1], this->rootBucketDataEvictComplete);
     start = std::chrono::high_resolution_clock::now();
@@ -614,7 +613,7 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
     this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
     end = std::chrono::high_resolution_clock::now();
     elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    std::cout << "ClientCommunicationSendRootBucket: " << elapsed_ns.count() << " ns" << std::endl;
+    std::cout << "ClientServerCommunicationSendRootBucket: " << elapsed_ns.count() << " ns" << std::endl;
     // Prepare the data structure for the GenTripletEvictPerms
     for (BucketConfig::TYPE_SMALL_INDEX_U i = 0; i < 3; ++i) {
         this->tripletBucketIDsComplete[i] = i;
@@ -675,7 +674,7 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
     this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
     end = std::chrono::high_resolution_clock::now();
     elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    std::cout << "ClientCommunicationSendTripletEvictPerms: " << elapsed_ns.count() << " ns" << std::endl;
+    std::cout << "ClientServerCommunicationSendTripletEvictPerms: " << elapsed_ns.count() << " ns" << std::endl;
     this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
     TreeConfig::GenPathBucketIDsInReverseOrder(path_id,
                                               TreeConfig::HEIGHT,
@@ -709,6 +708,7 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
         end = std::chrono::high_resolution_clock::now();
         elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
         std::cout << "ClientComputationGenTripletEvictPerms: " << elapsed_ns.count() << " ns" << std::endl;
+        #if UNIT_TEST_OPENSSL
         std::cout << "The tripletPermIntermediateCompleteThirdParty: ";
         for (const auto& p : this->tripletPermIntermediateCompleteThirdParty) {
             std::cout << p << " ";
@@ -719,14 +719,7 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
             std::cout << p << " ";
         }
         std::cout << std::endl;
-        // this->communicator2ThirdParty.sendCommand(this->communicator2ThirdParty.getSockfd(),
-        //                                          ServerConfig::CMD_COMPLETE_EVICT_CLIENT_TO_THIRD_PARTY);
-      
-        // this->communicator2ThirdParty.sendData(this->communicator2ThirdParty.getSockfd(),
-        //                                         this->tripletPermIntermediateCompleteThirdParty.data(),
-        //                                         this->triplet_evict_perm_size);
-        // this->communicator2ThirdParty.receiveCommand(this->communicator2ThirdParty.getSockfd(), this->cmd);
-       
+        #endif
         std::memcpy(this->tripletPermIntermediateCompleteBoth.data(), this->tripletPermIntermediateCompleteThirdParty.data(), this->triplet_evict_perm_size);
         std::memcpy(this->tripletPermIntermediateCompleteBoth.data() + this->evictPermSize, this->tripletPermIntermediateCompleteServer.data(), this->triplet_evict_perm_size);
         start = std::chrono::high_resolution_clock::now();
@@ -736,7 +729,7 @@ void Client::EvictComplete(PathConfig::TYPE_PATH_ID path_id) {
         this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
         end = std::chrono::high_resolution_clock::now();
         elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-        std::cout << "ClientCommunicationSendTripletEvictPerms: " << elapsed_ns.count() << " ns" << std::endl;
+        std::cout << "ClientServerCommunicationSendTripletEvictPerms: " << elapsed_ns.count() << " ns" << std::endl;
 
         this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
     }

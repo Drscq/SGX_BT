@@ -62,6 +62,7 @@ void InitializeElGamalParams() {
 int main(int argc, char* argv[]) {
     LogConfig::CheckLogDir();
     InitializeElGamalParams();
+    int access_times = 50;
     if (argc != 2) {
         std::cout << "Usage: " << argv[0] << " <port>" << std::endl;
         return 1;
@@ -71,12 +72,11 @@ int main(int argc, char* argv[]) {
             DurationLogger logger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
           #endif 
           // warm up
-          for (int ii = 0; ii < 1; ii++) {
+          Client client(ClientConfig::HOST, ClientConfig::PORT);
+          for (int ii = 0; ii < access_times; ii++) {
                 std::cout << "Iteration " << ii << "for warm up" << std::endl;
-                Client client(ClientConfig::HOST, ClientConfig::PORT);
                 client.InitReadPath(ClientConfig::PATH_ID);
                 client.ReadPath(ClientConfig::TARGET_BLOCK_ID, ClientConfig::PATH_ID);
-                client.blockDataStash.erase(0);
           }
           for (int i = 0; i < 0; i++) {
                 #if LOG_READ_PATH_TOTAL_DELAY
@@ -100,9 +100,9 @@ int main(int argc, char* argv[]) {
          DurationLogger logger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
          #endif
          Client client(ClientConfig::HOST, ClientConfig::PORT);
-         client.InitEarlyReshuffle();
-          for (int i = 0; i < 5; i++) {
+          for (int i = 0; i < access_times; i++) {
                 std::cout << "Iteration " << i << std::endl;
+                client.InitEarlyReshuffle();
                 client.EarlyReshuffle();
           }
          for (int i = 0; i < 0; i++) {
@@ -123,7 +123,7 @@ int main(int argc, char* argv[]) {
             #endif 
             // warm up
             Client client(ClientConfig::HOST, ClientConfig::PORT);
-            for (int i = 0; i < 2; i++) {
+            for (int i = 0; i < access_times; i++) {
                 std::cout << "Iteration " << i << "for warm up" << std::endl;
                 client.InitEviction();
                 client.EvictComplete(ClientConfig::PATH_ID);
