@@ -18,9 +18,9 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
                                                        path(0, TreeConfig::HEIGHT) {
     // std::cout << "Server constructor" << std::endl;
     this->pathIDChars.resize(sizeof(PathConfig::TYPE_PATH_ID));
-    this->pathIDChars.reserve(sizeof(PathConfig::TYPE_PATH_ID));
+    // this->pathIDChars.reserve(sizeof(PathConfig::TYPE_PATH_ID));
     this->blockIDChars.resize(sizeof(BlockConfig::TYPE_BLOCK_ID));
-    this->blockIDChars.reserve(sizeof(BlockConfig::TYPE_BLOCK_ID));
+    // this->blockIDChars.reserve(sizeof(BlockConfig::TYPE_BLOCK_ID));
     this->offsets.resize(PathConfig::HEIGHT);
     this->offsetsCharsSize = PathConfig::HEIGHT * sizeof(BucketConfig::TYPE_SLOT_ID);
     this->offsetsChars.resize(this->offsetsCharsSize);
@@ -38,22 +38,22 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     // this->InitConnectThirdParty();
     // #endif
     // std::cout << "The BLOCK_CIPHERTEXT_NUM_CHARS: " << ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS << std::endl;
-    this->blockCiphertextsSerializedData.reserve(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+    // this->blockCiphertextsSerializedData.reserve(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
     this->blockCiphertextsSerializedData.resize(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
     // std::cout << "The BUCKET_CIPHERTEXT_NUM_CHARS: " << ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS << std::endl;
-    this->bucketCiphertextsSerializedData.reserve(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+    // this->bucketCiphertextsSerializedData.reserve(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
     this->bucketCiphertextsSerializedData.resize(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
     this->rootBucketData.resize(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
     this->triplet_evict_perm2.resize(3 * BucketConfig::BUCKET_SIZE);
     // this->triplet_evict_perm_size = 3 * BucketConfig::BUCKET_SIZE * sizeof(BucketConfig::TYPE_SLOT_ID);
-    this->path_evict_bucketCiphertexts_complete.reserve((TreeConfig::HEIGHT - 1) * 2 * BucketConfig::BUCKET_SIZE);
+    // this->path_evict_bucketCiphertexts_complete.reserve((TreeConfig::HEIGHT - 1) * 2 * BucketConfig::BUCKET_SIZE);
     this->path_evict_bucketCiphertexts_complete.resize((TreeConfig::HEIGHT - 1) * 2 * BucketConfig::BUCKET_SIZE);
-    for (auto& inner_vector : this->path_evict_bucketCiphertexts_complete) {
-        inner_vector.reserve(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
-    }
-    this->triplet_evict_bucketCiphertexts_flat.reserve(3 * BucketConfig::BUCKET_SIZE * ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
-    this->bucketCiphertexts_flat.reserve(BucketConfig::BUCKET_SIZE * ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
-    this->triplet_evict_bucketCiphertextsSerializedData.reserve(3 * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+    // for (auto& inner_vector : this->path_evict_bucketCiphertexts_complete) {
+    //     inner_vector.reserve(ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    // }
+    // this->triplet_evict_bucketCiphertexts_flat.reserve(3 * BucketConfig::BUCKET_SIZE * ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    // this->bucketCiphertexts_flat.reserve(BucketConfig::BUCKET_SIZE * ElGamalNTLConfig::BLOCK_CHUNK_SIZE);
+    // this->triplet_evict_bucketCiphertextsSerializedData.reserve(3 * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
     this->triplet_evict_bucketCiphertextsSerializedData.resize(3 * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
     this->triplet_evict_bucketCiphertextsSerializedDataSize = 3 * ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS;
     this->pathCompleteOffsets.reserve(TreeConfig::HEIGHT);
@@ -68,16 +68,16 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     this->perm2EarlyReshuffleComplete.reserve(BucketConfig::BUCKET_SIZE);
     this->perm2EarlyReshuffleComplete.resize(BucketConfig::BUCKET_SIZE);
     this->bucketCiphertexts.resize(BucketConfig::BUCKET_SIZE);
-    this->rootBucketDataEvictComplete.reserve(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
+    // this->rootBucketDataEvictComplete.reserve(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
     this->rootBucketDataEvictComplete.resize(ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS);
-    this->bucketCiphertextsEvictComplete.reserve(BucketConfig::BUCKET_SIZE);
+    // this->bucketCiphertextsEvictComplete.reserve(BucketConfig::BUCKET_SIZE);
     this->bucketCiphertextsEvictComplete.resize(BucketConfig::BUCKET_SIZE);
     this->tripletBucketIDsComplete.reserve(3);
     this->tripletBucketIDsComplete.resize(3);
     this->tripletBucketIDsCompleteCharNum = 3 * sizeof(BucketConfig::TYPE_BUCKET_ID);
     this->evictPathBucketIDsComplete.reserve(TreeConfig::HEIGHT - 1);
     this->evictPathBucketIDsComplete.resize(TreeConfig::HEIGHT - 1);
-    this->targetBlockCiphertextsSerializedData.reserve(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
+    // this->targetBlockCiphertextsSerializedData.reserve(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
     this->targetBlockCiphertextsSerializedData.resize(ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
 
     this->logger = DurationLogger(LogConfig::LOG_DIR + LogConfig::LOG_FILE);
@@ -101,7 +101,7 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     this->pathBucketsDataEviction1Size = (2 * TreeConfig::HEIGHT - 1) * (BucketConfig::META_DATA_SIZE
                                         + BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
     this->pathBucketsDataEviction1.resize(this->pathBucketsDataEviction1Size);
-    this->pathBucketsDataEviction1.reserve(this->pathBucketsDataEviction1Size);
+    // this->pathBucketsDataEviction1.reserve(this->pathBucketsDataEviction1Size);
     this->bucketSizeEviction1 = BucketConfig::META_DATA_SIZE + BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE;
     this->tripletBucketMDsDataEviction1Size = 3 * BucketConfig::META_DATA_SIZE + sizeof(BucketConfig::TYPE_BUCKET_ID) + sizeof(PathConfig::TYPE_PATH_SIZE);
     this->tripletBucketMDsDataEviction1.resize(this->tripletBucketMDsDataEviction1Size);
@@ -113,12 +113,12 @@ Server::Server(ServerConfig::TYPE_PORT_NUM port) : port(port),
     this->tripletBucketsDataEviction1.resize(this->tripletBucketsDataEviction1Size);
     this->bucketCiphertextsNumPairs = ElGamalNTLConfig::BUCKET_CIPHERTEXT_NUM_CHARS / (2 * ElGamalNTLConfig::PER_CIPHERTEXT_SIZE);
     this->single_bucketCiphertexts_flat.resize(this->bucketCiphertextsNumPairs);
-    this->single_bucketCiphertexts_flat.reserve(this->bucketCiphertextsNumPairs);
+    // this->single_bucketCiphertexts_flat.reserve(this->bucketCiphertextsNumPairs);
     this->blockCiphertextsNumPairs = ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS / (2 * ElGamalNTLConfig::PER_CIPHERTEXT_SIZE);
     this->triplet_evict_bucketCiphertexts.resize(3 * BucketConfig::BUCKET_SIZE);
     for (auto& inner_vector : this->triplet_evict_bucketCiphertexts) {
         inner_vector.resize(blockCiphertextsNumPairs);
-        inner_vector.reserve(blockCiphertextsNumPairs);
+        // inner_vector.reserve(blockCiphertextsNumPairs);
     }
     // SGX variables
     this->sharedBucketBuffer.resize(BucketConfig::META_DATA_SIZE + BucketConfig::BUCKET_SIZE * BlockConfig::BLOCK_SIZE);
