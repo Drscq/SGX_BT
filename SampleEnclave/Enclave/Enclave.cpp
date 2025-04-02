@@ -376,9 +376,9 @@ void ecall_evict_2(char* buffer, uint8_t* flags) {
     }
     std::memcpy(perm1TripletBucketsEviction2.data(), buffer, perm1TripletBucketsEviction2.size() * sizeof(TYPE_SLOT_ID_SGX));
     // Check the values in the perm1TripletBucketsEviction2 vector
-    for (size_t i = 0; i < perm1TripletBucketsEviction2.size(); ++i) {
-        printf("perm1TripletBucketsEviction2[%d] = %d\n", i, perm1TripletBucketsEviction2[i]);
-    }
+    // for (size_t i = 0; i < perm1TripletBucketsEviction2.size(); ++i) {
+    //     printf("perm1TripletBucketsEviction2[%d] = %d\n", i, perm1TripletBucketsEviction2[i]);
+    // }
     flags[1] = 1;
     while (!flags[2]) {
         __asm__ __volatile__("pause");
