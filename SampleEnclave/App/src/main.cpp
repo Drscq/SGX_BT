@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
         client.InitCreateBinaryTree();
         
         // Randomly access the blocks
-        size_t accessCount = 2;
+        size_t accessCount = 100;
         for (size_t i = 0; i < accessCount; ++i) {
             std::cout << "Iteration " << i << std::endl;
             // DEBUG_PRINT("Iteration " << i);
@@ -163,7 +163,8 @@ int main(int argc, char* argv[]) {
              for (const auto& bucketID : client.bucketIDOffsets) {
                  if (client.treeMetaDatas[bucketID].count == BucketConfig::BUCKET_DUMMY_BLOCK_CAPACITY) {
                      // DEBUG_PRINT("Early Reshuffle for bucketID: " << bucketID);
-                     client.EarlyReshuffleComplete(bucketID);
+                     std::cout << "Early Reshuffle for bucketID: " << bucketID << std::endl;
+                    //  client.EarlyReshuffleComplete(bucketID);
                  }
              }
 
