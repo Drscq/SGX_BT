@@ -541,7 +541,7 @@ void Server::handleClient(int clientSockfd) {
                 }
                 end = std::chrono::high_resolution_clock::now();
                 elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-                std::cout << "HelperComputationAll: " << elapsed_ns.count() << " ns\n";
+                std::cout << "HelperComputationAllServerSide: " << elapsed_ns.count() << " ns\n";
                 while (flag_shared_sgx_earlyReshufffle2[7] == 0) {
                     // Wait for the enclave to finish the early reshuffle
                     __asm__ __volatile__("pause");

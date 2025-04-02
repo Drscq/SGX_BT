@@ -47,6 +47,40 @@ unsigned char key[AES_BLOCK_SIZE] = {
     0xab, 0xf7, 0x15, 0x88,
     0x09, 0xcf, 0x4f, 0x3c
 };
+// We'll store or receive the TSC freq (in Hz). Possibly pass it via an ECALL arg
+static double g_tsc_freq_hz = 2.6e9; // Example hard-coded at 2.6 GHz
+
+static inline void cpuid_serialize()
+{
+    __asm__ volatile(
+        "cpuid\n"
+        :
+        : "a"(0)
+        : "%rbx", "%rcx", "%rdx"
+    );
+}
+
+static inline uint64_t rdtsc()
+{
+    uint32_t lo, hi;
+    __asm__ volatile(
+        "rdtsc\n"
+        : "=a"(lo), "=d"(hi)
+    );
+    return ((uint64_t)hi << 32) | lo;
+}
+
+static inline uint64_t rdtscp()
+{
+    uint32_t lo, hi, aux;
+    __asm__ volatile(
+        "rdtscp\n"
+        : "=a"(lo), "=d"(hi), "=c"(aux)
+        :
+        :
+    );
+    return ((uint64_t)hi << 32) | lo;
+}
 /* 
  * printf: 
  *   Invokes OCALL to display the enclave buffer to the terminal.
@@ -344,11 +378,18 @@ void ecall_early_reshuffle_2(char* buffer, uint8_t* flags) {
     while (!flags[5]) {
         __asm__ __volatile__("pause");
     }
+    // cpuid_serialize();
+    // uint64_t start = rdtsc();
     BNConfig::ApplyPermutation(BucketCiphertexts, BNConfig::BUCKET_CHUNK_SIZE_SGX, BUCKET_SIZE_SGX, perm1EarlyReshuffleComplete_sgx);
     BNConfig::ParallelReRandomize(BucketCiphertexts[0], BucketCiphertexts[1]);
+    // uint64_t end = rdtscp();
+    // cpuid_serialize();
+    // uint64_t diff_cycles = end - start;
     flags[6] = 1;
     BNConfig::ConvertVecBNCipher2VecChar(BucketCiphertexts[0], BucketCiphertexts[1], buffer);
     flags[7] = 1;
+    // double time_ns = ((double)diff_cycles / g_tsc_freq_hz) * 1.0e9;
+    // printf("HelperComputationAllHelperSide: %.2f ns\n", time_ns);
     // free the BIGNUM objects
     for (size_t i = 0; i < 2; ++i) {
         for (size_t j = 0; j < BNConfig::BUCKET_CHUNK_SIZE_SGX; ++j) {
