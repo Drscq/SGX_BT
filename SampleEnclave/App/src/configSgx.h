@@ -77,6 +77,7 @@ namespace BNConfig {
     inline void ConvertVecCharCipher2VecBN(const char* data, std::vector<std::vector<BIGNUM*>>& ciphertexts) {
         auto it = data;
         for (size_t ii = 0, size = ciphertexts[0].size(); ii < size; ++ii) {
+            printf("[ConvertVecCharCipher2VecBN] The value of ii = %zu\n", ii);
             BN_bin2bn(reinterpret_cast<const unsigned char*>(it), PER_CIPHERTEXT_SIZE_SGX, ciphertexts[0][ii]);
             it += PER_CIPHERTEXT_SIZE_SGX;
             BN_bin2bn(reinterpret_cast<const unsigned char*>(it), PER_CIPHERTEXT_SIZE_SGX, ciphertexts[1][ii]);
