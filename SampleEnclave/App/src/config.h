@@ -120,7 +120,7 @@ namespace ServerConfig {
     // communication related configurations
     typedef uint16_t TYPE_PORT_NUM;
     typedef int TYPE_CMD;
-    inline ServerConfig::TYPE_PORT_NUM PORT = 2000;
+    inline ServerConfig::TYPE_PORT_NUM PORT = 8183;
     // commannds for socket communication
     constexpr TYPE_CMD CMD_CREATE_DB = 12;
     constexpr TYPE_CMD CMD_READ_PATH = 13;
@@ -205,8 +205,8 @@ namespace ClientConfig {
     typedef int TYPE_PORT;
     // typedef unsigned long long TYPE_CHAR_SIZE;
     typedef size_t TYPE_CHAR_SIZE;
-    inline TYPE_HOST HOST = "198.82.162.120";
-    inline TYPE_PORT PORT = 2000;
+    inline TYPE_HOST HOST = "128.173.236.241";
+    inline TYPE_PORT PORT = 8183;
     inline PathConfig::TYPE_PATH_ID PATH_ID = 0;
     inline BlockConfig::TYPE_BLOCK_ID TARGET_BLOCK_ID = 3;
     inline void SerializeBlockStash(const BlockConfig::TYPE_BLOCK_ID& block_id, 
