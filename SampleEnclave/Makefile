@@ -31,8 +31,9 @@
 
 ######## SGX SDK Settings ########
 
-SGX_SDK ?= /opt/intel/sgxsdk
-SGX_MODE ?= HW
+SGX_SDK ?= /home/changqi/sgx_sdk/sgxsdk
+# SGX_MODE ?= HW
+SGX_MODE ?= SIM
 SGX_ARCH ?= x64
 SGX_DEBUG ?= 1
 
@@ -84,10 +85,11 @@ else
 endif
 
 # Define SGX SSL path
-SGX_SSL_DIR ?= /lhome/oramtee/DownLoad/intel-sgx-ssl/Linux/package
+# SGX_SSL_DIR ?= /lhome/oramtee/DownLoad/intel-sgx-ssl/Linux/package
+SGX_SSL_DIR ?= /home/changqi/local/
 
 App_Cpp_Files := App/App.cpp App/src/AES_CTR.cpp App/src/Block.cpp App/src/Bucket.cpp App/src/DurationLogger.cpp App/src/ElGamal_parallel_ntl.cpp App/src/Path.cpp App/src/Server.cpp App/src/SocketCommunicator.cpp App/src/Tree.cpp $(wildcard App/Edger8rSyntax/*.cpp) $(wildcard App/TrustedLibrary/*.cpp)
-App_Include_Paths := -IInclude -IApp -IApp/src -I$(SGX_SDK)/include 
+App_Include_Paths := -IInclude -IApp -IApp/src -I$(SGX_SDK)/include -I$(SGX_SSL_DIR)/include
 
 App_C_Flags := -fPIC -Wno-attributes $(App_Include_Paths)
 
@@ -104,7 +106,7 @@ else
 endif
 
 App_Cpp_Flags := $(App_C_Flags) -std=c++17
-App_Link_Flags := -L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) -lpthread -lntl -lgmp -lcrypto
+App_Link_Flags := -L$(SGX_LIBRARY_PATH) -l$(Urts_Library_Name) -L$(SGX_SSL_DIR)/lib -lpthread -lntl -lgmp -lcrypto -lstdc++fs
 
 App_Cpp_Objects := $(App_Cpp_Files:.cpp=.o)
 
@@ -122,8 +124,10 @@ endif
 Crypto_Library_Name := sgx_tcrypto
 
 Enclave_Cpp_Files := Enclave/Enclave.cpp $(wildcard Enclave/Edger8rSyntax/*.cpp) $(wildcard Enclave/TrustedLibrary/*.cpp) $(wildcard Enclave/src/*.cpp)
-Enclave_Include_Paths := -IInclude -IEnclave -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -IEnclave/src -I$(SGX_SSL_DIR)/include -I$(SGX_SDK)/include/openmp
-Enclave_Library_Paths := -L$(SGX_SSL_DIR)/lib64
+Enclave_Include_Paths := -IInclude -IEnclave -I$(SGX_SDK)/include -I$(SGX_SDK)/include/tlibc -I$(SGX_SDK)/include/libcxx -IEnclave/src -I$(SGX_SSL_DIR)/include
+# -I$(SGX_SDK)/include/openmp
+# Enclave_Library_Paths := -L$(SGX_SSL_DIR)/lib64
+Enclave_Library_Paths := -L$(SGX_SSL_DIR)/lib
 Enclave_Libraries := 
 
 Enclave_C_Flags := $(Enclave_Include_Paths) -nostdinc -fvisibility=hidden -fpie -ffunction-sections -fdata-sections $(MITIGATION_CFLAGS)
