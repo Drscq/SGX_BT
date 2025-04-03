@@ -1,8 +1,0 @@
-DiskIOLoadBucketCiphertextsFromDiskBN: 1875312 ns
-ServerComputationApplyPermutation: 791613 ns
-ServerComputationParallelRerandomize: 15798941 ns
-HelperComputationAll: 21215422 ns
-DiskIOWriteBucketCiphertextsToDisk: 4241701 ns
-
-ClientComputationEarlyReshuffleGenPerms,7209ns 
-ClientServerBandwidthEarlyReshuffleSendPermToServer,19142375ns 
