@@ -62,12 +62,12 @@ def run_server(ssh_client, index, working_dir, cmd_run_server, server_log_file):
 
 def run_client(cmd_run_client, index):
     print(f"Running client for index = {index}.")
-    client_process = subprocess.Popen(cmd_run_client)
+    client_process = subprocess.Popen(cmd_run_client, shell=True)
     client_process.wait()
 TNRBs = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
 
 working_dir_server = "/home/changqi/ORAM/SGX_BT/SampleEnclave"
-
+print(f"current working dir: {os.getcwd()}")
 for TNRB in TNRBs:
     cmd_run_server_read_path_css = f"./../experimentalResults/CSH_SGX_STAR/readPath/breakDownCost/64KB/server/bin/csh_sgx_star_{TNRB} server"
     cmd_run_server_early_reshuffle_css = f"./../experimentalResults/CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/server/bin/csh_sgx_star_{TNRB} server"
@@ -75,15 +75,19 @@ for TNRB in TNRBs:
     log_file_server_read_path_css = f"./../experimentalResults/CSH_SGX_STAR/readPath/breakDownCost/64KB/server/logs/log_{TNRB}.txt"
     log_file_server_early_reshuffle_css = f"./../experimentalResults/CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/server/logs/log_{TNRB}.txt"
     log_file_server_evict_path_css = f"./../experimentalResults/CSH_SGX_STAR/evictPath/breakDownCost/64KB/server/logs/log_{TNRB}.txt"
-    working_dir_read_path_css = f"../CSH_SGX_STAR/readPath/breakDownCost/64KB/client/bin"
-    working_dir_early_reshuffle_css = f"../CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/client/bin"
-    working_dir_evict_path_css = f"../CSH_SGX_STAR/evictPath/breakDownCost/64KB/client/bin"
-    log_file_client_read_path_css = f"../CSH_SGX_STAR/readPath/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
-    log_file_client_early_reshuffle_css = f"../CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
-    log_file_client_evict_path_css = f"../CSH_SGX_STAR/evictPath/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
-    cmd_run_client_read_path_css = f"cd {working_dir_read_path_css} && nohup ./csh_sgx_star_{TNRB} client_read_path" + f" >> {log_file_client_read_path_css} 2>&1"
-    cmd_run_client_early_reshuffle_css = f"cd {working_dir_early_reshuffle_css} && nohup ./csh_sgx_star_{TNRB} client_early_reshuffle" + f" >> {log_file_client_early_reshuffle_css} 2>&1"
-    cmd_run_client_evict_path_css = f"cd {working_dir_evict_path_css} && nohup ./csh_sgx_star_{TNRB} client_eviction" + f" >> {log_file_client_evict_path_css} 2>&1"
+    working_dir_read_path_css = f"./../CSH_SGX_STAR/readPath/breakDownCost/64KB/client/bin"
+    working_dir_early_reshuffle_css = f"./../CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/client/bin"
+    working_dir_evict_path_css = f"./../CSH_SGX_STAR/evictPath/breakDownCost/64KB/client/bin"
+    log_file_client_read_path_css = f"../logs/log_{TNRB}.txt"
+    log_file_client_early_reshuffle_css = f"../logs/log_{TNRB}.txt"
+    log_file_client_evict_path_css = f"../logs/log_{TNRB}.txt"
+    cmd_run_client_read_path_css = f"cd {working_dir_read_path_css} && ./csh_sgx_star_{TNRB} client_read_path" + f" >> {log_file_client_read_path_css} 2>&1"
+    cmd_run_client_early_reshuffle_css = f"{working_dir_early_reshuffle_css} && ./csh_sgx_star_{TNRB} client_early_reshuffle" + f" >> {log_file_client_early_reshuffle_css} 2>&1"
+    cmd_run_client_evict_path_css = f"{log_file_client_evict_path_css} && ./csh_sgx_star_{TNRB} client_eviction" + f" >> {log_file_client_evict_path_css} 2>&1"
+    # cmd_run_client = ['./TriConvergeStar_TNRB_{}'.format(index), 'client_eviction']
+    # cmd_run_client_read_path_css = ['./csh_sgx_star_{}'.format(TNRB), "client_read_path"]
+    # cmd_run_client_early_reshuffle_css = ['./csh_sgx_star_{}'.format(TNRB), 'client_early_reshuffle' + f" >> {log_file_client_early_reshuffle_css} 2>&1"]
+    # cmd_run_client_evict_path_css = ['./csh_sgx_star_{}'.format(TNRB), 'client_eviction' + f" >> {log_file_client_evict_path_css} 2>&1"]
     with manage_ssh_connection(SSH_HOST, SSH_USER, SSH_PASS) as ssh_server:
         for _ in range(1):
             stop_remote_process(ssh_server, p_server)
@@ -96,4 +100,4 @@ for TNRB in TNRBs:
 
             stop_remote_process(ssh_server, p_server)
 
-print("All processes completed.")
+# print("All processes completed.")

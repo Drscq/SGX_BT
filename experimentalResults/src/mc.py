@@ -41,6 +41,7 @@ def compile_move_breakdowncost_64KB(target):
     dir_layer_3_ = ['64KB']
     dir_layer_4_client = ['client']
     dir_layer_4_server = ['server']
+    dir_layer_5 = ['bin']
 
     if target == 'server':
         bin_dir_paths = create_bin_dir(bin_dir_server_base_css, dir_layer_1, dir_layer_2, dir_layer_3_, dir_layer_4_server, dir_layer_5)
@@ -68,7 +69,7 @@ def compile_move_breakdowncost_64KB(target):
         elif target == 'client':
             subprocess.Popen(build_cmd_client, shell=True).wait()
             for bin_dir_path in bin_dir_paths:
-                cp_cmd_client = f"cp {build_dir_client}/crtgamal_client {bin_dir_path}/csh_sgx_{tnrb}"
+                cp_cmd_client = f"cp {build_dir_client}/crtgamal_client {bin_dir_path}/csh_sgx_star_{tnrb}"
                 print(f"Copying client binary to {bin_dir_path}")
                 subprocess.Popen(cp_cmd_client, shell=True).wait()
 
