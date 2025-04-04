@@ -29,3 +29,8 @@ SampleEnclave/bin/eviction1/CSH_TNRB_*
 SampleEnclave/App/src/build/
 SampleEnclave/output.txt
 experimentalResults/src/__pycache__/config.cpython-38.pyc
+experimentalResults/CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/server/bin/
+experimentalResults/CSH_SGX_STAR/evictPath/breakDownCost/64KB/server/bin/
+experimentalResults/CSH_SGX_STAR/readPath/breakDownCost/64KB/server/bin/
+SampleEnclave/.config_HW_DEBUG_x64
+SampleEnclave/.config_SIM_DEBUG_x64

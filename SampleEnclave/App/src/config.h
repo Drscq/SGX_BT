@@ -167,7 +167,7 @@ namespace ServerConfig {
 namespace PathConfig {
     typedef long long TYPE_PATH_ID;
     typedef size_t TYPE_PATH_SIZE;
-    inline constexpr TYPE_PATH_SIZE HEIGHT = 3;
+    inline constexpr TYPE_PATH_SIZE HEIGHT = 27;
     inline TYPE_PATH_SIZE REAL_BLOCK_NUM = 2 * HEIGHT;
     inline TYPE_PATH_ID GenPathID() {
         std::random_device rd;
@@ -182,7 +182,7 @@ namespace PathConfig {
 namespace BlockConfig {
     typedef long long TYPE_BLOCK_ID;
     typedef unsigned long long TYPE_BLOCK_SIZE;
-    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 256;
+    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 65536;
 }
 
 namespace AESConfig {
@@ -205,7 +205,7 @@ namespace ClientConfig {
     typedef int TYPE_PORT;
     // typedef unsigned long long TYPE_CHAR_SIZE;
     typedef size_t TYPE_CHAR_SIZE;
-    inline TYPE_HOST HOST = "198.82.162.120";
+    inline TYPE_HOST HOST = "127.0.0.1";
     inline TYPE_PORT PORT = 8183;
     inline PathConfig::TYPE_PATH_ID PATH_ID = 0;
     inline BlockConfig::TYPE_BLOCK_ID TARGET_BLOCK_ID = 3;
