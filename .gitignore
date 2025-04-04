@@ -39,3 +39,5 @@ experimentalResults/CSH_SGX_STAR/evictPath/breakDownCost/64KB/client/bin/*
 experimentalResults/CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/client/bin
 experimentalResults/src/__pycache__/config.cpython-36.pyc
 experimentalResults/src/tools/__pycache__/updateConfig.cpython-36.pyc
+experimentalResults/CSH_SGX/earlyReshuffle/breakDownCost/64KB/client/bin/
+experimentalResults/CSH_SGX/readPath/breakDownCost/64KB/client/bin/
