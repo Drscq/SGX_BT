@@ -2,9 +2,7 @@ import paramiko
 import time
 import subprocess
 import os
-log_dir = "../bin/clientExecutableFiles/logs"
-if os.path.exists(log_dir):
-    subprocess.run(["rm", "-rf", log_dir])
+
 # SSH constants
 SSH_HOST = "asap.cs.vt.edu"
 SSH_USER = input("Enter your username: ")
@@ -80,10 +78,12 @@ for TNRB in TNRBs:
     working_dir_read_path_css = f"./../experimentalResults/CSH_SGX_STAR/readPath/breakDownCost/64KB/client/bin"
     working_dir_early_reshuffle_css = f"./../experimentalResults/CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/client/bin"
     working_dir_evict_path_css = f"./../experimentalResults/CSH_SGX_STAR/evictPath/breakDownCost/64KB/client/bin"
-    cmd_run_client_read_path_css = f"cd {working_dir_read_path_css} && ./csh_sgx_star_{TNRB} client_read_path"
-    #client_eviction
-    cmd_run_client_early_reshuffle_css = f"cd {working_dir_early_reshuffle_css} && ./csh_sgx_star_{TNRB} client_early_reshuffle"
-    cmd_run_client_evict_path_css = f"cd {working_dir_evict_path_css} && ./csh_sgx_star_{TNRB} client_eviction"
+    log_file_client_read_path_css = f"./../experimentalResults/CSH_SGX_STAR/readPath/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
+    log_file_client_early_reshuffle_css = f"./../experimentalResults/CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
+    log_file_client_evict_path_css = f"./../experimentalResults/CSH_SGX_STAR/evictPath/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
+    cmd_run_client_read_path_css = f"cd {working_dir_read_path_css} && ./csh_sgx_star_{TNRB} client_read_path" + f" >> {log_file_client_read_path_css} 2>&1"
+    cmd_run_client_early_reshuffle_css = f"cd {working_dir_early_reshuffle_css} && ./csh_sgx_star_{TNRB} client_early_reshuffle" + f" >> {log_file_client_early_reshuffle_css} 2>&1"
+    cmd_run_client_evict_path_css = f"cd {working_dir_evict_path_css} && ./csh_sgx_star_{TNRB} client_eviction" + f" >> {log_file_client_evict_path_css} 2>&1"
     with manage_ssh_connection(SSH_HOST, SSH_USER, SSH_PASS) as ssh_server:
         for _ in range(1):
             stop_remote_process(ssh_server, p_server)
@@ -92,7 +92,7 @@ for TNRB in TNRBs:
             run_server(ssh_server, TNRB, working_dir_server, cmd_run_server_read_path_css, log_file_server_read_path_css)
 
             # Run client after server and third_party are started
-            run_client(TNRB, cmd_run_client_read_path_css)
+            run_client(cmd_run_client_read_path_css, TNRB)
 
             stop_remote_process(ssh_server, p_server)
 
