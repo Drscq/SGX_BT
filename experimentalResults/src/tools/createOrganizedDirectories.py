@@ -44,7 +44,9 @@ def main():
                     layer_4_path = os.path.join(layer_3_path, layer_4)
                     if not os.path.exists(layer_4_path):
                         create_directories(layer_4_path, dir_layer_5)
-    
+                    for layer_5 in dir_layer_5:
+                        layer_5_path = os.path.join(layer_4_path, layer_5)
+                        os.makedirs(layer_5_path, exist_ok=True)
     
     base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../CSH_SGX'))
     # Create directories for each layer
@@ -66,6 +68,9 @@ def main():
                     layer_4_path = os.path.join(layer_3_path, layer_4)
                     if not os.path.exists(layer_4_path):
                         create_directories(layer_4_path, dir_layer_5)
+                    for layer_5 in dir_layer_5:
+                        layer_5_path = os.path.join(layer_4_path, layer_5)
+                        os.makedirs(layer_5_path, exist_ok=True)
 
 if __name__ == "__main__":
     main()

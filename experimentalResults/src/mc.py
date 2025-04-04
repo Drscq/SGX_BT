@@ -6,7 +6,7 @@ from tools.updateConfig import update_config
 from config import dir_layer_1, dir_layer_2, dir_layer_3, dir_layer_4, dir_layer_5
 config_file = '../../SampleEnclave/App/src/config.h'
 config_sgx_file = '../../SampleEnclave/App/src/configSgx.h'
-host = '127.0.0.1'
+host = '128.173.236.241'
 TNRBs = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
 A = 43
 build_dir_server = '../../SampleEnclave'
@@ -32,42 +32,61 @@ def create_bin_dir(base_dir, dir_layer_1, dir_layer_2, dir_layer_3, dir_layer_4,
                         bin_dir_path = os.path.join(layer_4_path, layer_5)
                         dir_paths.append(bin_dir_path)
     return dir_paths
-def compile_move_breakdowncost_64KB():
+def compile_move_breakdowncost_64KB(target):
+    """
+    Compile and move binaries for server or client based on the target input.
+    :param target: 'server' or 'client'
+    """
     block_size = 64 * 1024
     dir_layer_3_ = ['64KB']
     dir_layer_4_client = ['client']
     dir_layer_4_server = ['server']
-    bin_dir_paths_server = create_bin_dir(bin_dir_server_base_css, dir_layer_1, dir_layer_2, dir_layer_3_, dir_layer_4_server, dir_layer_5)
-    bin_dir_paths_client = create_bin_dir(bin_dir_server_base_css, dir_layer_1, dir_layer_2, dir_layer_3_, dir_layer_4_client, dir_layer_5)
-    # print out the bin_dir_paths_server
-    print("bin_dir_paths_server:")
-    for bin_dir_path in bin_dir_paths_server:
+
+    if target == 'server':
+        bin_dir_paths = create_bin_dir(bin_dir_server_base_css, dir_layer_1, dir_layer_2, dir_layer_3_, dir_layer_4_server, dir_layer_5)
+        print("bin_dir_paths_server:")
+    elif target == 'client':
+        bin_dir_paths = create_bin_dir(bin_dir_server_base_css, dir_layer_1, dir_layer_2, dir_layer_3_, dir_layer_4_client, dir_layer_5)
+        print("bin_dir_paths_client:")
+    else:
+        raise ValueError("Invalid target. Use 'server' or 'client'.")
+
+    for bin_dir_path in bin_dir_paths:
         print(bin_dir_path)
-    print("bin_dir_paths_client:")
-    for bin_dir_path in bin_dir_paths_client:
-        print(bin_dir_path)
+
     for tnrb in TNRBs:
         height = math.ceil(math.log2(math.ceil(2**tnrb / A))) + 2
-        update_config(config_file, h=host,height=height, bs=block_size)
-        update_config(config_sgx_file, h=host,height=height, bs=block_size)
-        subprocess.Popen(build_cmd_server, shell=True).wait()
-        for i, bin_dir_path in enumerate(bin_dir_paths_server):
-            cp_cmd_server = f"cp {build_dir_server}/app {bin_dir_path}/csh_sgx_star_{tnrb}"
-            print(f"Copying server binary to {bin_dir_path}")
-            subprocess.Popen(cp_cmd_server, shell=True).wait()
-            # remove the content in bin_dir_path
-            # subprocess.run(f"rm -rf {bin_dir_path}/*", shell=True)
-            # subprocess.run(f"rm -rf {bin_dir_paths_client[i]}/*", shell=True)
+        update_config(config_file, h=host, height=height, bs=block_size)
+        update_config(config_sgx_file, h=host, height=height, bs=block_size)
 
-            # subprocess.run(f"cp {build_dir_server}/app {bin_dir_path}/csh_sgx_star_{tnrb}", shell=True)
-            # subprocess.run(f"cp {build_dir_client}/crtgamal_client {bin_dir_paths_client[i]}/csh_sgx_{tnrb}", shell=True)
-        subprocess.Popen(build_cmd_client, shell=True).wait()
-        for i, bin_dir_path in enumerate(bin_dir_paths_client):
-            cp_cmd_client = f"cp {build_dir_client}/crtgamal_client {bin_dir_paths_client[i]}/csh_sgx_{tnrb}"
-            print(f"Copying client binary to {bin_dir_paths_client[i]}")
-            subprocess.Popen(cp_cmd_client, shell=True).wait()
+        if target == 'server':
+            subprocess.Popen(build_cmd_server, shell=True).wait()
+            for bin_dir_path in bin_dir_paths:
+                cp_cmd_server = f"cp {build_dir_server}/app {bin_dir_path}/csh_sgx_star_{tnrb}"
+                print(f"Copying server binary to {bin_dir_path}")
+                subprocess.Popen(cp_cmd_server, shell=True).wait()
+        elif target == 'client':
+            subprocess.Popen(build_cmd_client, shell=True).wait()
+            for bin_dir_path in bin_dir_paths:
+                cp_cmd_client = f"cp {build_dir_client}/crtgamal_client {bin_dir_path}/csh_sgx_{tnrb}"
+                print(f"Copying client binary to {bin_dir_path}")
+                subprocess.Popen(cp_cmd_client, shell=True).wait()
 
-compile_move_breakdowncost_64KB()
+# use the main function to take the system arguments as the inputs to indicate the target
+def main():
+    if len(sys.argv) != 2:
+        print("Usage: python mc.py <target>")
+        print("target: server or client")
+        sys.exit(1)
+    target = sys.argv[1]
+    if target not in ['server', 'client']:
+        print("Invalid target. Use 'server' or 'client'.")
+        sys.exit(1)
+
+    compile_move_breakdowncost_64KB(target)
+
+if __name__ == "__main__":
+    main()
 
 
     
