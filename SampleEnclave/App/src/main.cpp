@@ -62,7 +62,7 @@ void InitializeElGamalParams() {
 int main(int argc, char* argv[]) {
     LogConfig::CheckLogDir();
     InitializeElGamalParams();
-    int access_times = 5;
+    int access_times = 50;
     if (argc != 2) {
         std::cout << "Usage: " << argv[0] << " <port>" << std::endl;
         return 1;
