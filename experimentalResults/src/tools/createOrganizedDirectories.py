@@ -4,7 +4,7 @@ import os
 # Add the parent directory to the system path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from config import dir_layer_1, dir_layer_2, dir_layer_3
+from config import dir_layer_1, dir_layer_2, dir_layer_3, dir_layer_4, dir_layer_5
 
 def create_directories(base_path, sub_dirs):
     """
@@ -36,6 +36,15 @@ def main():
             layer_2_path = os.path.join(layer_1_path, layer_2)
             if not os.path.exists(layer_2_path):
                 create_directories(layer_2_path, dir_layer_3)
+            for layer_3 in dir_layer_3:
+                layer_3_path = os.path.join(layer_2_path, layer_3)
+                if not os.path.exists(layer_3_path):
+                    create_directories(layer_3_path, dir_layer_4)
+                for layer_4 in dir_layer_4:
+                    layer_4_path = os.path.join(layer_3_path, layer_4)
+                    if not os.path.exists(layer_4_path):
+                        create_directories(layer_4_path, dir_layer_5)
+    
     
     base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../CSH_SGX'))
     # Create directories for each layer
@@ -49,6 +58,14 @@ def main():
             layer_2_path = os.path.join(layer_1_path, layer_2)
             if not os.path.exists(layer_2_path):
                 create_directories(layer_2_path, dir_layer_3)
+            for layer_3 in dir_layer_3:
+                layer_3_path = os.path.join(layer_2_path, layer_3)
+                if not os.path.exists(layer_3_path):
+                    create_directories(layer_3_path, dir_layer_4)
+                for layer_4 in dir_layer_4:
+                    layer_4_path = os.path.join(layer_3_path, layer_4)
+                    if not os.path.exists(layer_4_path):
+                        create_directories(layer_4_path, dir_layer_5)
 
 if __name__ == "__main__":
     main()

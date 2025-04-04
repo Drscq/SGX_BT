@@ -2,6 +2,8 @@
 dir_layer_1 = ['readPath', "earlyReshuffle", "evictPath"]
 dir_layer_2 = ['breakDownCost']
 dir_layer_3 = ['64KB', "256KB", "1024KB", 'blockSize']
+dir_layer_4 = ['client', 'server']
+dir_layer_5 = ['bin']
 
 
 def clean_directory_with_exception(

@@ -24,7 +24,7 @@ using namespace NTL;
 #include <pthread.h> // For setting CPU affinity 
 
 // Macros
-#define UNIT_TEST_OPENSSL_FINAL_CHECK 1
+#define UNIT_TEST_OPENSSL_FINAL_CHECK 0
 #define USE_PERM_TO_GEN_INTERMEDIATE_PERM 0
 #define USE_ASSERT 0
 #define USE_COUT 0
@@ -45,11 +45,11 @@ using namespace NTL;
 #define PRINT_READ_PATH_DELAY_FOR_SCHEME1 0
 #define ASSERT_CORRECTNESS_TARGET_BLOCK_SCHEME1 0
 #define PRINT_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1 0
-#define LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_CLIENT 1
+#define LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_CLIENT 0
 #define  LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_CLIENT_BLOCKS_STASH 0
 #define PRINT_READ_PATH_ASSERT_SCHEME1 0
 #define PRINT_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_SERVER 0
-#define LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_SERVER 1
+#define LOG_READ_PATH_BREAKDOWN_COST_FOR_SCHEME1_SERVER 0
 
 #define PRINT_EARLY_RESHUFFLE_DELAY_FOR_SCHEME1 0
 #define PRINT_EARLY_RESHUFFLE_BREAKDOWN_COST_FOR_SCHEME1_SERVER 0
@@ -260,8 +260,8 @@ namespace BucketConfig {
     typedef short TYPE_SLOT_ID_S;
     typedef size_t TYPE_BUCKET_ID;
     typedef size_t TYPE_THREAD_NUM;
-    const TYPE_BUCKET_SIZE BUCKET_REAL_BLOCK_CAPACITY = 3;
-    const TYPE_BUCKET_SIZE BUCKET_DUMMY_BLOCK_CAPACITY = 1;
+    const TYPE_BUCKET_SIZE BUCKET_REAL_BLOCK_CAPACITY = 30;
+    const TYPE_BUCKET_SIZE BUCKET_DUMMY_BLOCK_CAPACITY = 43;
     const TYPE_BUCKET_SIZE BUCKET_SIZE = BUCKET_REAL_BLOCK_CAPACITY + BUCKET_DUMMY_BLOCK_CAPACITY;
     inline void ApplyPerm(std::vector<std::vector<std::pair<ZZ, ZZ>>>& bucketCiphertexts, const std::vector<TYPE_SLOT_ID>& perm) {
             TYPE_BUCKET_SIZE n = bucketCiphertexts.size();
@@ -860,7 +860,7 @@ namespace TreeConfig {
     inline TYPE_BUCKET_NUM TOTAL_NUM_NON_LEAF_BUCKETS = (1 << (HEIGHT - 1)) - 1;
     inline TYPE_BUCKET_NUM TOTAL_NUM_LEAF_BUCKETS = (1 << (HEIGHT - 1));
     inline TYPE_BUCKET_NUM REAL_BLOCK_NUM = 2 * TOTAL_NUM_LEAF_BUCKETS;
-    inline BucketConfig::TYPE_BUCKET_SIZE EVICTION_FREQUENCY = 1;
+    inline BucketConfig::TYPE_BUCKET_SIZE EVICTION_FREQUENCY = 43;
     typedef BucketConfig::TYPE_BUCKET_SIZE TYPE_ACCESS_COUNT;
     inline TYPE_ACCESS_COUNT ACCESS_COUNT_EVICTION_COMPLETE = 0;
     inline PathConfig::TYPE_PATH_ID EVICTION_PATH_ID = 0;
@@ -1048,14 +1048,5 @@ namespace ElGamalConfig {
         BN_free(bn_one);
     }
 }
-
-
-// extern "C" {
-//     #include "crtecelgamal.h"
-// }
-
-// namespace ECElGamalConfig {
-
-// }
 
 #endif // CONFIG_H
