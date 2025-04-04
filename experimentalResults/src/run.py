@@ -27,7 +27,7 @@ def stop_remote_process(ssh_client, port_number):
     time.sleep(2)
 
 def start_remote_process(ssh_client, command, log_file, working_directory):
-    full_command = f"cd {working_directory} && nohup {command} > {log_file} 2>&1 &"
+    full_command = f"cd {working_directory} && nohup {command} >> {log_file} 2>&1 &"
     ssh_transport = ssh_client.get_transport()
     channel = ssh_transport.open_session()
     channel.exec_command(full_command)
@@ -78,12 +78,12 @@ for TNRB in TNRBs:
     working_dir_read_path_css = f"./../CSH_SGX_STAR/readPath/breakDownCost/64KB/client/bin"
     working_dir_early_reshuffle_css = f"./../CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/client/bin"
     working_dir_evict_path_css = f"./../CSH_SGX_STAR/evictPath/breakDownCost/64KB/client/bin"
-    log_file_client_read_path_css = f"./../CSH_SGX_STAR/readPath/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
-    log_file_client_early_reshuffle_css = f"./../CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
-    log_file_client_evict_path_css = f"./../CSH_SGX_STAR/evictPath/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
-    cmd_run_client_read_path_css = f"cd {working_dir_read_path_css} && ./csh_sgx_star_{TNRB} client_read_path" + f" >> {log_file_client_read_path_css} 2>&1"
-    cmd_run_client_early_reshuffle_css = f"cd {working_dir_early_reshuffle_css} && ./csh_sgx_star_{TNRB} client_early_reshuffle" + f" >> {log_file_client_early_reshuffle_css} 2>&1"
-    cmd_run_client_evict_path_css = f"cd {working_dir_evict_path_css} && ./csh_sgx_star_{TNRB} client_eviction" + f" >> {log_file_client_evict_path_css} 2>&1"
+    log_file_client_read_path_css = f"../CSH_SGX_STAR/readPath/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
+    log_file_client_early_reshuffle_css = f"../CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
+    log_file_client_evict_path_css = f"../CSH_SGX_STAR/evictPath/breakDownCost/64KB/client/logs/log_{TNRB}.txt"
+    cmd_run_client_read_path_css = f"cd {working_dir_read_path_css} && nohup ./csh_sgx_star_{TNRB} client_read_path" + f" >> {log_file_client_read_path_css} 2>&1"
+    cmd_run_client_early_reshuffle_css = f"cd {working_dir_early_reshuffle_css} && nohup ./csh_sgx_star_{TNRB} client_early_reshuffle" + f" >> {log_file_client_early_reshuffle_css} 2>&1"
+    cmd_run_client_evict_path_css = f"cd {working_dir_evict_path_css} && nohup ./csh_sgx_star_{TNRB} client_eviction" + f" >> {log_file_client_evict_path_css} 2>&1"
     with manage_ssh_connection(SSH_HOST, SSH_USER, SSH_PASS) as ssh_server:
         for _ in range(1):
             stop_remote_process(ssh_server, p_server)
