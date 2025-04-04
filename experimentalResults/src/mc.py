@@ -29,7 +29,6 @@ def create_bin_dir(base_dir, dir_layer_1, dir_layer_2, dir_layer_3, dir_layer_4,
                     for layer_5 in dir_layer_5:
                         bin_dir_path = os.path.join(layer_4_path, layer_5)
                         dir_paths.append(bin_dir_path)
-                        print(f"Created directory: {bin_dir_path}")
     return dir_paths
 def compile_move_breakdowncost_64KB():
     block_size = 64 * 1024
@@ -40,14 +39,14 @@ def compile_move_breakdowncost_64KB():
     bin_dir_paths_client = create_bin_dir(bin_dir_server_basr_cs, dir_layer_1, dir_layer_2, dir_layer_3_, dir_layer_4_client, dir_layer_5)
     for tnrb in TNRBs:
         height = math.ceil(math.log2(math.ceil(2**tnrb / A))) + 2
-        update_config(config_file, h=host,height=height, bs=block_size)
-        update_config(config_sgx_file, h=host,height=height, bs=block_size)
-        subprocess.run(build_cmd_server, shell=True)
+        # update_config(config_file, h=host,height=height, bs=block_size)
+        # update_config(config_sgx_file, h=host,height=height, bs=block_size)
+        # subprocess.run(build_cmd_server, shell=True)
         for i, bin_dir_path in enumerate(bin_dir_paths_server):
-            bin_dir_path = os.path.join(bin_dir_path, f"tnrb_{tnrb}")
-            os.makedirs(bin_dir_path, exist_ok=True)
+            # remove the content in bin_dir_path
+            subprocess.run(f"rm -rf {bin_dir_path}/*", shell=True)
 
-            subprocess.run(f"cp {build_dir_server}/app {bin_dir_path}/csh_sgx_star_{tnrb}", shell=True)
+            # subprocess.run(f"cp {build_dir_server}/app {bin_dir_path}/csh_sgx_star_{tnrb}", shell=True)
 
 compile_move_breakdowncost_64KB()
 
