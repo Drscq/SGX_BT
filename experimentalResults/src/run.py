@@ -82,8 +82,8 @@ for idx, TNRB in enumerate(TNRBs):
     log_file_client_early_reshuffle_css = f"../logs/log_{TNRB}.txt"
     log_file_client_evict_path_css = f"../logs/log_{TNRB}.txt"
     cmd_run_client_read_path_css = f"cd {working_dir_read_path_css} && ./csh_sgx_star_{TNRB} client_read_path" + f" >> {log_file_client_read_path_css} 2>&1"
-    cmd_run_client_early_reshuffle_css = f"{working_dir_early_reshuffle_css} && ./csh_sgx_star_{TNRB} client_early_reshuffle" + f" >> {log_file_client_early_reshuffle_css} 2>&1"
-    cmd_run_client_evict_path_css = f"{log_file_client_evict_path_css} && ./csh_sgx_star_{TNRB} client_eviction" + f" >> {log_file_client_evict_path_css} 2>&1"
+    cmd_run_client_early_reshuffle_css = f"cd {working_dir_early_reshuffle_css} && ./csh_sgx_star_{TNRB} client_early_reshuffle" + f" >> {log_file_client_early_reshuffle_css} 2>&1"
+    cmd_run_client_evict_path_css = f"cd {log_file_client_evict_path_css} && ./csh_sgx_star_{TNRB} client_eviction" + f" >> {log_file_client_evict_path_css} 2>&1"
     # cmd_run_client = ['./TriConvergeStar_TNRB_{}'.format(index), 'client_eviction']
     # cmd_run_client_read_path_css = ['./csh_sgx_star_{}'.format(TNRB), "client_read_path"]
     # cmd_run_client_early_reshuffle_css = ['./csh_sgx_star_{}'.format(TNRB), 'client_early_reshuffle' + f" >> {log_file_client_early_reshuffle_css} 2>&1"]
