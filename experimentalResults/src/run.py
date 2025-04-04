@@ -68,7 +68,7 @@ TNRBs = [18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30]
 
 working_dir_server = "/home/changqi/ORAM/SGX_BT/SampleEnclave"
 print(f"current working dir: {os.getcwd()}")
-for TNRB in TNRBs:
+for idx, TNRB in enumerate(TNRBs):
     cmd_run_server_read_path_css = f"./../experimentalResults/CSH_SGX_STAR/readPath/breakDownCost/64KB/server/bin/csh_sgx_star_{TNRB} server"
     cmd_run_server_early_reshuffle_css = f"./../experimentalResults/CSH_SGX_STAR/earlyReshuffle/breakDownCost/64KB/server/bin/csh_sgx_star_{TNRB} server"
     cmd_run_server_evict_path_css = f"./../experimentalResults/CSH_SGX_STAR/evictPath/breakDownCost/64KB/server/bin/csh_sgx_star_{TNRB} server"
@@ -89,15 +89,25 @@ for TNRB in TNRBs:
     # cmd_run_client_early_reshuffle_css = ['./csh_sgx_star_{}'.format(TNRB), 'client_early_reshuffle' + f" >> {log_file_client_early_reshuffle_css} 2>&1"]
     # cmd_run_client_evict_path_css = ['./csh_sgx_star_{}'.format(TNRB), 'client_eviction' + f" >> {log_file_client_evict_path_css} 2>&1"]
     with manage_ssh_connection(SSH_HOST, SSH_USER, SSH_PASS) as ssh_server:
-        for _ in range(1):
+        stop_remote_process(ssh_server, p_server)
+
+        # Run server and third_party on the remote server
+        run_server(ssh_server, TNRB, working_dir_server, cmd_run_server_read_path_css, log_file_server_read_path_css)
+
+        # Run client after server and third_party are started
+        run_client(cmd_run_client_read_path_css, TNRB)
+
+        stop_remote_process(ssh_server, p_server)
+
+        if idx == 0:
+            run_server(ssh_server, TNRB, working_dir_server, cmd_run_server_early_reshuffle_css, log_file_server_early_reshuffle_css)
+            run_client(cmd_run_client_early_reshuffle_css, TNRB)
             stop_remote_process(ssh_server, p_server)
+        
+        run_server(ssh_server, TNRB, working_dir_server, cmd_run_server_evict_path_css, log_file_server_evict_path_css)
+        run_client(cmd_run_client_evict_path_css, TNRB)
+        
+        stop_remote_process(ssh_server, p_server)
 
-            # Run server and third_party on the remote server
-            run_server(ssh_server, TNRB, working_dir_server, cmd_run_server_read_path_css, log_file_server_read_path_css)
-
-            # Run client after server and third_party are started
-            run_client(cmd_run_client_read_path_css, TNRB)
-
-            stop_remote_process(ssh_server, p_server)
 
 # print("All processes completed.")
