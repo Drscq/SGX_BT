@@ -414,14 +414,11 @@ void Server::handleClient(int clientSockfd) {
                                                 reinterpret_cast<char*>(&this->pathIDComplete),
                                                 sizeof(this->pathIDComplete));
                 this->communicator.sendCommand(clientSockfd, ServerConfig::CMD_SUCCESS);
-                #if LOG_BREAKDOWN_COST
-                this->logger.startTiming(this->LogReadPathGenBucketIDsScheme2);
-                #endif
+                auto start = std::chrono::high_resolution_clock::now();
                 this->path.ConvertPID2BIDs(this->pathIDComplete, TreeConfig::HEIGHT, this->bucketIDOffsets);
-                #if LOG_BREAKDOWN_COST
-               this->logger.stopTiming(this->LogReadPathGenBucketIDsScheme2);
-               this->logger.writeToFile();
-                #endif
+                auto end = std::chrono::high_resolution_clock::now();
+                auto dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                std::cout << "ServerComputation:ConvertPID2BIDs: " << dur_ns << " ns" << std::endl;
                 // get the bucket IDs of the pathIDComplete
                 this->communicator.receiveData(clientSockfd, 
                                                 this->pathCompleteOffsets.data(),
@@ -433,38 +430,47 @@ void Server::handleClient(int clientSockfd) {
                 }
                 for (PathConfig::TYPE_PATH_SIZE i = 0; i < TreeConfig::HEIGHT; ++i) {
                     // std::vector<std::pair<ZZ_p, ZZ_p>> blockCiphertexts;
+                    start = std::chrono::high_resolution_clock::now();
                     this->bucket.LoadSingleBlockCiphertextFromDisk(BucketConfig::DATADIR,
                         BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDOffsets[i]),
                         this->pathCompleteOffsets[i],
                         this->opensslBlockCiphertextsData);
+                    end = std::chrono::high_resolution_clock::now();
+                    dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    std::cout << "DiskIOLoadSingleBlockCiphertextFromDisk: " << dur_ns << " ns" << std::endl;
                     this->elgamal.ConvertVecCharCipher2VecBN(this->opensslBlockCiphertextsData,
                         this->opensslTempBlockCiphertextsData);
+                    start = std::chrono::high_resolution_clock::now();
                     this->elgamal.ParallelMultiplyCiphertexts(this->targetBlockCiphertexts,
                         this->opensslTempBlockCiphertextsData,
                         this->targetBlockCiphertexts);
+                    end = std::chrono::high_resolution_clock::now();
+                    dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    std::cout << "ServerComputation:ParallelMultiplyCiphertexts: " << dur_ns << " ns" << std::endl;
                     this->elgamal.ParallelRerandomize(m_dummyBlockCiphertexts[0], m_dummyBlockCiphertexts[1]);
                     this->elgamal.ConvertVecBNCipher2VecChar(m_dummyBlockCiphertexts[0],
                                                                 m_dummyBlockCiphertexts[1],                    
                                                                 this->opensslBlockCiphertextsData);
+                    start = std::chrono::high_resolution_clock::now();
                     this->bucket.UpdateSingleBlockCiphertextToDisk(BucketConfig::DATADIR + BucketConfig::BUCKETPREFIX + std::to_string(this->bucketIDOffsets[i]),
                                                                     this->pathCompleteOffsets[i],
                                                                     this->opensslBlockCiphertextsData);
+                    end = std::chrono::high_resolution_clock::now();
+                    dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                    std::cout << "DiskIOUpdateSingleBlockCiphertextToDisk: " << dur_ns << " ns" << std::endl;
                 }
                
                 this->elgamal.ConvertVecBNCipher2VecChar(this->targetBlockCiphertexts[0],
                     this->targetBlockCiphertexts[1],                    
                     this->targetBlockCiphertextsSerializedData);
-                #if LOG_BREAKDOWN_COST
-                this->logger.startTiming(this->LogReadPathSendCiphertextScheme2);
-                #endif
+                start = std::chrono::high_resolution_clock::now();  
                 this->communicator.sendData(clientSockfd,
                                             this->targetBlockCiphertextsSerializedData.data(),
                                             ElGamalNTLConfig::BLOCK_CIPHERTEXT_NUM_CHARS);
                 this->communicator.receiveCommand(clientSockfd, this->cmd1);
-                #if LOG_BREAKDOWN_COST
-                this->logger.stopTiming(this->LogReadPathSendCiphertextScheme2);
-                this->logger.writeToFile();
-                #endif
+                end = std::chrono::high_resolution_clock::now();
+                dur_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start).count();
+                std::cout << "ClientServerCommunication:SendData: " << dur_ns << " ns" << std::endl;
                 
             } else if (this->command == ServerConfig::CMD_COMPLETE_EARLY_RESHUFFLE) {
                 std::fill(flag_shared_sgx_earlyReshufffle2.begin(), flag_shared_sgx_earlyReshufffle2.end(), 0);

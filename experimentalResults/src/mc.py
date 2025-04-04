@@ -12,7 +12,9 @@ A = 43
 build_dir_server = '../../SampleEnclave'
 build_cmd_server = f"cd {build_dir_server} && make clean && make -j 40"
 bin_dir_server_base_css = '../CSH_SGX_STAR'
-bin_dir_server_basr_cs = '../CSH_SGX'
+bin_dir_server_base_cs = '../CSH_SGX'
+build_dir_client = '../../SampleEnclave/App/src/build'
+build_cmd_client = f"cd {build_dir_client} && make crtgamal_client -j 10"
 def create_bin_dir(base_dir, dir_layer_1, dir_layer_2, dir_layer_3, dir_layer_4, dir_layer_5):
     """
     Create directories based on the provided base path and subdirectories.
@@ -36,17 +38,34 @@ def compile_move_breakdowncost_64KB():
     dir_layer_4_client = ['client']
     dir_layer_4_server = ['server']
     bin_dir_paths_server = create_bin_dir(bin_dir_server_base_css, dir_layer_1, dir_layer_2, dir_layer_3_, dir_layer_4_server, dir_layer_5)
-    bin_dir_paths_client = create_bin_dir(bin_dir_server_basr_cs, dir_layer_1, dir_layer_2, dir_layer_3_, dir_layer_4_client, dir_layer_5)
+    bin_dir_paths_client = create_bin_dir(bin_dir_server_base_css, dir_layer_1, dir_layer_2, dir_layer_3_, dir_layer_4_client, dir_layer_5)
+    # print out the bin_dir_paths_server
+    print("bin_dir_paths_server:")
+    for bin_dir_path in bin_dir_paths_server:
+        print(bin_dir_path)
+    print("bin_dir_paths_client:")
+    for bin_dir_path in bin_dir_paths_client:
+        print(bin_dir_path)
     for tnrb in TNRBs:
         height = math.ceil(math.log2(math.ceil(2**tnrb / A))) + 2
-        # update_config(config_file, h=host,height=height, bs=block_size)
-        # update_config(config_sgx_file, h=host,height=height, bs=block_size)
-        # subprocess.run(build_cmd_server, shell=True)
+        update_config(config_file, h=host,height=height, bs=block_size)
+        update_config(config_sgx_file, h=host,height=height, bs=block_size)
+        subprocess.Popen(build_cmd_server, shell=True).wait()
         for i, bin_dir_path in enumerate(bin_dir_paths_server):
+            cp_cmd_server = f"cp {build_dir_server}/app {bin_dir_path}/csh_sgx_star_{tnrb}"
+            print(f"Copying server binary to {bin_dir_path}")
+            subprocess.Popen(cp_cmd_server, shell=True).wait()
             # remove the content in bin_dir_path
-            subprocess.run(f"rm -rf {bin_dir_path}/*", shell=True)
+            # subprocess.run(f"rm -rf {bin_dir_path}/*", shell=True)
+            # subprocess.run(f"rm -rf {bin_dir_paths_client[i]}/*", shell=True)
 
             # subprocess.run(f"cp {build_dir_server}/app {bin_dir_path}/csh_sgx_star_{tnrb}", shell=True)
+            # subprocess.run(f"cp {build_dir_client}/crtgamal_client {bin_dir_paths_client[i]}/csh_sgx_{tnrb}", shell=True)
+        subprocess.Popen(build_cmd_client, shell=True).wait()
+        for i, bin_dir_path in enumerate(bin_dir_paths_client):
+            cp_cmd_client = f"cp {build_dir_client}/crtgamal_client {bin_dir_paths_client[i]}/csh_sgx_{tnrb}"
+            print(f"Copying client binary to {bin_dir_paths_client[i]}")
+            subprocess.Popen(cp_cmd_client, shell=True).wait()
 
 compile_move_breakdowncost_64KB()
 
