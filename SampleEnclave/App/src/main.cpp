@@ -123,9 +123,9 @@ int main(int argc, char* argv[]) {
             #endif 
             // warm up
             Client client(ClientConfig::HOST, ClientConfig::PORT);
+            client.InitEviction();
             for (int i = 0; i < access_times; i++) {
                 std::cout << "Iteration " << i << "for warm up" << std::endl;
-                client.InitEviction();
                 client.EvictComplete(ClientConfig::PATH_ID);
             }
             for (int i = 0; i < 0; ++i) {
