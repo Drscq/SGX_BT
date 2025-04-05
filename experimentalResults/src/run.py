@@ -104,8 +104,8 @@ for idx, TNRB in enumerate(TNRBs):
             run_client(cmd_run_client_early_reshuffle_css, TNRB)
             stop_remote_process(ssh_server, p_server)
         
-        run_server(ssh_server, TNRB, working_dir_server, cmd_run_server_evict_path_css, log_file_server_evict_path_css)
-        run_client(cmd_run_client_evict_path_css, TNRB)
+        # run_server(ssh_server, TNRB, working_dir_server, cmd_run_server_evict_path_css, log_file_server_evict_path_css)
+        # run_client(cmd_run_client_evict_path_css, TNRB)
         
         stop_remote_process(ssh_server, p_server)
 
