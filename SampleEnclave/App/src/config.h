@@ -205,7 +205,7 @@ namespace ClientConfig {
     typedef int TYPE_PORT;
     // typedef unsigned long long TYPE_CHAR_SIZE;
     typedef size_t TYPE_CHAR_SIZE;
-    inline TYPE_HOST HOST = "128.173.236.241";
+    inline TYPE_HOST HOST = "198.82.162.120";
     inline TYPE_PORT PORT = 8183;
     inline PathConfig::TYPE_PATH_ID PATH_ID = 0;
     inline BlockConfig::TYPE_BLOCK_ID TARGET_BLOCK_ID = 3;
