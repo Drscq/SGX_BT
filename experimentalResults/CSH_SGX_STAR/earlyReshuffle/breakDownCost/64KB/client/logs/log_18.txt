@@ -1,0 +1,152 @@
+Initializing ElGamal Parameters...
+Connected to the server at 128.173.236.241:8183
+Iteration 0
+ClientComputationGenPerms: 9875 ns
+ClientComputationSendPerm: 11823875 ns
+Iteration 1
+ClientComputationGenPerms: 7958 ns
+ClientComputationSendPerm: 9615959 ns
+Iteration 2
+ClientComputationGenPerms: 8875 ns
+ClientComputationSendPerm: 9701583 ns
+Iteration 3
+ClientComputationGenPerms: 9292 ns
+ClientComputationSendPerm: 9605833 ns
+Iteration 4
+ClientComputationGenPerms: 6417 ns
+ClientComputationSendPerm: 9646708 ns
+Iteration 5
+ClientComputationGenPerms: 7416 ns
+ClientComputationSendPerm: 9802750 ns
+Iteration 6
+ClientComputationGenPerms: 8917 ns
+ClientComputationSendPerm: 9792292 ns
+Iteration 7
+ClientComputationGenPerms: 9042 ns
+ClientComputationSendPerm: 9784875 ns
+Iteration 8
+ClientComputationGenPerms: 8917 ns
+ClientComputationSendPerm: 10012291 ns
+Iteration 9
+ClientComputationGenPerms: 22750 ns
+ClientComputationSendPerm: 9798125 ns
+Iteration 10
+ClientComputationGenPerms: 9458 ns
+ClientComputationSendPerm: 9465209 ns
+Iteration 11
+ClientComputationGenPerms: 5959 ns
+ClientComputationSendPerm: 9265875 ns
+Iteration 12
+ClientComputationGenPerms: 8125 ns
+ClientComputationSendPerm: 9972500 ns
+Iteration 13
+ClientComputationGenPerms: 8125 ns
+ClientComputationSendPerm: 9702166 ns
+Iteration 14
+ClientComputationGenPerms: 8084 ns
+ClientComputationSendPerm: 9728834 ns
+Iteration 15
+ClientComputationGenPerms: 10000 ns
+ClientComputationSendPerm: 9740291 ns
+Iteration 16
+ClientComputationGenPerms: 10250 ns
+ClientComputationSendPerm: 9832416 ns
+Iteration 17
+ClientComputationGenPerms: 9583 ns
+ClientComputationSendPerm: 10052625 ns
+Iteration 18
+ClientComputationGenPerms: 9083 ns
+ClientComputationSendPerm: 9719834 ns
+Iteration 19
+ClientComputationGenPerms: 7750 ns
+ClientComputationSendPerm: 9968375 ns
+Iteration 20
+ClientComputationGenPerms: 9333 ns
+ClientComputationSendPerm: 9602792 ns
+Iteration 21
+ClientComputationGenPerms: 11125 ns
+ClientComputationSendPerm: 9715167 ns
+Iteration 22
+ClientComputationGenPerms: 7583 ns
+ClientComputationSendPerm: 9573500 ns
+Iteration 23
+ClientComputationGenPerms: 5916 ns
+ClientComputationSendPerm: 9258666 ns
+Iteration 24
+ClientComputationGenPerms: 14125 ns
+ClientComputationSendPerm: 10068708 ns
+Iteration 25
+ClientComputationGenPerms: 7791 ns
+ClientComputationSendPerm: 9670834 ns
+Iteration 26
+ClientComputationGenPerms: 9167 ns
+ClientComputationSendPerm: 9513375 ns
+Iteration 27
+ClientComputationGenPerms: 8083 ns
+ClientComputationSendPerm: 10400875 ns
+Iteration 28
+ClientComputationGenPerms: 11041 ns
+ClientComputationSendPerm: 10005250 ns
+Iteration 29
+ClientComputationGenPerms: 8334 ns
+ClientComputationSendPerm: 10960042 ns
+Iteration 30
+ClientComputationGenPerms: 7958 ns
+ClientComputationSendPerm: 10037041 ns
+Iteration 31
+ClientComputationGenPerms: 8875 ns
+ClientComputationSendPerm: 9804834 ns
+Iteration 32
+ClientComputationGenPerms: 9917 ns
+ClientComputationSendPerm: 9843417 ns
+Iteration 33
+ClientComputationGenPerms: 9000 ns
+ClientComputationSendPerm: 9645792 ns
+Iteration 34
+ClientComputationGenPerms: 8250 ns
+ClientComputationSendPerm: 9365167 ns
+Iteration 35
+ClientComputationGenPerms: 5292 ns
+ClientComputationSendPerm: 9239041 ns
+Iteration 36
+ClientComputationGenPerms: 8958 ns
+ClientComputationSendPerm: 9918667 ns
+Iteration 37
+ClientComputationGenPerms: 7625 ns
+ClientComputationSendPerm: 9534167 ns
+Iteration 38
+ClientComputationGenPerms: 7875 ns
+ClientComputationSendPerm: 9673500 ns
+Iteration 39
+ClientComputationGenPerms: 8041 ns
+ClientComputationSendPerm: 9740083 ns
+Iteration 40
+ClientComputationGenPerms: 8375 ns
+ClientComputationSendPerm: 10163583 ns
+Iteration 41
+ClientComputationGenPerms: 7500 ns
+ClientComputationSendPerm: 9639250 ns
+Iteration 42
+ClientComputationGenPerms: 8125 ns
+ClientComputationSendPerm: 9737250 ns
+Iteration 43
+ClientComputationGenPerms: 10458 ns
+ClientComputationSendPerm: 9760875 ns
+Iteration 44
+ClientComputationGenPerms: 9625 ns
+ClientComputationSendPerm: 9917292 ns
+Iteration 45
+ClientComputationGenPerms: 10875 ns
+ClientComputationSendPerm: 9921625 ns
+Iteration 46
+ClientComputationGenPerms: 8375 ns
+ClientComputationSendPerm: 9872251 ns
+Iteration 47
+ClientComputationGenPerms: 5708 ns
+ClientComputationSendPerm: 9294333 ns
+Iteration 48
+ClientComputationGenPerms: 8958 ns
+ClientComputationSendPerm: 9905958 ns
+Iteration 49
+ClientComputationGenPerms: 8167 ns
+ClientComputationSendPerm: 9780208 ns
