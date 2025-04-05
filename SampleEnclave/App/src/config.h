@@ -182,7 +182,7 @@ namespace PathConfig {
 namespace BlockConfig {
     typedef long long TYPE_BLOCK_ID;
     typedef unsigned long long TYPE_BLOCK_SIZE;
-    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 65536;
+    inline TYPE_BLOCK_SIZE BLOCK_SIZE = 256;
 }
 
 namespace AESConfig {
