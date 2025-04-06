@@ -524,7 +524,7 @@ void Client::EarlyReshuffleComplete(BucketConfig::TYPE_BUCKET_ID bucket_id) {
     this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
     end = std::chrono::high_resolution_clock::now();
     elapsed_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(end - start);
-    std::cout << "ClientComputationSendPerm: " << elapsed_ns.count() << " ns" << std::endl;
+    std::cout << "ClientServerCommunicationSendPerm: " << elapsed_ns.count() << " ns" << std::endl;
     this->communicator.receiveCommand(this->communicator.getSockfd(), this->cmd);
 }
 
