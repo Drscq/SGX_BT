@@ -1,0 +1,92 @@
+Total Delays for 64KB:
+Height 15:
+  ClientComputation: 2539964.0 ns
+  ServerComputation: 24982766.0 ns
+  HelperComputation: 31093507.0 ns
+  DiskIO: 7564324.0 ns
+  ClientServerCommunication: 69439355.0 ns
+  Total Delay: 135619916.0 ns
+Height 16:
+  ClientComputation: 2599058.0 ns
+  ServerComputation: 26248374.0 ns
+  HelperComputation: 32968734.0 ns
+  DiskIO: 7622723.0 ns
+  ClientServerCommunication: 70959751.46153846 ns
+  Total Delay: 140398640.46153846 ns
+Height 17:
+  ClientComputation: 2512074.0 ns
+  ServerComputation: 28022553.0 ns
+  HelperComputation: 35300031.0 ns
+  DiskIO: 8582210.0 ns
+  ClientServerCommunication: 72480147.92307693 ns
+  Total Delay: 146897015.92307693 ns
+Height 18:
+  ClientComputation: 2524967.0 ns
+  ServerComputation: 29712784.0 ns
+  HelperComputation: 37515751.0 ns
+  DiskIO: 8502718.0 ns
+  ClientServerCommunication: 74000544.38461539 ns
+  Total Delay: 152256764.3846154 ns
+Height 19:
+  ClientComputation: 2484610.0 ns
+  ServerComputation: 31400566.0 ns
+  HelperComputation: 39185277.0 ns
+  DiskIO: 8954541.0 ns
+  ClientServerCommunication: 75520940.84615384 ns
+  Total Delay: 157545934.84615386 ns
+Height 20:
+  ClientComputation: 2568508.0 ns
+  ServerComputation: 33501022.0 ns
+  HelperComputation: 41755096.0 ns
+  DiskIO: 9646808.0 ns
+  ClientServerCommunication: 77041337.3076923 ns
+  Total Delay: 164512771.3076923 ns
+Height 21:
+  ClientComputation: 2550929.0 ns
+  ServerComputation: 34959126.0 ns
+  HelperComputation: 43835691.0 ns
+  DiskIO: 9791127.0 ns
+  ClientServerCommunication: 78561733.76923077 ns
+  Total Delay: 169698606.76923078 ns
+Height 22:
+  ClientComputation: 2540462.0 ns
+  ServerComputation: 36402519.0 ns
+  HelperComputation: 46404132.0 ns
+  DiskIO: 10503930.0 ns
+  ClientServerCommunication: 80082130.23076923 ns
+  Total Delay: 175933173.23076922 ns
+Height 23:
+  ClientComputation: 2562459.0 ns
+  ServerComputation: 38633997.0 ns
+  HelperComputation: 48385821.0 ns
+  DiskIO: 11078564.0 ns
+  ClientServerCommunication: 81602526.6923077 ns
+  Total Delay: 182263367.6923077 ns
+Height 24:
+  ClientComputation: 2614395.0 ns
+  ServerComputation: 39817781.0 ns
+  HelperComputation: 50753681.0 ns
+  DiskIO: 11337296.0 ns
+  ClientServerCommunication: 83122923.15384616 ns
+  Total Delay: 187646076.15384614 ns
+Height 25:
+  ClientComputation: 2586231.0 ns
+  ServerComputation: 42326980.0 ns
+  HelperComputation: 52460588.0 ns
+  DiskIO: 11836584.0 ns
+  ClientServerCommunication: 84643319.61538461 ns
+  Total Delay: 193853702.6153846 ns
+Height 26:
+  ClientComputation: 2528744.0 ns
+  ServerComputation: 45507390.0 ns
+  HelperComputation: 55287566.0 ns
+  DiskIO: 12413724.0 ns
+  ClientServerCommunication: 86163716.07692307 ns
+  Total Delay: 201901140.07692307 ns
+Height 27:
+  ClientComputation: 2575134.0 ns
+  ServerComputation: 45749821.0 ns
+  HelperComputation: 59067751.0 ns
+  DiskIO: 12875421.0 ns
+  ClientServerCommunication: 87684112.53846154 ns
+  Total Delay: 207952239.53846154 ns

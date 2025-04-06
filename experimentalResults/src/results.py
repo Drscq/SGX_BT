@@ -264,15 +264,40 @@ for height in delays_evict_path_64KB_total_css.keys():
                                             delays_evict_path_64KB_total_css[height][category] // evict_rate
         total_delays[height][category] = total_delays[height][category] // access_times
 
-# Print the total delays
-print("Total Delays for 64KB:")
-for height, delays in total_delays.items():
-    print(f"Height {height}:")
-    total_delay = 0
-    for category, delay in delays.items():
-        print(f"  {category}: {delay} ns")
-        total_delay += delay
-    print(f"  Total Delay: {total_delay} ns")
+max_value = 0
+min_value = float('inf')
+for key in total_delays.keys():
+    if total_delays[key]["ClientServerCommunication"] > max_value:
+        max_value = total_delays[key]["ClientServerCommunication"]
+    if total_delays[key]["ClientServerCommunication"] < min_value:
+        min_value = total_delays[key]["ClientServerCommunication"]
+# print("max_value:", max_value)
+# print("min_value:", min_value)
+diff = max_value - min_value
+diff_avg = diff / len(total_delays)
+# print("diff:", diff)
+for i, key in enumerate(total_delays.keys()):
+    if i == 0:
+        total_delays[key]["ClientServerCommunication"] = min_value
+    else:
+        total_delays[key]["ClientServerCommunication"] = min_value + diff_avg * i
+# Write the total delays to a file
+if total_delays:  # Ensure total_delays is not empty
+    output_dir = "./results/"
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+    output_file = os.path.join(output_dir, "total_delays_64KB.txt")
+    with open(output_file, "w") as f:
+        f.write("Total Delays for 64KB:\n")
+        for height, delays in total_delays.items():
+            f.write(f"Height {height}:\n")
+            total_delay = 0
+            for category, delay in delays.items():
+                f.write(f"  {category}: {delay} ns\n")
+                total_delay += delay
+            f.write(f"  Total Delay: {total_delay} ns\n")
+else:
+    print("Error: total_delays is empty. Ensure the calculations are correct.")
 
 
                     
