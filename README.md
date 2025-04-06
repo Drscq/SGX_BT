@@ -6,6 +6,11 @@ This project demonstrates **multi-threaded execution** between a **host thread**
 3. **The host thread sums up the even-indexed elements** of the sorted array.
 4. **The enclave directly accesses host memory** using `[user_check]`, avoiding unnecessary copying.
 
+## Useful Executive Commands
+1. [server] ./app server >> ./../experimentalResults/CSH_SGX_STAR/evictPath/breakDownCost/64KB/server/logs/log_28.txt
+2. [client] ./csh_sgx_star_28 client_eviction >> ../logs/log_28.txt
+
+
 ## Table of Contents
 - [Prerequisites](#prerequisites)
 - [Project Structure](#project-structure)
